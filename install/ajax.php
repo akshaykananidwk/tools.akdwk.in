@@ -53,7 +53,7 @@ try {
         $ch = curl_init($base);
         curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $payload,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
-        $resp = curl_exec($ch); $http = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
+        $resp = curl_exec($ch); $http = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch);
         if ($resp === false) out(['ok' => false, 'error' => "❌ cURL: $err"]);
         out(['ok' => $http >= 200 && $http < 300, 'msg' => "HTTP $http", 'raw' => mb_substr((string) $resp, 0, 500)]);
     }
@@ -73,7 +73,7 @@ try {
         if (!$key || !$secret) out(['ok' => false, 'error' => 'Key ID અને Secret આપો']);
         $ch = curl_init('https://api.razorpay.com/v1/orders?count=1');
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => "$key:$secret", CURLOPT_TIMEOUT => 15]);
-        $resp = curl_exec($ch); $http = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        $resp = curl_exec($ch); $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         out(['ok' => $http === 200, 'msg' => $http === 200 ? 'Razorpay કી માન્ય ✅' : "❌ HTTP $http — કી તપાસો"]);
     }
 

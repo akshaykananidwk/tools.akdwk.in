@@ -197,7 +197,6 @@ class GitHubUpdater {
         ]);
         $body = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         return [$code, (string) $body];
     }
 
@@ -217,7 +216,6 @@ class GitHubUpdater {
         ]);
         $ok = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         fclose($fp);
         return $ok !== false && $code >= 200 && $code < 300;
     }

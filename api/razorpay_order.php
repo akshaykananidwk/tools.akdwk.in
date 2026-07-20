@@ -36,7 +36,6 @@ curl_setopt_array($ch, [
 ]);
 $resp = curl_exec($ch);
 $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
 $order = json_decode($resp, true);
 if ($http !== 200 || empty($order['id'])) {
     kt_error_log('Razorpay order failed: ' . $resp);
