@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/tools_registry.php';
+require_once __DIR__ . '/seed_data.php'; // shloks (daily_shlok), plans/templates/blog seeds
 
 if (defined('APP_TIMEZONE')) {
     date_default_timezone_set(APP_TIMEZONE);
@@ -127,7 +128,8 @@ function kt_error_log(string $msg): void {
 
 /* ── Misc ────────────────────────────────────────────────── */
 function money(float $n): string {
-    return (defined('CURRENCY_SYMBOL') ? CURRENCY_SYMBOL : '₹') . number_format($n, 2);
+    // Note: CURRENCY_SYMBOL is a predefined PHP constant, so we use KT_CURRENCY_SYMBOL.
+    return (defined('KT_CURRENCY_SYMBOL') ? KT_CURRENCY_SYMBOL : '₹') . number_format($n, 2);
 }
 
 function rand_token(int $len = 24): string {

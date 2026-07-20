@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /install/
+Disallow: /api/
+Disallow: /config/
+Disallow: /uploads/temp/
+Disallow: /uploads/share/
+
+Sitemap: https://tools.akdwk.in/sitemap.php

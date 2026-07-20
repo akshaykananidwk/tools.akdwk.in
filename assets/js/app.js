@@ -544,6 +544,26 @@ regCalc('backup-est', () => ({
     return [{ label: T('જરૂરી જગ્યા', 'Space needed'), value: (per * v.copies).toFixed(0) + ' GB', big: true }, { label: T('પ્રતિ કોપી', 'Per copy'), value: per.toFixed(0) + ' GB' }];
   },
 }));
+regCalc('pc-build', () => ({
+  title: T('PC બિલ્ડ કોસ્ટ', 'PC Build Cost'), live: false,
+  fields: [
+    { k: 'parts', label: T('પાર્ટ્સ (નામ,ભાવ પ્રતિ લાઇન)', 'Parts (name,price per line)'), type: 'textarea', rows: 6, full: true, val: 'CPU,8000\nMotherboard,6000\nRAM 16GB,3500\nSSD 512GB,3200\nCabinet+SMPS,2500' },
+    { k: 'margin', label: T('માર્જિન %', 'Margin %'), type: 'number', val: 12 },
+    { k: 'gst', label: 'GST %', type: 'number', val: 18 },
+  ],
+  compute: v => {
+    let cost = 0;
+    v.parts.split('\n').forEach(l => { const p = l.split(','); if (p[1]) cost += parseFloat(p[1]) || 0; });
+    const withMargin = cost * (1 + v.margin / 100);
+    const gst = withMargin * v.gst / 100;
+    return [
+      { label: T('પાર્ટ્સ કોસ્ટ', 'Parts cost'), value: '₹' + cost.toFixed(0) },
+      { label: T('માર્જિન સાથે', 'With margin'), value: '₹' + withMargin.toFixed(0) },
+      { label: 'GST', value: '₹' + gst.toFixed(0) },
+      { label: T('કુલ વેચાણ કિંમત', 'Total sale price'), value: '₹' + (withMargin + gst).toFixed(0), big: true },
+    ];
+  },
+}));
 regCalc('psu-calc', () => ({
   title: 'PSU', fields: [
     { k: 'cpu', label: 'CPU', unit: 'W', type: 'number', val: 95 },

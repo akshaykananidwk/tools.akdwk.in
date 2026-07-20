@@ -367,7 +367,9 @@ reg('color-picker', function (mount, opt, ctx) {
   };
 });
 
-reg('favicon-generator', async function (mount, opt, ctx) {
+reg('favicon-gen', faviconEngine);
+reg('favicon-generator', faviconEngine);
+async function faviconEngine(mount, opt, ctx) {
   await need('jszip');
   const input = fileInput(mount, { accept: 'image/*' });
   const box = resultBox(mount);
@@ -380,7 +382,7 @@ reg('favicon-generator', async function (mount, opt, ctx) {
     setActions([{ label: T('ZIP ડાઉનલોડ', 'Download ZIP'), cls: 'btn-cta', icon: 'download', onClick: () => downloadBlob(blob, 'favicons.zip') }]);
     if (ctx.toolId) logUsage(ctx.toolId); if (window.lucide) lucide.createIcons();
   };
-});
+}
 
 reg('img-bulk', async function (mount, opt, ctx) {
   await need('jszip');
@@ -685,7 +687,7 @@ reg('json-excel', async function (mount, opt, ctx) {
   await need('xlsx'); const to = (opt && opt.to) || 'xlsx';
   if (to === 'xlsx') {
     const ta = textArea(mount, '[{"name":"Krishna","tools":120}]'); const box = resultBox(mount);
-    setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', onClick: () => { try { const arr = JSON.parse(ta.value); const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } }]);
+    setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', onClick: () => { try { const arr = JSON.parse(ta.value); const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } } }]);
   } else {
     const input = fileInput(mount, { accept: '.xlsx,.xls' }); const box = resultBox(mount);
     input.onchange = async () => { const f = input.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); showText(box, JSON.stringify(json, null, 2), 'data.json', 'application/json', ctx); };
@@ -868,7 +870,9 @@ reg('cctv-reference', function (mount, opt, ctx) {
   mount.querySelector('.srch').oninput = e => { const t = e.target.value.toLowerCase(); mount.querySelectorAll('.row').forEach(r => r.style.display = r.textContent.toLowerCase().includes(t) ? '' : 'none'); };
   if (ctx.toolId) logUsage(ctx.toolId);
 });
-reg('fov-visualizer', function (mount, opt, ctx) {
+reg('cctv-fov', fovEngine);
+reg('fov-visualizer', fovEngine);
+function fovEngine(mount, opt, ctx) {
   const ctrl = el(`<div class="grid grid-cols-2 gap-3"><div><label class="kt-label">${T('કોણ', 'Angle')}°</label><input type="number" class="kt-input ang" value="90"></div><div><label class="kt-label">${T('રેન્જ', 'Range')} m</label><input type="number" class="kt-input rng" value="15"></div></div><canvas class="cv mt-3 w-full bg-white rounded-xl" width="400" height="300" style="border:1px solid var(--border)"></canvas>`);
   mount.appendChild(ctrl);
   const draw = () => {
@@ -880,7 +884,7 @@ reg('fov-visualizer', function (mount, opt, ctx) {
     cx.fillStyle = '#333'; cx.font = '12px Inter'; cx.textAlign = 'center'; cx.fillText(`${ctrl.querySelector('.ang').value}° / ${rng}m`, ox, oy - rng * scale - 6);
   };
   ctrl.oninput = draw; draw(); if (ctx.toolId) logUsage(ctx.toolId);
-});
+}
 
 /* ---------- Document PDF generators (jsPDF) ---------- */
 function shopHeader(pdf, title) {
