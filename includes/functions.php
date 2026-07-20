@@ -53,7 +53,9 @@ function current_lang(): string {
     if (isset($_GET['lang']) && in_array($_GET['lang'], ['gu', 'en'], true)) {
         $_SESSION['lang'] = $_GET['lang'];
     }
-    return $_SESSION['lang'] ?? (defined('DEFAULT_LANG') ? DEFAULT_LANG : 'gu');
+    // Default language is admin-configurable (Settings → default_lang); English
+    // by default. A visitor's toggle choice (session) always wins.
+    return $_SESSION['lang'] ?? setting('default_lang', (defined('DEFAULT_LANG') ? DEFAULT_LANG : 'en'));
 }
 
 function lang_pack(): array {
@@ -71,6 +73,12 @@ function t(string $key, array $vars = []): string {
     $str  = $pack[$key] ?? $key;
     foreach ($vars as $k => $v) $str = str_replace(':' . $k, (string) $v, $str);
     return $str;
+}
+
+/** The brand/site name in the current language (English default: "Krishna Tools"). */
+function brand_name(): string {
+    if (current_lang() === 'en') return setting('site_name_en', 'Krishna Tools');
+    return setting('site_name', 'કૃષ્ણા ટૂલ્સ');
 }
 
 /** Pick the language-appropriate field from a row with _gu/_en variants. */

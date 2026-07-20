@@ -9,7 +9,7 @@ require_once __DIR__ . '/csrf.php';
 kt_session_start();
 
 $lang     = current_lang();
-$title    = $page_title ?? (setting('site_name', SITE_NAME) . ' — ' . t('tagline'));
+$title    = $page_title ?? (brand_name() . ' — ' . t('tagline'));
 $desc     = $page_desc  ?? t('tagline');
 $og       = $page_og    ?? (SITE_URL . '/assets/img/logo/og.png');
 $fest     = festival_theme();
@@ -22,19 +22,62 @@ $gaId     = setting('ga_id', defined('GA_ID') ? GA_ID : '');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?></title>
 <meta name="description" content="<?= e($desc) ?>">
+<?php
+// Canonical + hreflang alternates: strip any ?lang= so both languages point at
+// one canonical URL, and advertise the en/gu variants for international SEO.
+$reqUri = $_SERVER['REQUEST_URI'] ?? '/';
+$cleanUri = preg_replace('/([?&])lang=(en|gu)(&|$)/', '$1', $reqUri);
+$cleanUri = rtrim(preg_replace('/[?&]$/', '', $cleanUri), '');
+$canonical = SITE_URL . $cleanUri;
+$sep = str_contains($cleanUri, '?') ? '&' : '?';
+$siteName = brand_name();
+?>
+<meta name="robots" content="<?= e($page_robots ?? 'index, follow, max-image-preview:large') ?>">
+<?php if (!empty($page_keywords)): ?><meta name="keywords" content="<?= e($page_keywords) ?>"><?php endif; ?>
+<meta name="author" content="AK Computer, Dwarka">
+<link rel="canonical" href="<?= e($canonical) ?>">
+<link rel="alternate" hreflang="en" href="<?= e($canonical . $sep . 'lang=en') ?>">
+<link rel="alternate" hreflang="gu" href="<?= e($canonical . $sep . 'lang=gu') ?>">
+<link rel="alternate" hreflang="x-default" href="<?= e($canonical) ?>">
+<!-- Open Graph -->
+<meta property="og:site_name" content="<?= e($siteName) ?>">
 <meta property="og:title" content="<?= e($title) ?>">
 <meta property="og:description" content="<?= e($desc) ?>">
 <meta property="og:image" content="<?= e($og) ?>">
+<meta property="og:url" content="<?= e($canonical) ?>">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="<?= $lang === 'gu' ? 'gu_IN' : 'en_IN' ?>">
+<meta property="og:locale:alternate" content="<?= $lang === 'gu' ? 'en_IN' : 'gu_IN' ?>">
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= e($title) ?>">
+<meta name="twitter:description" content="<?= e($desc) ?>">
+<meta name="twitter:image" content="<?= e($og) ?>">
 <meta name="theme-color" content="#1E3A8A">
 <link rel="icon" href="<?= SITE_URL ?>/assets/img/logo/favicon.svg" type="image/svg+xml">
-<link rel="canonical" href="<?= e(SITE_URL . ($_SERVER['REQUEST_URI'] ?? '/')) ?>">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
 <script>window.KT = { url: <?= json_encode(SITE_URL) ?>, lang: <?= json_encode($lang) ?>, csrf: <?= json_encode(csrf_token()) ?>, loggedIn: <?= is_logged_in() ? 'true' : 'false' ?> };</script>
+<?php
+// Site-wide structured data: Organization + WebSite (Sitelinks Search box).
+$orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
+    ['@type' => 'Organization', '@id' => SITE_URL . '/#org', 'name' => 'AK Computer',
+     'url' => SITE_URL, 'logo' => SITE_URL . '/assets/img/logo/logo.svg',
+     'description' => 'Computer & CCTV shop in Dwarka, Gujarat — makers of Krishna Tools.',
+     'address' => ['@type' => 'PostalAddress', 'addressLocality' => 'Dwarka', 'addressRegion' => 'Gujarat', 'addressCountry' => 'IN'],
+     'contactPoint' => ['@type' => 'ContactPoint', 'telephone' => setting('shop_phone', ''), 'contactType' => 'customer service']],
+    ['@type' => 'WebSite', '@id' => SITE_URL . '/#website', 'url' => SITE_URL,
+     'name' => $siteName, 'publisher' => ['@id' => SITE_URL . '/#org'],
+     'inLanguage' => ['en', 'gu'],
+     'potentialAction' => ['@type' => 'SearchAction',
+         'target' => ['@type' => 'EntryPoint', 'urlTemplate' => SITE_URL . '/search.php?q={search_term_string}'],
+         'query-input' => 'required name=search_term_string']],
+]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?>
+<script type="application/ld+json"><?= $orgLd ?></script>
 <?php if ($gaId): ?>
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($gaId) ?>"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<?= e($gaId) ?>');</script>
@@ -55,7 +98,7 @@ $gaId     = setting('ga_id', defined('GA_ID') ? GA_ID : '');
   <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
     <a href="<?= SITE_URL ?>/" class="flex items-center gap-2 shrink-0">
       <img src="<?= SITE_URL ?>/assets/img/logo/logo.svg" alt="Krishna Tools" class="w-9 h-9" onerror="this.style.display='none'">
-      <span class="brand-title text-xl md:text-2xl brand"><?= e(setting('site_name', 'કૃષ્ણા ટૂલ્સ')) ?></span>
+      <span class="brand-title text-xl md:text-2xl brand"><?= e(brand_name()) ?></span>
     </a>
 
     <div class="hidden md:flex flex-1 max-w-md relative">

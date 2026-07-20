@@ -8,7 +8,7 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
 <footer class="mt-10 border-t" style="border-color:var(--border)">
   <div class="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-8 text-sm">
     <div>
-      <div class="brand-title text-lg mb-2"><?= e(setting('site_name', 'કૃષ્ણા ટૂલ્સ')) ?></div>
+      <div class="brand-title text-lg mb-2"><?= e(brand_name()) ?></div>
       <p class="opacity-70"><?= t('tagline') ?></p>
       <p class="opacity-70 mt-2"><?= t('footer_note') ?></p>
     </div>
@@ -38,7 +38,7 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
     </div>
   </div>
   <div class="text-center py-4 hare-krishna-mark text-[color:var(--gold)]">ॐ हरे कृष्ण हरे कृष्ण कृष्ण कृष्ण हरे हरे</div>
-  <div class="text-center pb-6 text-xs opacity-60">© <?= date('Y') ?> <?= e(setting('site_name', 'કૃષ્ણા ટૂલ્સ')) ?> · <?= e(setting('shop_name', 'AK Computer')) ?>, દ્વારકા</div>
+  <div class="text-center pb-6 text-xs opacity-60">© <?= date('Y') ?> <?= e(brand_name()) ?> · <?= e(setting('shop_name', 'AK Computer')) ?>, દ્વારકા</div>
 </footer>
 
 <!-- Floating WhatsApp -->

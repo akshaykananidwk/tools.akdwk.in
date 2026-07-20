@@ -9,14 +9,20 @@ $tools = kt_tools();
 $dbTools = [];
 try { foreach (all("SELECT slug, is_active, is_premium, views FROM " . tbl('tools')) as $r) $dbTools[$r['slug']] = $r; } catch (Throwable $e) {}
 
-$page_title = setting('site_name', 'કૃષ્ણા ટૂલ્સ') . ' — ' . t('tagline');
-$page_desc  = t('tagline') . ' · AK Computer, Dwarka';
+$en = current_lang() === 'en';
+$page_title = $en
+    ? brand_name() . ' — 120+ Free Online Tools (PDF, Image, CCTV, GST)'
+    : setting('site_name', 'કૃષ્ણા ટૂલ્સ') . ' — 120+ ફ્રી ઓનલાઇન ટૂલ્સ';
+$page_desc  = $en
+    ? 'Krishna Tools by AK Computer, Dwarka — 120+ free online tools: PDF & image converters, CCTV storage/bandwidth calculators, GST & invoice generators, QR codes and more. Fast, secure, works in your browser.'
+    : 'AK Computer, દ્વારકા દ્વારા 120+ ફ્રી ઓનલાઇન ટૂલ્સ — PDF, ઇમેજ, CCTV કેલ્ક્યુલેટર, GST, QR અને ઘણું બધું.';
+$page_keywords = 'online tools, free tools, pdf converter, image compressor, cctv storage calculator, gst calculator, qr code generator, invoice generator, AK Computer Dwarka';
 require __DIR__ . '/includes/header.php';
 ?>
 <!-- Hero -->
 <section class="hero-krishna rounded-3xl p-8 md:p-12 mt-4 text-center relative">
   <div class="text-5xl mb-3">🦚</div>
-  <h1 class="brand-title text-3xl md:text-5xl mb-3"><?= e(setting('site_name', 'કૃષ્ણા ટૂલ્સ')) ?></h1>
+  <h1 class="brand-title text-3xl md:text-5xl mb-3"><?= e(brand_name()) ?></h1>
   <p class="text-lg opacity-80 max-w-2xl mx-auto"><?= t('tagline') ?></p>
   <div class="max-w-xl mx-auto mt-6 relative">
     <input id="heroSearch" type="text" placeholder="<?= t('search_tools') ?>" class="kt-input !py-3 pl-11 text-lg" autocomplete="off">

@@ -33,10 +33,16 @@ try {
 } catch (Throwable $e) { /* DB not ready — skip blog URLs */ }
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
 foreach ($urls as [$loc, $lastmod, $changefreq, $priority]) {
+    $esc = htmlspecialchars($loc, ENT_XML1, 'UTF-8');
+    $sep = str_contains($loc, '?') ? '&amp;' : '?';
     echo "  <url>\n";
-    echo '    <loc>' . htmlspecialchars($loc, ENT_XML1, 'UTF-8') . "</loc>\n";
+    echo '    <loc>' . $esc . "</loc>\n";
+    // Bilingual alternates (English default + Gujarati).
+    echo '    <xhtml:link rel="alternate" hreflang="en" href="' . $esc . $sep . 'lang=en"/>' . "\n";
+    echo '    <xhtml:link rel="alternate" hreflang="gu" href="' . $esc . $sep . 'lang=gu"/>' . "\n";
+    echo '    <xhtml:link rel="alternate" hreflang="x-default" href="' . $esc . '"/>' . "\n";
     if ($lastmod) echo '    <lastmod>' . $lastmod . "</lastmod>\n";
     echo '    <changefreq>' . $changefreq . "</changefreq>\n";
     echo '    <priority>' . $priority . "</priority>\n";

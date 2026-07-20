@@ -90,7 +90,7 @@ try {
                 'site' => [
                     'name' => trim($_POST['site_name'] ?? 'કૃષ્ણા ટૂલ્સ'),
                     'url'  => rtrim(trim($_POST['site_url'] ?? install_site_url()), '/'),
-                    'lang' => ($_POST['lang'] ?? 'gu') === 'en' ? 'en' : 'gu',
+                    'lang' => ($_POST['lang'] ?? 'en') === 'gu' ? 'gu' : 'en',
                     'tz'   => trim($_POST['tz'] ?? 'Asia/Kolkata'),
                 ],
                 'shop' => [

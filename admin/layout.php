@@ -11,17 +11,18 @@ require_once __DIR__ . '/../includes/csrf.php';
 /** Sidebar link definitions: [file, icon, label]. */
 function admin_nav_links(): array {
     return [
-        ['index.php',      'layout-dashboard', 'ડેશબોર્ડ'],
-        ['users.php',      'users',            'યુઝર્સ'],
-        ['plans.php',      'badge-indian-rupee','પ્લાન્સ'],
-        ['payments.php',   'receipt',          'પેમેન્ટ્સ'],
-        ['tools.php',      'wrench',           'ટૂલ્સ'],
-        ['categories.php', 'folder-tree',      'કેટેગરી'],
-        ['whatsapp.php',   'message-circle',   'વ્હોટ્સએપ'],
-        ['contact.php',    'inbox',            'સંપર્ક'],
-        ['logs.php',       'scroll-text',      'લોગ્સ'],
-        ['settings.php',   'settings',         'સેટિંગ્સ'],
-        ['backup.php',     'database-backup',  'બેકઅપ'],
+        ['index.php',      'layout-dashboard', 'Dashboard'],
+        ['users.php',      'users',            'Users'],
+        ['plans.php',      'badge-indian-rupee','Plans'],
+        ['payments.php',   'receipt',          'Payments'],
+        ['tools.php',      'wrench',           'Tools'],
+        ['categories.php', 'folder-tree',      'Categories'],
+        ['whatsapp.php',   'message-circle',   'WhatsApp'],
+        ['contact.php',    'inbox',            'Contact'],
+        ['update.php',     'github',           'GitHub Update'],
+        ['logs.php',       'scroll-text',      'Logs'],
+        ['settings.php',   'settings',         'Settings'],
+        ['backup.php',     'database-backup',  'Backup'],
     ];
 }
 

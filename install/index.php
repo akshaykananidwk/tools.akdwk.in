@@ -109,7 +109,7 @@ $siteUrl = install_site_url();
       <div><label class="kt-label">Admin Email (login)</label><input type="email" class="kt-input" id="admin_email"></div>
       <div><label class="kt-label">Admin Password <span class="opacity-50">(min 8)</span></label><input type="password" class="kt-input" id="admin_password" oninput="pwMeter(this.value)"><div class="h-1.5 rounded mt-1" id="pwbar" style="background:rgba(0,0,0,.1)"></div></div>
       <div><label class="kt-label">Confirm Password</label><input type="password" class="kt-input" id="admin_password2"></div>
-      <div><label class="kt-label">Default Language</label><select class="kt-select" id="lang"><option value="gu">ગુજરાતી</option><option value="en">English</option></select></div>
+      <div><label class="kt-label">Default Language</label><select class="kt-select" id="lang"><option value="en">English</option><option value="gu">ગુજરાતી</option></select></div>
       <div><label class="kt-label">Timezone</label><input class="kt-input" id="tz" value="Asia/Kolkata"></div>
     </div>
     <div id="siteMsg" class="mt-3 text-sm"></div>
