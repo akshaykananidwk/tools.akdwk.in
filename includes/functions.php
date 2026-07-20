@@ -13,7 +13,8 @@ if (defined('APP_TIMEZONE')) {
 
 // Production error posture: never print warnings/deprecations to visitors
 // (PHP 8.5 deprecates several old cURL/date calls); log them to a file instead.
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_STRICT);
+// (E_STRICT was removed in PHP 8.4 — referencing it would itself warn.)
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 @ini_set('display_errors', '0');
 @ini_set('log_errors', '1');
 if (defined('KT_LOGS')) @ini_set('error_log', KT_LOGS . '/php_error.log');
