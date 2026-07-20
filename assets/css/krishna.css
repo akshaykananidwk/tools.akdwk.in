@@ -1,0 +1,177 @@
+/* ================================================================
+   KRISHNA TOOLS — devotional theme layer (rides on top of Tailwind CDN)
+   Palette: Krishna blue, peacock teal, morpankh green, gold, saffron.
+   ================================================================ */
+:root {
+  --krishna-blue: #1E3A8A;
+  --peacock-teal: #0E7490;
+  --morpankh-green: #059669;
+  --gold: #F59E0B;
+  --gold-soft: #FBBF24;
+  --saffron: #EA580C;
+  --cream: #FFF8E7;
+  --deep-night: #0F172A;
+  --ink: #1F2937;
+  --card: #ffffff;
+  --border: rgba(245, 158, 11, .35);
+  --shadow-gold: 0 8px 30px -12px rgba(245, 158, 11, .45);
+}
+[data-theme="dark"] {
+  --cream: #0F172A;
+  --ink: #E5E7EB;
+  --card: #1E293B;
+  --border: rgba(245, 158, 11, .28);
+  --shadow-gold: 0 8px 30px -12px rgba(245, 158, 11, .25);
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', 'Baloo Bhai 2', system-ui, sans-serif;
+  background-color: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+}
+:lang(gu), .gu, h1, h2, .brand, .tool-title {
+  font-family: 'Baloo Bhai 2', 'Inter', sans-serif;
+}
+
+/* Morpankh dotted background pattern (subtle) */
+.morpankh-bg {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(5,150,105,.12) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+.hero-krishna {
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(14,116,144,.18), transparent 60%),
+    linear-gradient(160deg, rgba(30,58,138,.10), rgba(14,116,144,.06));
+  position: relative;
+  overflow: hidden;
+}
+.hero-krishna::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(245,158,11,.10) 1px, transparent 0);
+  background-size: 26px 26px;
+  opacity: .6; pointer-events: none;
+}
+
+/* Brand mark */
+.brand-title {
+  background: linear-gradient(92deg, var(--krishna-blue), var(--peacock-teal) 55%, var(--gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-weight: 800; letter-spacing: .3px;
+}
+
+/* Cards — lotus-petal rounded with a soft gold border + gentle lift */
+.kt-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 20px 6px;   /* lotus-petal asymmetry */
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  will-change: transform;
+}
+.kt-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-gold);
+  border-color: var(--gold);
+}
+.tool-card .icon-wrap {
+  background: linear-gradient(135deg, rgba(30,58,138,.10), rgba(5,150,105,.12));
+  color: var(--peacock-teal);
+}
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; gap:.5rem; font-weight:600;
+  padding:.65rem 1.1rem; border-radius:12px; transition:.15s; cursor:pointer;
+  border:1px solid transparent; }
+.btn-primary { background: linear-gradient(135deg, var(--krishna-blue), var(--peacock-teal)); color:#fff; }
+.btn-primary:hover { filter:brightness(1.08); box-shadow: var(--shadow-gold); }
+.btn-cta { background: linear-gradient(135deg, var(--saffron), var(--gold)); color:#fff; }
+.btn-cta:hover { filter:brightness(1.06); }
+.btn-gold { background: var(--gold); color:#111; }
+.btn-ghost { background:transparent; border-color: var(--border); color:var(--ink); }
+.btn-ghost:hover { border-color: var(--gold); color: var(--saffron); }
+.btn-wa { background:#25D366; color:#fff; }
+.btn-wa:hover { filter:brightness(1.05); }
+
+/* Inputs */
+.kt-input, .kt-select, textarea.kt-input {
+  width:100%; background:var(--card); color:var(--ink);
+  border:1px solid var(--border); border-radius:12px; padding:.65rem .85rem;
+  transition:.15s;
+}
+.kt-input:focus, .kt-select:focus {
+  outline:none; border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(245,158,11,.18);
+}
+.kt-label { font-weight:600; font-size:.9rem; margin-bottom:.3rem; display:block; }
+
+/* Sudarshan Chakra loader */
+.chakra-loader {
+  width:48px; height:48px; border-radius:50%;
+  border:5px solid rgba(245,158,11,.25); border-top-color:var(--gold);
+  animation: chakra-spin .8s linear infinite;
+}
+@keyframes chakra-spin { to { transform: rotate(360deg); } }
+
+/* Peacock toast */
+.kt-toast {
+  position:fixed; z-index:9999; right:1rem; bottom:1rem;
+  background: linear-gradient(135deg, var(--morpankh-green), var(--peacock-teal));
+  color:#fff; padding:.8rem 1.1rem; border-radius:14px;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.5);
+  transform: translateX(120%); transition: transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.kt-toast.show { transform: translateX(0); }
+.kt-toast.err { background: linear-gradient(135deg,#DC2626,#EA580C); }
+
+/* Dropzone */
+.kt-drop {
+  border:2px dashed var(--border); border-radius:16px; padding:2rem 1rem;
+  text-align:center; cursor:pointer; transition:.15s; background:var(--card);
+}
+.kt-drop.drag, .kt-drop:hover { border-color:var(--gold); background:rgba(245,158,11,.05); }
+
+/* Category chips */
+.cat-chip { border:1px solid var(--border); border-radius:999px; padding:.4rem .9rem;
+  font-weight:600; font-size:.85rem; white-space:nowrap; transition:.15s; }
+.cat-chip:hover, .cat-chip.active { background:var(--gold); color:#111; border-color:var(--gold); }
+
+/* FAQ accordion */
+.faq-q { cursor:pointer; font-weight:600; padding:.8rem 0; display:flex; justify-content:space-between; gap:1rem; }
+.faq-a { max-height:0; overflow:hidden; transition:max-height .25s ease; color:#6B7280; }
+[data-theme="dark"] .faq-a { color:#9CA3AF; }
+.faq-item.open .faq-a { max-height:400px; }
+
+/* Watermark footer */
+.hare-krishna-mark { opacity:.5; letter-spacing:.35em; font-weight:600; }
+
+/* Mobile bottom nav */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:50;
+  background:var(--card); border-top:1px solid var(--border);
+  display:flex; justify-content:space-around; padding:.4rem 0; }
+.bottom-nav a { display:flex; flex-direction:column; align-items:center; gap:2px;
+  font-size:.68rem; color:#6B7280; }
+.bottom-nav a.active { color:var(--saffron); }
+@media (min-width:768px){ .bottom-nav{ display:none; } }
+
+/* Janmashtami festival particles */
+.festival-ribbon {
+  background: linear-gradient(90deg, var(--gold), var(--saffron));
+  color:#fff; text-align:center; font-weight:700; padding:.4rem;
+}
+.gold-particle { position:fixed; top:-10px; width:8px; height:8px; border-radius:50%;
+  background:var(--gold-soft); pointer-events:none; z-index:9998;
+  animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(105vh) rotate(360deg); opacity:.2; } }
+
+/* Utility */
+.badge-premium { background:linear-gradient(135deg,var(--gold),var(--saffron)); color:#fff;
+  font-size:.62rem; font-weight:700; padding:.1rem .45rem; border-radius:6px; }
+.section-title { font-weight:800; font-size:1.5rem; color:var(--krishna-blue); }
+[data-theme="dark"] .section-title { color:var(--gold-soft); }
+.divider-gold { height:3px; width:64px; border-radius:3px;
+  background:linear-gradient(90deg,var(--gold),var(--saffron)); }
