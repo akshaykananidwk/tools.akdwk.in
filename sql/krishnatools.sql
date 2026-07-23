@@ -201,6 +201,26 @@ CREATE TABLE IF NOT EXISTS `{{PREFIX}}activity_logs` (
   INDEX(`user_id`), INDEX(`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}webhook_bins` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `token` VARCHAR(40) NOT NULL UNIQUE,
+  `ip` VARCHAR(45) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT NULL,
+  `expires_at` DATETIME DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}webhook_requests` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `bin_token` VARCHAR(40) NOT NULL,
+  `method` VARCHAR(10) DEFAULT NULL,
+  `headers` TEXT,
+  `query_string` TEXT,
+  `body` MEDIUMTEXT,
+  `ip` VARCHAR(45) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT NULL,
+  INDEX(`bin_token`), INDEX(`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET foreign_key_checks = 1;
 -- Seed data (categories, tools, plans, templates, blog, admin, settings)
 -- is inserted programmatically by the installer from the PHP registries so

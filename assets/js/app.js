@@ -934,7 +934,10 @@ function mountTool() {
     }
   };
   if (window.KTX.Engines[name]) run();
-  else loadScript(KT.url + '/assets/js/engines.js').then(run).catch(run);
+  else Promise.all([
+    loadScript(KT.url + '/assets/js/engines.js'),
+    loadScript(KT.url + '/assets/js/engines-dev.js'),
+  ]).then(run).catch(run);
 }
 
 /* ================================================================

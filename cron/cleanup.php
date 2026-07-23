@@ -97,11 +97,23 @@ try {
     fwrite(STDERR, 'guest_limits cleanup error: ' . $e->getMessage() . "\n");
 }
 
+// 5) Expired webhook bins + their requests (>24h).
+try {
+    $expiredBins = all("SELECT token FROM " . tbl('webhook_bins') . " WHERE expires_at < NOW()");
+    foreach ($expiredBins as $b) {
+        q("DELETE FROM " . tbl('webhook_requests') . " WHERE bin_token = :t", [':t' => $b['token']]);
+    }
+    $stats['webhook_bins'] = q("DELETE FROM " . tbl('webhook_bins') . " WHERE expires_at < NOW()")->rowCount();
+} catch (Throwable $e) {
+    // Table may not exist on older installs — ignore.
+    $stats['webhook_bins'] = 0;
+}
+
 // Summary.
 $summary = sprintf(
-    "[%s] cleanup done — temp:%d share:%d dirs:%d saved_rows:%d saved_files:%d guest_rows:%d\n",
+    "[%s] cleanup done — temp:%d share:%d dirs:%d saved_rows:%d saved_files:%d guest_rows:%d webhook_bins:%d\n",
     date('Y-m-d H:i:s'),
     $stats['temp_files'], $stats['share_files'], $stats['share_dirs'],
-    $stats['saved_rows'], $stats['saved_files'], $stats['guest_rows']
+    $stats['saved_rows'], $stats['saved_files'], $stats['guest_rows'], $stats['webhook_bins'] ?? 0
 );
 echo $summary;
