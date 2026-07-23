@@ -56,7 +56,7 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
 </nav>
 
 <div id="ktToast" class="kt-toast"></div>
-<script src="<?= SITE_URL ?>/assets/js/app.js" defer></script>
+<script src="<?= SITE_URL ?>/assets/js/app.js?v=<?= asset_ver() ?>" defer></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{if(window.lucide)lucide.createIcons();});</script>
 </body>
 </html>

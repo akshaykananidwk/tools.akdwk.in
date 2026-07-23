@@ -83,6 +83,19 @@ function t(string $key, array $vars = []): string {
     return $str;
 }
 
+/**
+ * Asset cache-busting version. Changes on every GitHub self-update (so browsers
+ * fetch fresh CSS/JS instead of a stale 7-day-cached copy), falling back to the
+ * app.js file modification time for manual installs.
+ */
+function asset_ver(): string {
+    static $v = null;
+    if ($v !== null) return $v;
+    $gh = setting('gh_current_version', '');
+    if ($gh !== '') return $v = substr($gh, 0, 8);
+    return $v = (string) (@filemtime(KT_ROOT . '/assets/js/app.js') ?: '1');
+}
+
 /** The brand/site name in the current language (English default: "Krishna Tools"). */
 function brand_name(): string {
     if (current_lang() === 'en') return setting('site_name_en', 'Krishna Tools');

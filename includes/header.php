@@ -59,9 +59,9 @@ $siteName = brand_name();
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css">
+<link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css?v=<?= asset_ver() ?>">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-<script>window.KT = { url: <?= json_encode(SITE_URL) ?>, lang: <?= json_encode($lang) ?>, csrf: <?= json_encode(csrf_token()) ?>, loggedIn: <?= is_logged_in() ? 'true' : 'false' ?> };</script>
+<script>window.KT = { url: <?= json_encode(SITE_URL) ?>, lang: <?= json_encode($lang) ?>, csrf: <?= json_encode(csrf_token()) ?>, loggedIn: <?= is_logged_in() ? 'true' : 'false' ?>, ver: <?= json_encode(asset_ver()) ?> };</script>
 <?php
 // Site-wide structured data: Organization + WebSite (Sitelinks Search box).
 $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [

@@ -934,10 +934,13 @@ function mountTool() {
     }
   };
   if (window.KTX.Engines[name]) run();
-  else Promise.all([
-    loadScript(KT.url + '/assets/js/engines.js'),
-    loadScript(KT.url + '/assets/js/engines-dev.js'),
-  ]).then(run).catch(run);
+  else {
+    const v = KT.ver ? ('?v=' + KT.ver) : '';
+    Promise.all([
+      loadScript(KT.url + '/assets/js/engines.js' + v),
+      loadScript(KT.url + '/assets/js/engines-dev.js' + v),
+    ]).then(run).catch(run);
+  }
 }
 
 /* ================================================================
