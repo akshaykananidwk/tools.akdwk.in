@@ -8,7 +8,12 @@ Options -Indexes
   RewriteEngine On
   RewriteRule ^tool/([a-z0-9-]+)/?$ tool.php?slug=$1 [L,QSA]
   RewriteRule ^category/([a-z0-9-]+)/?$ category.php?slug=$1 [L,QSA]
+  RewriteRule ^convert/([a-z0-9.\-]+)/?$ convert.php?slug=$1 [L,QSA]
   RewriteRule ^blog/([a-z0-9-]+)/?$ blog/post.php?slug=$1 [L,QSA]
+  # Sitemap index + children
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+  RewriteRule ^sitemap-main\.xml$ sitemap-main.php [L]
+  RewriteRule ^sitemap-convert\.xml$ sitemap-convert.php [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>

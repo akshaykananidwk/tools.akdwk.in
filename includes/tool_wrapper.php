@@ -57,6 +57,7 @@ function render_tool_page(string $slug): void {
         ? $name . ' — Free Online Tool | ' . setting('site_name', 'Krishna Tools')
         : $name . ' — ફ્રી ઓનલાઇન ટૂલ | ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
     $page_desc  = $desc . ($en ? ' Fast, free and secure — works in your browser. By AK Computer, Dwarka.' : ' ઝડપી, ફ્રી અને સુરક્ષિત.');
+    $page_canonical = SITE_URL . '/tool/' . $tool['slug'];
     $page_keywords = $tool['name_en'] . ', ' . $tool['slug'] . ', online tool, free, ' . $tool['cat'] . ' tools';
     $breadcrumb = [
         ['label' => t('home'), 'url' => SITE_URL . '/'],

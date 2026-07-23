@@ -1,9 +1,11 @@
 <?php
 /** KRISHNA TOOLS — home page (hero + category grid + tool grid + live search). */
 require_once __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/generated_tools.php';
 
 $cats  = kt_categories();
 $tools = kt_tools();
+$gc = gen_total_count()['total'];
 
 // Merge DB flags (active/premium/views) so admin toggles reflect on the grid.
 $dbTools = [];
@@ -76,6 +78,20 @@ require __DIR__ . '/includes/header.php';
     </div>
   </section>
 <?php endforeach; ?>
+
+<!-- Converters hub promo -->
+<section class="kt-card p-6 md:p-8 mt-6 flex flex-col md:flex-row items-center gap-6" style="background:linear-gradient(135deg,rgba(14,116,144,.08),rgba(245,158,11,.08))">
+  <div class="flex-1">
+    <h2 class="section-title text-2xl mb-2"><?= $en ? number_format($gc) . '+ Instant Unit Converters' : number_format($gc) . '+ યુનિટ કન્વર્ટર' ?></h2>
+    <p class="opacity-75"><?= $en ? 'Length, weight, temperature, volume, speed, digital storage, data rate and more — with formulas and conversion tables.' : 'લંબાઈ, વજન, તાપમાન, વોલ્યુમ, સ્પીડ, ડિજિટલ સ્ટોરેજ અને વધુ — ફોર્મ્યુલા અને ટેબલ સાથે.' ?></p>
+    <div class="flex flex-wrap gap-2 mt-4">
+      <?php foreach (['kilometer-to-mile' => 'km → miles', 'kilogram-to-pound' => 'kg → lb', 'celsius-to-fahrenheit' => '°C → °F', 'megabyte-to-gigabyte' => 'MB → GB', 'megabit-per-second-to-megabyte-per-second' => 'Mbps → MB/s'] as $slug => $label): ?>
+        <a href="<?= SITE_URL ?>/convert/<?= $slug ?>" class="cat-chip"><?= $label ?></a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <a href="<?= SITE_URL ?>/converters.php" class="btn btn-primary"><i data-lucide="arrow-left-right" class="w-4 h-4"></i> <?= $en ? 'All Converters' : 'બધા કન્વર્ટર' ?></a>
+</section>
 
 <!-- Pricing teaser -->
 <section class="kt-card p-6 md:p-8 text-center mt-6">

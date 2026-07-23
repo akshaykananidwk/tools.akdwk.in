@@ -28,7 +28,8 @@ $gaId     = setting('ga_id', defined('GA_ID') ? GA_ID : '');
 $reqUri = $_SERVER['REQUEST_URI'] ?? '/';
 $cleanUri = preg_replace('/([?&])lang=(en|gu)(&|$)/', '$1', $reqUri);
 $cleanUri = rtrim(preg_replace('/[?&]$/', '', $cleanUri), '');
-$canonical = SITE_URL . $cleanUri;
+// Pages may force a clean canonical URL (e.g. generated converter pages).
+$canonical = $page_canonical ?? (SITE_URL . $cleanUri);
 $sep = str_contains($cleanUri, '?') ? '&' : '?';
 $siteName = brand_name();
 ?>
@@ -109,6 +110,7 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
     </div>
 
     <nav class="flex items-center gap-1 md:gap-2">
+      <a href="<?= SITE_URL ?>/converters.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= current_lang() === 'en' ? 'Converters' : 'કન્વર્ટર' ?></a>
       <a href="<?= SITE_URL ?>/pricing.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= t('pricing') ?></a>
       <button onclick="ktToggleTheme()" class="btn btn-ghost !px-2" title="Theme" aria-label="Theme">
         <i data-lucide="moon-star" class="w-4 h-4"></i>

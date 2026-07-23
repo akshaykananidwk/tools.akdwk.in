@@ -13,6 +13,7 @@ try { foreach (all("SELECT slug, is_active, is_premium FROM " . tbl('tools')) as
 
 $page_title = loc($cat, 'name') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
 $page_desc  = loc($cat, 'name') . ' · ' . count($tools) . ' ' . t('all_tools');
+$page_canonical = SITE_URL . '/category/' . $slug;
 $breadcrumb = [['label' => t('home'), 'url' => SITE_URL . '/'], ['label' => loc($cat, 'name')]];
 require __DIR__ . '/includes/header.php';
 ?>
