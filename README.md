@@ -125,17 +125,21 @@ https://tools.akdwk.in/install/
 
 ### Step 6 — ⏰ CRON સેટઅપ (Cron Jobs)
 
-cPanel → **Cron Jobs** પર જાઓ અને નીચેની **ત્રણ** cron lines બરાબર ઉમેરો:
+cPanel → **Cron Jobs** પર જાઓ અને **ફક્ત એક જ** cron line ઉમેરો (દર મિનિટે ચાલે):
 
 ```cron
-*/30 * * * * php /home/USER/tools.akdwk.in/cron/cleanup.php
-0 9 * * * php /home/USER/tools.akdwk.in/cron/expiry_reminder.php
-0 10 * * * php /home/USER/tools.akdwk.in/cron/amc_reminder.php
+* * * * * php /home/USER/tools.akdwk.in/cron/run.php >/dev/null 2>&1
 ```
 
-- `cleanup.php` — દર **૩૦ મિનિટે** temp ફાઇલો સાફ કરે.
-- `expiry_reminder.php` — રોજ **સવારે ૯ વાગ્યે** પ્લાન expiry રિમાઇન્ડર મોકલે.
-- `amc_reminder.php` — રોજ **સવારે ૧૦ વાગ્યે** AMC રિમાઇન્ડર મોકલે.
+આ **એક master cron** આખી સાઇટના બધા background jobs સંભાળે છે — message queue (WhatsApp/Email), plan expiry reminders, AMC reminders, cleanup, database backup વગેરે. કયો job ક્યારે ચાલે એ **Admin → Cron / Scheduler** માંથી મેનેજ થાય (enable/disable, manual run, retry, logs, health).
+
+જો તમારા host પર CLI cron ન હોય તો URL cron વાપરો (secret key Admin → Settings માંથી):
+
+```cron
+* * * * * curl -s "https://tools.akdwk.in/cron/run.php?key=YOUR_CRON_KEY"
+```
+
+> નોંધ: જૂની `cleanup.php` / `expiry_reminder.php` / `amc_reminder.php` હજી ચાલે છે (backward-compatible), પણ હવે **માત્ર `run.php`** જ પૂરતું છે.
 
 > 🔧 **અગત્યનું:** `/home/USER/tools.akdwk.in/` ને તમારા **અસલી path** થી બદલો.
 > તમારો path cPanel → File Manager ના address bar માં દેખાય છે (દા.ત. `/home/akdwk/tools.akdwk.in`).
@@ -229,7 +233,8 @@ tools.akdwk.in/
 ├── assets/         → CSS, JS, images, logo
 ├── blog/           → બ્લોગ પેજ
 ├── config/         → config.php (installer લખે) + install.lock
-├── cron/           → cleanup / expiry_reminder / amc_reminder
+├── cron/           → run.php (single master cron) + legacy shims
+├── includes/scheduler.php + cron_jobs.php (centralized job registry)
 ├── includes/       → functions.php, db.php, mailer.php, tools_registry.php
 ├── install/        → ઇન્સ્ટોલ wizard + repair.php
 ├── logs/           → error logs

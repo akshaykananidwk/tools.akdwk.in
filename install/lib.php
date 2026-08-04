@@ -33,9 +33,12 @@ function install_pdo(array $db): PDO {
 function install_schema(PDO $pdo, string $prefix): void {
     $sql = file_get_contents(KT_ROOT_DIR . '/sql/krishnatools.sql');
     $sql = str_replace('{{PREFIX}}', $prefix, $sql);
-    // Split on semicolons at line ends; execute each statement.
-    foreach (array_filter(array_map('trim', preg_split('/;\s*[\r\n]/', $sql))) as $stmt) {
-        if ($stmt === '' || str_starts_with($stmt, '--')) continue;
+    // Split on semicolons at line ends; execute each statement. Strip full-line
+    // SQL comments first so a comment sitting above a CREATE doesn't cause the
+    // whole statement to be skipped.
+    foreach (preg_split('/;\s*[\r\n]/', $sql) as $stmt) {
+        $stmt = trim(preg_replace('/^\s*--.*$/m', '', $stmt));
+        if ($stmt === '') continue;
         $pdo->exec($stmt);
     }
 }

@@ -221,6 +221,58 @@ CREATE TABLE IF NOT EXISTS `{{PREFIX}}webhook_requests` (
   INDEX(`bin_token`), INDEX(`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── Centralized cron / scheduler ──
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}cron_jobs` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `job_key` VARCHAR(60) NOT NULL UNIQUE,
+  `name` VARCHAR(150) DEFAULT NULL,
+  `schedule` VARCHAR(60) DEFAULT NULL,
+  `is_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `last_run` DATETIME DEFAULT NULL,
+  `next_run` DATETIME DEFAULT NULL,
+  `last_status` VARCHAR(20) DEFAULT NULL,
+  `last_message` TEXT,
+  `last_duration_ms` INT UNSIGNED DEFAULT 0,
+  `run_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `fail_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `locked_at` DATETIME DEFAULT NULL,
+  `lock_token` VARCHAR(40) DEFAULT NULL,
+  `updated_at` DATETIME DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}cron_runs` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `job_key` VARCHAR(60) NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'running',
+  `trigger_by` VARCHAR(20) DEFAULT 'cron',
+  `message` TEXT,
+  `output` MEDIUMTEXT,
+  `started_at` DATETIME DEFAULT NULL,
+  `finished_at` DATETIME DEFAULT NULL,
+  `duration_ms` INT UNSIGNED DEFAULT 0,
+  INDEX(`job_key`), INDEX(`started_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}job_queue` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `channel` VARCHAR(20) NOT NULL DEFAULT 'whatsapp',
+  `recipient` VARCHAR(190) DEFAULT NULL,
+  `subject` VARCHAR(255) DEFAULT NULL,
+  `body` MEDIUMTEXT,
+  `media_url` VARCHAR(255) DEFAULT NULL,
+  `payload` TEXT,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `run_after` DATETIME DEFAULT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+  `attempts` INT UNSIGNED NOT NULL DEFAULT 0,
+  `max_attempts` INT UNSIGNED NOT NULL DEFAULT 3,
+  `claimed_by` VARCHAR(40) DEFAULT NULL,
+  `last_error` TEXT,
+  `created_at` DATETIME DEFAULT NULL,
+  `updated_at` DATETIME DEFAULT NULL,
+  INDEX(`status`), INDEX(`channel`), INDEX(`run_after`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET foreign_key_checks = 1;
 -- Seed data (categories, tools, plans, templates, blog, admin, settings)
 -- is inserted programmatically by the installer from the PHP registries so

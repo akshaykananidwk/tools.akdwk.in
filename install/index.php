@@ -262,7 +262,7 @@ async function runInstall() {
 function finishInstall(d) {
   document.getElementById('installBtns').classList.add('hidden');
   const box = document.getElementById('installDone'); box.classList.remove('hidden');
-  const cron = `*/30 * * * * php ${'{'}HOME{'}'}/public_html/cron/cleanup.php\n0 9 * * *   php ${'{'}HOME{'}'}/public_html/cron/expiry_reminder.php\n0 10 * * *  php ${'{'}HOME{'}'}/public_html/cron/amc_reminder.php`;
+  const cron = `* * * * * php ${'{'}HOME{'}'}/public_html/cron/run.php >/dev/null 2>&1`;
   box.innerHTML = `
     <div class="text-center py-4"><div class="text-6xl">🦚</div>
       <h3 class="brand-title text-2xl mt-2">ઇન્સ્ટોલેશન પૂર્ણ! હરે કૃષ્ણ</h3></div>

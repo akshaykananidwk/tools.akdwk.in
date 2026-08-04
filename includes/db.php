@@ -31,6 +31,11 @@ function db(): PDO {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
         ]);
+        // Align MySQL's session timezone with PHP's so NOW()/CURDATE()
+        // comparisons match datetimes written as PHP-local strings (fixes
+        // queue run_after, plan expiry, webhook expiry, cleanup windows, …).
+        try { $pdo->exec("SET time_zone = '" . (new DateTime('now'))->format('P') . "'"); }
+        catch (Throwable $e) { /* offset unsupported — ignore */ }
     } catch (PDOException $e) {
         // Never leak credentials; log and show a friendly message.
         if (defined('KT_LOGS')) {

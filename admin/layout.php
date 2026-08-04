@@ -20,6 +20,7 @@ function admin_nav_links(): array {
         ['whatsapp.php',   'message-circle',   'WhatsApp'],
         ['contact.php',    'inbox',            'Contact'],
         ['update.php',     'github',           'GitHub Update'],
+        ['cron.php',       'clock',            'Cron / Scheduler'],
         ['logs.php',       'scroll-text',      'Logs'],
         ['settings.php',   'settings',         'Settings'],
         ['backup.php',     'database-backup',  'Backup'],
