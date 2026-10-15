@@ -74,6 +74,7 @@ $desc = $plan ? loc($plan, 'name') . ' ' . ($en ? 'Plan' : 'પ્લાન') : 
     .actions { display: none; }
   }
 </style>
+<script src="https://notification.akdwk.in/sdk/v1.js" data-site-id="01m502jvh51tdcjbd8ndhn2fsa" defer></script>
 </head>
 <body>
 <div class="actions">

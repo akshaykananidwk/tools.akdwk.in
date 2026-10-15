@@ -83,12 +83,97 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($gaId) ?>"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<?= e($gaId) ?>');</script>
 <?php endif; ?>
+<!-- Notification.AKDWK.in: analytics + web push -->
+<script src="https://notification.akdwk.in/sdk/v1.js" data-site-id="01m502jvh51tdcjbd8ndhn2fsa" defer></script>
+<script src="https://notification.akdwk.in/sdk/push-v1.js" data-site-id="01m502jvh51tdcjbd8ndhn2fsa" defer></script>
 <?= $extra_head ?? '' ?>
 </head>
 <body class="morpankh-bg">
 <script>
   // Apply saved theme before paint to avoid flash.
   (function(){var t=localStorage.getItem('kt-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+</script>
+
+<?php $pgEn = $lang === 'en'; ?>
+<!-- Push opt-in gate: shown on first open. "Allow" enters at once; "Skip" appears after 5s. -->
+<style>
+  #ktPushGate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(15,23,42,.72); backdrop-filter: blur(4px); }
+  #ktPushGate.show { display: flex; }
+  #ktPushGate .pg-card { width: 100%; max-width: 380px; text-align: center; padding: 28px 22px; border-radius: 18px; background: var(--card, #fff); color: var(--text, #111827); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  #ktPushGate .pg-icon { font-size: 44px; line-height: 1; margin-bottom: 10px; }
+  #ktPushGate .pg-skip { margin-top: 12px; min-height: 22px; font-size: 14px; opacity: .75; }
+  #ktPushGate .pg-skip button { background: none; border: 0; color: inherit; text-decoration: underline; cursor: pointer; font-size: 14px; }
+  html.pg-lock, html.pg-lock body { overflow: hidden; }
+</style>
+<div id="ktPushGate" role="dialog" aria-modal="true" aria-labelledby="ktPushGateTitle">
+  <div class="pg-card">
+    <div class="pg-icon">🔔</div>
+    <h2 id="ktPushGateTitle" class="brand-title text-xl mb-2"><?= $pgEn ? 'Get notifications' : 'નોટિફિકેશન ચાલુ કરો' ?></h2>
+    <p class="opacity-75 text-sm mb-5"><?= $pgEn ? 'Allow notifications to get new tools, offers and updates first.' : 'નવા ટૂલ્સ, ઓફર અને અપડેટ સૌથી પહેલાં મેળવવા માટે નોટિફિકેશન Allow કરો.' ?></p>
+    <button type="button" id="ktPushAllow" class="btn btn-primary w-full justify-center"><?= $pgEn ? 'Allow notifications' : 'નોટિફિકેશન Allow કરો' ?></button>
+    <div class="pg-skip" id="ktPushSkipWrap" aria-live="polite"></div>
+  </div>
+</div>
+<script>
+(function () {
+  var KEY = 'kt-push-gate', REASK_MS = 7 * 864e5, WAIT = 5;
+  var en = <?= $pgEn ? 'true' : 'false' ?>;
+  var gate = document.getElementById('ktPushGate');
+  function store(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function seen() { try { var t = +localStorage.getItem(KEY); return t && Date.now() - t < REASK_MS; } catch (e) { return false; } }
+  var supported = window.isSecureContext && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+  var bot = /bot|crawl|spider|slurp|lighthouse|headless/i.test(navigator.userAgent);
+
+  // Already granted (e.g. returning visitor whose subscription was lost): resubscribe silently.
+  if (supported && Notification.permission === 'granted') {
+    window.addEventListener('load', function () {
+      var p = window.akdwkPush;
+      if (p) p.status().then(function (s) { if (s === 'default') return p.subscribe(); }).catch(function () {});
+    });
+    return;
+  }
+  if (!supported || bot || Notification.permission !== 'default' || seen()) return;
+
+  function close() {
+    gate.classList.remove('show');
+    document.documentElement.classList.remove('pg-lock');
+  }
+  gate.classList.add('show');
+  document.documentElement.classList.add('pg-lock');
+
+  // Skip only becomes available after 5 seconds.
+  var wrap = document.getElementById('ktPushSkipWrap'), left = WAIT;
+  function tick() {
+    if (left > 0) {
+      wrap.textContent = (en ? 'Skip in ' : 'સ્કીપ ') + left + (en ? 's' : ' સેકન્ડમાં');
+      left--; setTimeout(tick, 1000);
+    } else {
+      wrap.innerHTML = '<button type="button" id="ktPushSkip">' + (en ? 'Skip →' : 'સ્કીપ કરો →') + '</button>';
+      document.getElementById('ktPushSkip').onclick = function () { store(Date.now()); close(); };
+    }
+  }
+  tick();
+
+  document.getElementById('ktPushAllow').onclick = function () {
+    var btn = this;
+    btn.disabled = true;
+    function done() { store(Date.now()); close(); }
+    function failed() { btn.disabled = false; if (Notification.permission === 'granted') done(); }
+    if (window.akdwkPush) {
+      // subscribe() calls Notification.requestPermission() synchronously inside this click.
+      window.akdwkPush.subscribe().then(done, failed);
+    } else {
+      // SDK not loaded yet: ask now (inside the click), subscribe once the SDK arrives.
+      Promise.resolve(Notification.requestPermission()).then(function (perm) {
+        if (perm !== 'granted') return failed();
+        done();
+        window.addEventListener('load', function () { if (window.akdwkPush) window.akdwkPush.subscribe().catch(function () {}); });
+        if (document.readyState === 'complete' && window.akdwkPush) window.akdwkPush.subscribe().catch(function () {});
+      });
+    }
+    // Blocked or dismissed: the visitor waits for the Skip button.
+  };
+})();
 </script>
 
 <?php if ($fest === 'janmashtami'): ?>
