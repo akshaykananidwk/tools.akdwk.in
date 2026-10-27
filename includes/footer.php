@@ -23,7 +23,7 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
     <div>
       <div class="font-semibold mb-2"><?= t('contact') ?></div>
       <ul class="space-y-1 opacity-70">
-        <li><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/pricing.php"><?= t('pricing') ?></a></li>
+        <?php if (!kt_all_free()): ?><li><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/pricing.php"><?= t('pricing') ?></a></li><?php endif; ?>
         <li><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/blog/"><?= t('blog') ?></a></li>
         <li><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/contact.php"><?= t('contact') ?></a></li>
         <li><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/about.php"><?= t('about') ?></a></li>
@@ -51,7 +51,11 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
 <nav class="bottom-nav md:hidden">
   <a href="<?= SITE_URL ?>/"><i data-lucide="home" class="w-5 h-5"></i><?= t('home') ?></a>
   <a href="<?= SITE_URL ?>/#categories"><i data-lucide="grid-3x3" class="w-5 h-5"></i><?= t('all_tools') ?></a>
+  <?php if (kt_all_free()): ?>
+  <a href="<?= SITE_URL ?>/converters.php"><i data-lucide="arrow-left-right" class="w-5 h-5"></i><?= current_lang() === 'en' ? 'Converters' : 'કન્વર્ટર' ?></a>
+  <?php else: ?>
   <a href="<?= SITE_URL ?>/pricing.php"><i data-lucide="gem" class="w-5 h-5"></i><?= t('pricing') ?></a>
+  <?php endif; ?>
   <a href="<?= SITE_URL ?>/<?= is_logged_in() ? 'dashboard.php' : 'login.php' ?>"><i data-lucide="user" class="w-5 h-5"></i><?= is_logged_in() ? t('dashboard') : t('login') ?></a>
 </nav>
 

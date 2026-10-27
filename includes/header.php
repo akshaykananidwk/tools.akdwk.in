@@ -196,7 +196,7 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
 
     <nav class="flex items-center gap-1 md:gap-2">
       <a href="<?= SITE_URL ?>/converters.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= current_lang() === 'en' ? 'Converters' : 'કન્વર્ટર' ?></a>
-      <a href="<?= SITE_URL ?>/pricing.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= t('pricing') ?></a>
+      <?php if (!kt_all_free()): ?><a href="<?= SITE_URL ?>/pricing.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= t('pricing') ?></a><?php endif; ?>
       <button onclick="ktToggleTheme()" class="btn btn-ghost !px-2" title="Theme" aria-label="Theme">
         <i data-lucide="moon-star" class="w-4 h-4"></i>
       </button>

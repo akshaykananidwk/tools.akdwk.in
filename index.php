@@ -12,12 +12,14 @@ $dbTools = [];
 try { foreach (all("SELECT slug, is_active, is_premium, views FROM " . tbl('tools')) as $r) $dbTools[$r['slug']] = $r; } catch (Throwable $e) {}
 
 $en = current_lang() === 'en';
+$nTools = (int) (floor(count($tools) / 50) * 50); // "700+" style rounded count
 $page_title = $en
-    ? brand_name() . ' — 120+ Free Online Tools (PDF, Image, CCTV, GST)'
-    : setting('site_name', 'કૃષ્ણા ટૂલ્સ') . ' — 120+ ફ્રી ઓનલાઇન ટૂલ્સ';
+    ? brand_name() . " — {$nTools}+ Free Online Tools in Gujarati & English"
+    : setting('site_name', 'કૃષ્ણા ટૂલ્સ') . " — {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ ગુજરાતીમાં";
 $page_desc  = $en
-    ? 'Krishna Tools by AK Computer, Dwarka — 120+ free online tools: PDF & image converters, CCTV storage/bandwidth calculators, GST & invoice generators, QR codes and more. Fast, secure, works in your browser.'
-    : 'AK Computer, દ્વારકા દ્વારા 120+ ફ્રી ઓનલાઇન ટૂલ્સ — PDF, ઇમેજ, CCTV કેલ્ક્યુલેટર, GST, QR અને ઘણું બધું.';
+    ? "Krishna Tools by AK Computer, Dwarka — {$nTools}+ free online tools for everyone: PDF & image, restaurant, hotel, salon, doctor, contractor, electrician, printing, student, farmer, finance, birthday wishes and more. No login, works in your browser."
+    : "AK Computer, દ્વારકા દ્વારા {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ — PDF, ઇમેજ, રેસ્ટોરન્ટ, હોટલ, સલૂન, ડૉક્ટર, કોન્ટ્રાક્ટર, ઇલેક્ટ્રિશિયન, વિદ્યાર્થી, ખેડૂત, શુભેચ્છા અને ઘણું બધું. લોગિન વગર, સંપૂર્ણ ફ્રી.";
+$perCat = 8; // home shows the first 8 tools of each category; the rest live on the category page
 $page_keywords = 'online tools, free tools, pdf converter, image compressor, cctv storage calculator, gst calculator, qr code generator, invoice generator, AK Computer Dwarka';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -34,7 +36,7 @@ require __DIR__ . '/includes/header.php';
   <div class="flex items-center justify-center gap-4 mt-5 text-sm opacity-70 flex-wrap">
     <span>✅ <?= count($tools) ?>+ <?= t('all_tools') ?></span>
     <span>🔒 <?= T_bilingual('બ્રાઉઝરમાં સુરક્ષિત', 'Secure in browser') ?></span>
-    <span>🆓 <?= T_bilingual('ફ્રી શરૂ કરો', 'Start free') ?></span>
+    <span>🆓 <?= T_bilingual('100% ફ્રી, લોગિન વગર', '100% free, no login') ?></span>
   </div>
 </section>
 
@@ -48,22 +50,25 @@ require __DIR__ . '/includes/header.php';
 
 <!-- Tool grid grouped by category -->
 <?php foreach ($cats as $c):
-    $catTools = array_filter($tools, fn($t) => $t['cat'] === $c['slug']); ?>
+    $catTools = array_values(array_filter($tools, fn($t) => $t['cat'] === $c['slug']));
+    if (!$catTools) continue;
+    $catCount = count($catTools);
+    $catTools = array_slice($catTools, 0, $perCat); ?>
   <section class="cat-section mb-8" data-cat="<?= e($c['slug']) ?>">
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white" style="background:<?= e($c['color']) ?>">
         <i data-lucide="<?= e($c['icon']) ?>" class="w-5 h-5"></i></div>
       <div>
         <h2 class="section-title text-xl"><?= e(loc($c, 'name')) ?></h2>
-        <div class="text-xs opacity-60"><?= count($catTools) ?> <?= t('all_tools') ?></div>
+        <div class="text-xs opacity-60"><?= $catCount ?> <?= t('all_tools') ?></div>
       </div>
-      <a href="<?= SITE_URL ?>/category/<?= e($c['slug']) ?>" class="ml-auto text-sm text-[color:var(--peacock-teal)] hover:underline"><?= T_bilingual('બધા જુઓ', 'View all') ?> →</a>
+      <a href="<?= SITE_URL ?>/category/<?= e($c['slug']) ?>" class="ml-auto text-sm text-[color:var(--peacock-teal)] hover:underline"><?= T_bilingual('બધા ' . $catCount . ' જુઓ', 'View all ' . $catCount) ?> →</a>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       <?php foreach ($catTools as $t):
         $db = $dbTools[$t['slug']] ?? null;
         if ($db && (int) $db['is_active'] === 0) continue;
-        $prem = $t['premium'] || ($db && (int) $db['is_premium'] === 1); ?>
+        $prem = !kt_all_free() && ($t['premium'] || ($db && (int) $db['is_premium'] === 1)); ?>
         <a href="<?= SITE_URL ?>/tool/<?= e($t['slug']) ?>" class="kt-card tool-card p-4 block tool-item"
            data-name="<?= e(strtolower($t['name_gu'] . ' ' . $t['name_en'] . ' ' . $t['slug'])) ?>">
           <div class="flex items-start justify-between">
@@ -93,7 +98,8 @@ require __DIR__ . '/includes/header.php';
   <a href="<?= SITE_URL ?>/converters.php" class="btn btn-primary"><i data-lucide="arrow-left-right" class="w-4 h-4"></i> <?= $en ? 'All Converters' : 'બધા કન્વર્ટર' ?></a>
 </section>
 
-<!-- Pricing teaser -->
+<!-- Pricing teaser (hidden while every tool is free) -->
+<?php if (!kt_all_free()): ?>
 <section class="kt-card p-6 md:p-8 text-center mt-6">
   <h2 class="section-title text-2xl mb-2"><?= t('pricing') ?></h2>
   <p class="opacity-70 mb-5"><?= T_bilingual('ફ્રી શરૂ કરો, જરૂર પડે અપગ્રેડ કરો', 'Start free, upgrade when you need') ?></p>
@@ -104,6 +110,7 @@ require __DIR__ . '/includes/header.php';
   </div>
   <a href="<?= SITE_URL ?>/pricing.php" class="btn btn-cta mt-6"><i data-lucide="gem" class="w-4 h-4"></i> <?= t('pricing') ?></a>
 </section>
+<?php endif; ?>
 
 <script>
 // Category filter + hero search (client-side over the rendered grid).
@@ -113,18 +120,7 @@ document.querySelectorAll('#categories .cat-chip').forEach(chip => chip.onclick 
   const cat = chip.dataset.cat;
   document.querySelectorAll('.cat-section').forEach(s => s.style.display = (cat === 'all' || s.dataset.cat === cat) ? '' : 'none');
 });
-(function () {
-  const inp = document.getElementById('heroSearch'), box = document.getElementById('heroResults');
-  const items = Array.from(document.querySelectorAll('.tool-item'));
-  inp.addEventListener('input', () => {
-    const term = inp.value.trim().toLowerCase();
-    if (!term) { box.classList.add('hidden'); return; }
-    const hits = items.filter(a => a.dataset.name.includes(term)).slice(0, 10);
-    box.innerHTML = hits.length ? hits.map(a => `<a href="${a.href}" class="flex items-center gap-2 p-2 rounded-lg hover:bg-[color:var(--gold)]/10"><span class="text-sm font-medium">${a.querySelector('.font-semibold').textContent}</span></a>`).join('') : `<div class="p-2 text-sm opacity-60">કંઈ મળ્યું નહીં</div>`;
-    box.classList.remove('hidden');
-  });
-  document.addEventListener('click', e => { if (!box.contains(e.target) && e.target !== inp) box.classList.add('hidden'); });
-})();
+// Hero search is wired by app.js (searches the full tool index).
 </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
 <?php

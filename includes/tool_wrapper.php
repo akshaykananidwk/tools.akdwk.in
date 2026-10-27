@@ -20,6 +20,32 @@ function tool_db_row(string $slug): ?array {
 }
 
 /**
+ * Tools added to the registry after install (e.g. the industry packs) have no
+ * DB row yet. Create it on first visit so usage stats and admin toggles work
+ * without re-running the installer. INSERT IGNORE keeps concurrent hits safe.
+ */
+function kt_ensure_tool_row(array $tool): ?array {
+    try {
+        $cat = one("SELECT id FROM " . tbl('categories') . " WHERE slug = :s", [':s' => $tool['cat']]);
+        if (!$cat) {
+            foreach (kt_categories() as $c) {
+                if ($c['slug'] !== $tool['cat']) continue;
+                q("INSERT IGNORE INTO " . tbl('categories') . " (name_en, name_gu, slug, icon, color, sort_order)
+                   VALUES (:en, :gu, :slug, :icon, :color, :so)",
+                  [':en' => $c['name_en'], ':gu' => $c['name_gu'], ':slug' => $c['slug'], ':icon' => $c['icon'],
+                   ':color' => $c['color'], ':so' => $c['sort_order']]);
+            }
+            $cat = one("SELECT id FROM " . tbl('categories') . " WHERE slug = :s", [':s' => $tool['cat']]);
+        }
+        q("INSERT IGNORE INTO " . tbl('tools') . " (name_en, name_gu, slug, category_id, icon, description_gu, description_en, is_premium, is_active, sort_order)
+           VALUES (:en, :gu, :slug, :cat, :icon, :dg, :de, 0, 1, 1000)",
+          [':en' => $tool['name_en'], ':gu' => $tool['name_gu'], ':slug' => $tool['slug'], ':cat' => $cat['id'] ?? null,
+           ':icon' => $tool['icon'], ':dg' => $tool['desc_gu'], ':de' => $tool['desc_en']]);
+        return tool_db_row($tool['slug']);
+    } catch (Throwable $e) { return null; }
+}
+
+/**
  * Render a complete tool page for $slug. Handles access, chrome, JSON-LD and
  * usage logging. Dies with a 404 view if the slug is unknown.
  */
@@ -27,7 +53,7 @@ function render_tool_page(string $slug): void {
     $tool = kt_tool($slug);
     if (!$tool) { render_tool_404(); return; }
 
-    $db = tool_db_row($slug);
+    $db = tool_db_row($slug) ?? kt_ensure_tool_row($tool);
     if ($db && (int) $db['is_active'] === 0) { render_tool_404(); return; }
     $tool['db_id'] = $db['id'] ?? 0;
 
@@ -85,8 +111,7 @@ function render_tool_page(string $slug): void {
     $ld = json_encode(['@context' => 'https://schema.org', '@graph' => [
         ['@type' => 'SoftwareApplication', 'name' => $name, 'applicationCategory' => 'UtilitiesApplication',
          'operatingSystem' => 'Web, Android, iOS', 'description' => $desc,
-         'url' => SITE_URL . '/tool/' . $tool['slug'],
-         'aggregateRating' => ['@type' => 'AggregateRating', 'ratingValue' => '4.8', 'ratingCount' => max(12, (int) ($db['views'] ?? 20))],
+         'url' => SITE_URL . '/tool/' . $tool['slug'], 'inLanguage' => current_lang() === 'en' ? 'en' : 'gu',
          'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'INR']],
         $faqLd,
         $crumbLd,
@@ -104,7 +129,7 @@ function render_tool_page(string $slug): void {
               <i data-lucide="<?= e($tool['icon']) ?>" class="w-6 h-6"></i></div></div>
             <div>
               <h1 class="text-2xl md:text-3xl font-extrabold" style="color:var(--krishna-blue)"><?= e($name) ?>
-                <?php if (!empty($tool['is_premium'])): ?><span class="badge-premium align-middle">PRO</span><?php endif; ?></h1>
+                <?php if (!empty($tool['is_premium']) && !kt_all_free()): ?><span class="badge-premium align-middle">PRO</span><?php endif; ?></h1>
               <?php if (!$en && !empty($tool['name_en']) && $tool['name_en'] !== $name): ?><p class="text-sm opacity-60"><?= e($tool['name_en']) ?></p><?php endif; ?>
               <p class="opacity-70 mt-1"><?= e($desc) ?></p>
             </div>

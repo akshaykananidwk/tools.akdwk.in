@@ -90,7 +90,25 @@ function days_left(?array $user = null): int {
  * Returns ['allowed'=>bool, 'reason'=>string, 'upgrade'=>bool,
  *          'watermark'=>bool, 'max_mb'=>int].
  */
+/**
+ * Site-wide "everything free" switch (default ON). While on, every tool is
+ * usable by everyone with no daily limit, no watermark and no premium gate.
+ * Turn off later from Admin → Settings (all_tools_free = 0) to bring plans back.
+ */
+function kt_all_free(): bool {
+    return setting('all_tools_free', '1') !== '0';
+}
+
+/** Server-side upload cap (MB) for api/upload.php and api/convert.php. */
+function kt_server_max_mb(): int {
+    $planMb = (int) (user_plan()['max_file_mb'] ?? 5);
+    return kt_all_free() ? max($planMb, 25) : $planMb;
+}
+
 function tool_access(array $tool): array {
+    if (kt_all_free()) {
+        return ['allowed' => true, 'reason' => '', 'upgrade' => false, 'watermark' => false, 'max_mb' => 100];
+    }
     $user = current_user();
     $plan = user_plan($user);
     $isPaid = ((float) ($plan['price'] ?? 0)) > 0;

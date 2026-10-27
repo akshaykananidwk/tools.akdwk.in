@@ -19,7 +19,7 @@ $plan = user_plan($user);
 $isPaid = ((float) ($plan['price'] ?? 0)) > 0;
 
 // Guests / free users: count against the daily per-tool quota.
-if (!$isPaid) {
+if (!$isPaid && !kt_all_free()) {
     $u = guest_tool_usage($toolId, (int) ($plan['daily_limit'] ?? 3));
     if (!$u['allowed']) json_out(['ok' => false, 'limit' => true, 'error' => t('daily_limit_reached', ['n' => $u['limit']])], 200);
     guest_tool_increment($toolId);

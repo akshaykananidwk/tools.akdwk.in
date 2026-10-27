@@ -13,12 +13,20 @@
  * tool degrades gracefully. See /includes/tool_wrapper.php for how these
  * definitions are rendered into a full, working tool page.
  */
+require_once __DIR__ . '/tools_more.php';
 
 /**
  * Category definitions. slug is used in clean URLs (/category/<slug>).
  * color is a Tailwind-friendly hex used for the category accent.
  */
 function kt_categories(): array {
+    static $all = null;
+    if ($all !== null) return $all;
+    return $all = array_merge(kt_core_categories(), kt_more_categories());
+}
+
+/** The original 9 categories. */
+function kt_core_categories(): array {
     return [
         ['slug' => 'image',    'name_en' => 'Image Tools',        'name_gu' => 'ઇમેજ ટૂલ્સ',            'icon' => 'image',        'color' => '#0E7490', 'sort_order' => 1],
         ['slug' => 'pdf',      'name_en' => 'PDF Tools',          'name_gu' => 'PDF ટૂલ્સ',             'icon' => 'file-text',    'color' => '#EA580C', 'sort_order' => 2],
@@ -44,6 +52,13 @@ function kt_categories(): array {
  * tools use CDN libraries loaded on demand.
  */
 function kt_tools(): array {
+    static $all = null;
+    if ($all !== null) return $all;
+    return $all = array_merge(kt_core_tools(), kt_more_tools());
+}
+
+/** The original hand-written tools. */
+function kt_core_tools(): array {
     $g = function(...$s){ return $s; }; // guide helper (variadic -> array)
     return [
     // ───────────────────────── A) IMAGE (22) ─────────────────────────
@@ -660,10 +675,9 @@ function kt_tools(): array {
 
 /** Return a single tool definition by slug, or null. */
 function kt_tool(string $slug): ?array {
-    foreach (kt_tools() as $t) {
-        if ($t['slug'] === $slug) return $t;
-    }
-    return null;
+    static $map = null;
+    if ($map === null) { $map = []; foreach (kt_tools() as $t) $map[$t['slug']] = $t; }
+    return $map[$slug] ?? null;
 }
 
 /** Return all tools within a category slug. */

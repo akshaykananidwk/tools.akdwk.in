@@ -15,7 +15,7 @@ if (!rate_limit('upload', 30, 60)) json_out(['ok' => false, 'error' => 'Too many
 if (empty($_FILES['file']['tmp_name'])) json_out(['ok' => false, 'error' => 'No file']);
 
 $f = $_FILES['file'];
-$maxMb = (int) (user_plan()['max_file_mb'] ?? 5);
+$maxMb = kt_server_max_mb();
 if ($f['size'] > $maxMb * 1024 * 1024) json_out(['ok' => false, 'error' => "ફાઇલ {$maxMb}MB થી નાની હોવી જોઈએ"]);
 
 $allowedExt = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'pdf', 'zip', 'csv', 'txt', 'json', 'xlsx', 'xls', 'docx', 'pptx', 'heic'];
