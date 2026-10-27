@@ -19,7 +19,8 @@ function kt_more_packs(): array {
     $files = glob(__DIR__ . '/tools_more/*.php') ?: [];
     sort($files);
     foreach ($files as $file) {
-        $p = require $file;
+        // Isolated scope: packs may use local helper variables of their own.
+        $p = (static function (string $__f) { return require $__f; })($file);
         if (!is_array($p)) continue;
         foreach ($p['cats'] ?? [] as $c) $packs['cats'][] = $c;
         foreach ($p['tools'] ?? [] as $t) $packs['tools'][] = $t;
