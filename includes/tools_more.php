@@ -39,6 +39,7 @@ function kt_more_categories(): array {
             'sort_order' => $c['sort_order'] ?? $i++,
         ];
     }
+    usort($out, fn($a, $b) => $a['sort_order'] <=> $b['sort_order']);
     return $out;
 }
 
