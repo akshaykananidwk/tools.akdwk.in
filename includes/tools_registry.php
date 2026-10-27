@@ -41,7 +41,7 @@ function kt_core_categories(): array {
 }
 
 /**
- * All 120 tools. Fields:
+ * The original hand-written tools (industry packs live in tools_more/). Fields:
  *   slug, cat (category slug), name_gu, name_en, icon (lucide),
  *   desc_gu, desc_en, premium (0/1), engine (the JS engine key in app.js
  *   that powers this tool; 'custom' means the tool file supplies its own JS),
@@ -671,6 +671,12 @@ function kt_core_tools(): array {
       'guide'=>$g('ટેક્સ્ટ પેસ્ટ','ફોર્મેટ પસંદ','કન્વર્ટ','કોપી'),
       'faq'=>[['ડીકોડ?','હા.'],['hex?','હા.'],['ફ્રી?','હા.']]],
     ];
+}
+
+/** Tool count rounded down to a friendly figure for copy, e.g. "700" for 745 tools. */
+function kt_tool_count_label(): string {
+    $n = count(kt_tools());
+    return (string) ($n >= 100 ? floor($n / 50) * 50 : $n);
 }
 
 /** Return a single tool definition by slug, or null. */

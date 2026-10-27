@@ -14,7 +14,7 @@ if ($q !== '') {
 
 $en = current_lang() === 'en';
 $page_title = ($q !== '' ? ($en ? "Search: $q" : "શોધ: $q") : ($en ? 'Search Tools' : 'ટૂલ્સ શોધો')) . ' — ' . setting('site_name', 'Krishna Tools');
-$page_desc = $en ? "Search results for \"$q\" across 120+ online tools at Krishna Tools." : "\"$q\" માટે 120+ ટૂલ્સમાં શોધ પરિણામ.";
+$page_desc = $en ? "Search results for \"$q\" across " . kt_tool_count_label() . "+ online tools at Krishna Tools." : "\"$q\" માટે " . kt_tool_count_label() . "+ ટૂલ્સમાં શોધ પરિણામ.";
 $page_robots = 'noindex, follow'; // search result pages should not be indexed
 $breadcrumb = [['label' => t('home'), 'url' => SITE_URL . '/'], ['label' => $en ? 'Search' : 'શોધ']];
 require __DIR__ . '/includes/header.php';

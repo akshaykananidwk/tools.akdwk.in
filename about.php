@@ -33,7 +33,7 @@ require __DIR__ . '/includes/header.php';
         networking, printing and digital paperwork.
       </p>
       <p class="opacity-80 leading-relaxed mt-3">
-        Krishna Tools is our gift to the community — a collection of 120+ genuinely useful online tools
+        Krishna Tools is our gift to the community — a collection of <?= kt_tool_count_label() ?>+ genuinely useful online tools
         (image, PDF, CCTV calculators, business utilities and more), built Gujarati-first so everyone can
         use them with ease. Most tools run right inside your browser, so your files stay private.
       </p>
@@ -44,7 +44,7 @@ require __DIR__ . '/includes/header.php';
         અને ડિજિટલ કામકાજની સેવા આપીએ છીએ.
       </p>
       <p class="opacity-80 leading-relaxed mt-3">
-        કૃષ્ણા ટૂલ્સ એ સમાજ માટે અમારી ભેટ છે — 120+ ખરેખર ઉપયોગી ઓનલાઇન ટૂલ્સ (ઇમેજ, PDF, CCTV
+        કૃષ્ણા ટૂલ્સ એ સમાજ માટે અમારી ભેટ છે — <?= kt_tool_count_label() ?>+ ખરેખર ઉપયોગી ઓનલાઇન ટૂલ્સ (ઇમેજ, PDF, CCTV
         કેલ્ક્યુલેટર, બિઝનેસ યુટિલિટી અને વધુ), જે ગુજરાતી-પ્રથમ બનાવ્યાં છે જેથી દરેક સરળતાથી વાપરી શકે.
         મોટાભાગનાં ટૂલ્સ તમારા બ્રાઉઝરમાં જ ચાલે છે, એટલે તમારી ફાઇલો ખાનગી રહે છે.
       </p>

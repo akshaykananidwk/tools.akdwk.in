@@ -2,7 +2,7 @@
 /** KRISHNA TOOLS — Gujarati language pack (default). */
 return [
     'site_name'        => 'કૃષ્ણા ટૂલ્સ',
-    'tagline'          => '120+ ઓનલાઇન ટૂલ્સ — હરે કૃષ્ણ',
+    'tagline'          => ':tools+ ફ્રી ઓનલાઇન ટૂલ્સ — હરે કૃષ્ણ',
     'search_tools'     => 'ટૂલ્સ શોધો...',
     'all_categories'   => 'બધી કેટેગરી',
     'popular_tools'    => 'લોકપ્રિય ટૂલ્સ',

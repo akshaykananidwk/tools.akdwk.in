@@ -80,6 +80,7 @@ function t(string $key, array $vars = []): string {
     $pack = lang_pack();
     $str  = $pack[$key] ?? $key;
     foreach ($vars as $k => $v) $str = str_replace(':' . $k, (string) $v, $str);
+    if (str_contains($str, ':tools') && function_exists('kt_tool_count_label')) $str = str_replace(':tools', kt_tool_count_label(), $str);
     return $str;
 }
 

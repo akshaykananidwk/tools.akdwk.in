@@ -2,7 +2,7 @@
 /** KRISHNA TOOLS — English language pack. */
 return [
     'site_name'        => 'Krishna Tools',
-    'tagline'          => '120+ Online Tools — Hare Krishna',
+    'tagline'          => ':tools+ Free Online Tools — Hare Krishna',
     'search_tools'     => 'Search tools...',
     'all_categories'   => 'All Categories',
     'popular_tools'    => 'Popular Tools',

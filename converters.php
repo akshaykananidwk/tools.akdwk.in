@@ -43,6 +43,6 @@ require __DIR__ . '/includes/header.php';
 <?php endforeach; ?>
 
 <div class="kt-card p-5 text-center mt-8">
-  <p class="opacity-70">Looking for a specific conversion? Just type it in the search box, or visit <a class="text-[color:var(--peacock-teal)] underline" href="<?= SITE_URL ?>/">all 120 interactive tools</a>.</p>
+  <p class="opacity-70">Looking for a specific conversion? Just type it in the search box, or visit <a class="text-[color:var(--peacock-teal)] underline" href="<?= SITE_URL ?>/">all <?= kt_tool_count_label() ?>+ interactive tools</a>.</p>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>
