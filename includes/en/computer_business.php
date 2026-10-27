@@ -378,6 +378,21 @@ return [
       ['Should a purchase order include GST details?', 'Yes. Including the applicable GST rate and both parties GSTIN keeps the order clear and helps reconcile the supplier invoice against the PO for accurate input tax credit.'],
     ],
   ],
+  'internet-speed-test' => [
+    'guide' => [
+      'Close other apps, videos and downloads so they do not share your bandwidth.',
+      'Press "Start test".',
+      'Wait about 20 seconds while ping, download and upload are measured.',
+      'Copy the result or share it on WhatsApp.',
+    ],
+    'faq' => [
+      ['What is ping (ms)?', 'Ping is the time data takes to travel from your device to the test server and back, in milliseconds. 20–50 ms is good; lower is better for gaming and video calls. Browsers cannot send ICMP pings, so it is measured with tiny web requests, like other online speed tests.'],
+      ['What is jitter?', 'Jitter is how much the ping varies from one moment to the next. High jitter makes voice and video calls choppy even when the speed is fine.'],
+      ['How much data does the test use?', 'Between about 10 MB and 150 MB (on very fast connections). Keep this in mind on mobile data; the page shows how much was used after each test.'],
+      ['Why is my speed lower than my plan?', 'Distance from the WiFi router, other devices downloading at the same time and Wi-Fi interference all reduce speed. Test again close to the router, or with a cable, to see your line speed.'],
+      ['Which server is used?', 'The test runs against Cloudflare\'s nearest speed-test server, with locations in major Indian cities. If that cannot be reached it falls back to the tools.akdwk.in server.'],
+    ],
+  ],
   'inventory-valuation' => [
     'guide' => [
       'Enter each product in stock with its quantity.',

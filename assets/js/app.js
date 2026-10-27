@@ -942,6 +942,7 @@ function mountTool() {
       loadScript(KT.url + '/assets/js/engines.js' + v),
       loadScript(KT.url + '/assets/js/engines-dev.js' + v),
       loadScript(KT.url + '/assets/js/engines-more.js' + v),
+      loadScript(KT.url + '/assets/js/engines-speed.js' + v),
     ]).then(run).catch(run);
   }
 }
