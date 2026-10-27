@@ -105,7 +105,8 @@ function render_tool_page(string $slug): void {
             <div>
               <h1 class="text-2xl md:text-3xl font-extrabold" style="color:var(--krishna-blue)"><?= e($name) ?>
                 <?php if (!empty($tool['is_premium'])): ?><span class="badge-premium align-middle">PRO</span><?php endif; ?></h1>
-              <p class="opacity-70 mt-1"><?= e(loc($tool, 'name') === $name ? ($tool['name_en'] ?? '') : '') ?><?= e($desc) ?></p>
+              <?php if (!$en && !empty($tool['name_en']) && $tool['name_en'] !== $name): ?><p class="text-sm opacity-60"><?= e($tool['name_en']) ?></p><?php endif; ?>
+              <p class="opacity-70 mt-1"><?= e($desc) ?></p>
             </div>
           </div>
         </div>

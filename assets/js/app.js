@@ -925,6 +925,8 @@ function mountTool() {
   // The heavier file/generator engines live in engines.js; wait for it if needed.
   const run = () => {
     const fn = window.KTX.Engines[name];
+    // Clear the "Processing…" placeholder: most engines append to the mount.
+    mount.innerHTML = '';
     if (fn) { try { fn(mount, opt, ctx); } catch (e) { console.error(e); mount.innerHTML = `<div class="text-red-500">${e.message}</div>`; } }
     else {
       mount.innerHTML = `<div class="text-center py-6">
