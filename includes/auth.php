@@ -5,10 +5,10 @@
 require_once __DIR__ . '/functions.php';
 
 /* ── Current user ─────────────────────────────────────────── */
-function current_user(): ?array {
+function current_user(bool $refresh = false): ?array {
     static $cached = false;
     static $user = null;
-    if ($cached) return $user;
+    if ($cached && !$refresh) return $user;
     $cached = true;
     kt_session_start();
     if (empty($_SESSION['uid'])) return $user = null;
@@ -29,6 +29,7 @@ function login_user(array $user): void {
     kt_session_start();
     session_regenerate_id(true);          // prevent fixation
     $_SESSION['uid'] = (int) $user['id'];
+    current_user(true); // drop the cached "guest" result from earlier in this request
     update('users', [
         'last_login' => date('Y-m-d H:i:s'),
         'last_ip'    => client_ip(),
@@ -41,6 +42,7 @@ function logout_user(): void {
     $uid = $_SESSION['uid'] ?? null;
     $_SESSION = [];
     session_destroy();
+    current_user(true);
     if ($uid) activity_log((int) $uid, 'logout');
 }
 

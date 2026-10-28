@@ -84,10 +84,38 @@ async function need(...keys) { for (const k of keys) await loadScript(CDN[k]); }
 /* ---------- Usage log (fire and forget) ---------- */
 function logUsage(toolId) {
   if (!toolId) return;
+  const m = document.getElementById('toolMount');
   fetch(KT.url + '/api/tool_log.php', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF': KT.csrf },
-    body: JSON.stringify({ tool_id: toolId }),
+    body: JSON.stringify({ tool_id: toolId, v: visitorId(), s: m ? m.dataset.slug : '', p: location.pathname }),
   }).catch(() => {});
+}
+
+/* ---------- First-party analytics beacon (admin → Live Analytics) ---------- */
+function visitorId() {
+  try {
+    let v = localStorage.getItem('kt-vid');
+    if (!/^[a-f0-9]{16}$/.test(v || '')) {
+      const b = new Uint8Array(8); crypto.getRandomValues(b);
+      v = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('kt-vid', v);
+    }
+    return v;
+  } catch (e) { return ''; }
+}
+function beacon(type) {
+  const v = visitorId(); if (!v) return;
+  const m = document.getElementById('toolMount');
+  const body = JSON.stringify({ t: type, v, p: location.pathname, s: m ? m.dataset.slug : (location.pathname.match(/^\/convert\/([a-z0-9.-]+)/) || [])[1],
+    r: type === 'view' ? document.referrer : '', l: KT.lang });
+  const url = KT.url + '/api/track.php';
+  if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }))) return;
+  fetch(url, { method: 'POST', body, keepalive: true, headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+}
+function startTracking() {
+  beacon('view');
+  setInterval(() => { if (document.visibilityState === 'visible') beacon('ping'); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') beacon('ping'); });
 }
 
 /* ---------- WhatsApp share ---------- */
@@ -209,7 +237,8 @@ function renderCalc(mount, spec, ctx) {
       else state[f.k] = node.value;
     });
   }
-  function run() {
+  let lastLog = 0;
+  function run(byUser) {
     readState();
     let rows;
     try { rows = spec.compute(state); }
@@ -226,13 +255,15 @@ function renderCalc(mount, spec, ctx) {
     }
     const txt = Array.isArray(rows) ? rows.map(r => `${r.label}: ${String(r.value).replace(/<[^>]+>/g, '')}`).join('\n') : String(rows).replace(/<[^>]+>/g, '');
     ctx._resultText = (spec.title || '') + '\n' + txt + '\n\n' + KT.url;
-    if (ctx.toolId) logUsage(ctx.toolId);
+    // Count a "use" only when the visitor works the tool (not the automatic first run),
+    // and at most once every 30 seconds so typing does not count every keystroke.
+    if (byUser === true && ctx.toolId && Date.now() - lastLog > 30000) { lastLog = Date.now(); logUsage(ctx.toolId); }
     if (window.lucide) lucide.createIcons();
   }
   // Auto-run on input + a Calculate button.
-  form.addEventListener('input', () => { if (spec.live !== false) run(); });
+  form.addEventListener('input', () => { if (spec.live !== false) run(true); });
   setActions([
-    { label: T('ગણો', 'Calculate'), cls: 'btn-primary', icon: 'calculator', onClick: run },
+    { label: T('ગણો', 'Calculate'), cls: 'btn-primary', icon: 'calculator', onClick: () => run(true) },
     { label: T('કોપી', 'Copy'), icon: 'copy', onClick: () => copy(ctx._resultText || '') },
     { label: T('WhatsApp', 'WhatsApp'), cls: 'btn-wa', icon: 'send', onClick: () => waShareText(ctx._resultText || '') },
     { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => window.print() },
@@ -998,6 +1029,7 @@ function festivalParticles() {
 document.addEventListener('DOMContentLoaded', () => {
   mountTool();
   wireSearch();
+  startTracking();
   festivalParticles();
 });
 })();

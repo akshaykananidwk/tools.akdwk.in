@@ -16,6 +16,7 @@
  */
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/whatsapp.php';
+require_once __DIR__ . '/analytics.php';
 
 /* ================= Queue helpers (used by any feature) ================= */
 
@@ -89,6 +90,18 @@ function kt_cron_jobs(): array {
         'key' => 'db_backup', 'name' => 'Database Backup (nightly)',
         'group' => 'maintenance', 'schedule' => 'cron:30 2 * * *', 'default_enabled' => true,
         'handler' => 'kt_job_db_backup',
+    ],
+
+    // ── Visitor analytics: city lookup for new IPs + table pruning ─────
+    [
+        'key' => 'analytics_geo', 'name' => 'Analytics: Visitor City Lookup',
+        'group' => 'reports', 'schedule' => 'interval:300', 'default_enabled' => true,
+        'handler' => 'kt_job_analytics_geo',
+    ],
+    [
+        'key' => 'analytics_prune', 'name' => 'Analytics: Prune Old Data',
+        'group' => 'maintenance', 'schedule' => 'cron:15 3 * * *', 'default_enabled' => true,
+        'handler' => 'kt_job_analytics_prune',
     ],
 
     // ── Daily admin report (off by default) ────────────────────────────

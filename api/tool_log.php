@@ -36,4 +36,10 @@ try {
     q("UPDATE " . tbl('tools') . " SET views = views + 1 WHERE id = :id", [':id' => $toolId]);
 } catch (Throwable $e) { /* non-fatal */ }
 
+// Per-visitor usage for the Live Analytics report.
+try {
+    require_once __DIR__ . '/../includes/analytics.php';
+    kt_track('use', (string) ($body['v'] ?? ''), (string) ($body['p'] ?? '/'), (string) ($body['s'] ?? '') ?: null);
+} catch (Throwable $e) { /* non-fatal */ }
+
 json_out(['ok' => true]);

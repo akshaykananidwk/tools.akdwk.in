@@ -273,6 +273,43 @@ CREATE TABLE IF NOT EXISTS `{{PREFIX}}job_queue` (
   INDEX(`status`), INDEX(`channel`), INDEX(`run_after`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- First-party visitor analytics (also created on first use by includes/analytics.php)
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}page_views` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `kind` ENUM('view','use') NOT NULL DEFAULT 'view',
+  `vid` CHAR(16) NOT NULL,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `path` VARCHAR(255) NOT NULL DEFAULT '/',
+  `slug` VARCHAR(120) DEFAULT NULL,
+  `ref_host` VARCHAR(120) DEFAULT NULL,
+  `ip` VARCHAR(45) DEFAULT NULL,
+  `device` VARCHAR(10) DEFAULT NULL,
+  `lang` VARCHAR(5) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL,
+  INDEX `pv_time` (`created_at`), INDEX `pv_vid` (`vid`), INDEX `pv_slug` (`slug`), INDEX `pv_ip` (`ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}live_visitors` (
+  `vid` CHAR(16) NOT NULL PRIMARY KEY,
+  `user_id` INT UNSIGNED DEFAULT NULL,
+  `path` VARCHAR(255) NOT NULL DEFAULT '/',
+  `slug` VARCHAR(120) DEFAULT NULL,
+  `ip` VARCHAR(45) DEFAULT NULL,
+  `device` VARCHAR(10) DEFAULT NULL,
+  `first_seen` DATETIME NOT NULL,
+  `last_seen` DATETIME NOT NULL,
+  INDEX `lv_seen` (`last_seen`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `{{PREFIX}}ip_geo` (
+  `ip` VARCHAR(45) NOT NULL PRIMARY KEY,
+  `city` VARCHAR(80) DEFAULT NULL,
+  `region` VARCHAR(80) DEFAULT NULL,
+  `country` VARCHAR(80) DEFAULT NULL,
+  `isp` VARCHAR(120) DEFAULT NULL,
+  `resolved_at` DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET foreign_key_checks = 1;
 -- Seed data (categories, tools, plans, templates, blog, admin, settings)
 -- is inserted programmatically by the installer from the PHP registries so

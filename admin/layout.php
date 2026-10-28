@@ -12,6 +12,7 @@ require_once __DIR__ . '/../includes/csrf.php';
 function admin_nav_links(): array {
     return [
         ['index.php',      'layout-dashboard', 'Dashboard'],
+        ['analytics.php',  'activity',         'Live Analytics'],
         ['users.php',      'users',            'Users'],
         ['plans.php',      'badge-indian-rupee','Plans'],
         ['payments.php',   'receipt',          'Payments'],

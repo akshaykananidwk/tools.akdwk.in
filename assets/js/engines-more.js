@@ -109,7 +109,8 @@ reg('textgen', function (mount, opt, ctx) {
   }
   mount.appendChild(form);
   const out = el('<div class="mt-5 grid gap-3"></div>'); mount.appendChild(out);
-  let all = '';
+  let all = '', lastLog = 0;
+  const used = () => { if (ctx.toolId && Date.now() - lastLog > 30000) { lastLog = Date.now(); logUsage(ctx.toolId); } };
   function run() {
     const v = {};
     fields.forEach(f => { const n = $('#f_' + f.k); v[f.k] = n ? n.value.trim() : ''; });
@@ -121,13 +122,13 @@ reg('textgen', function (mount, opt, ctx) {
       texts.map((t, i) => `<div class="kt-card p-4"><div style="white-space:pre-wrap">${esc(t)}</div>
         <div class="flex gap-2 mt-3"><button type="button" class="btn btn-ghost !py-1 text-sm" data-c="${i}">${T('કોપી', 'Copy')}</button>
         <button type="button" class="btn btn-wa !py-1 text-sm" data-w="${i}">WhatsApp</button></div></div>`).join('');
-    out.querySelectorAll('[data-c]').forEach(b => b.onclick = () => copy(texts[+b.dataset.c]));
-    out.querySelectorAll('[data-w]').forEach(b => b.onclick = () => waShareText(texts[+b.dataset.w]));
+    out.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { copy(texts[+b.dataset.c]); used(); });
+    out.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { waShareText(texts[+b.dataset.w]); used(); });
   }
   form.addEventListener('input', run); form.addEventListener('change', run);
   setActions([
-    { label: T('બનાવો', 'Generate'), cls: 'btn-primary', icon: 'sparkles', onClick: () => { run(); if (ctx.toolId) logUsage(ctx.toolId); } },
-    { label: T('બધું કોપી', 'Copy all'), icon: 'copy', onClick: () => copy(all) },
+    { label: T('બનાવો', 'Generate'), cls: 'btn-primary', icon: 'sparkles', onClick: () => { run(); used(); } },
+    { label: T('બધું કોપી', 'Copy all'), icon: 'copy', onClick: () => { copy(all); used(); } },
   ]);
   run();
 });
