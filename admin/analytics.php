@@ -39,8 +39,8 @@ function an_live(): array {
     global $LV, $GEO, $U;
     $rows = all("SELECT lv.*, g.city, g.country, u.name AS uname
                  FROM $LV lv LEFT JOIN $GEO g ON g.ip = lv.ip LEFT JOIN $U u ON u.id = lv.user_id
-                 WHERE lv.last_seen >= NOW() - INTERVAL " . KT_LIVE_WINDOW . " SECOND
-                 ORDER BY lv.last_seen DESC LIMIT 200");
+                 WHERE lv.last_seen >= :t
+                 ORDER BY lv.last_seen DESC LIMIT 200", [':t' => date('Y-m-d H:i:s', time() - KT_LIVE_WINDOW)]);
     $out = [];
     foreach ($rows as $r) {
         $out[] = ['who' => $r['uname'] ?: ('મુલાકાતી #' . substr($r['vid'], 0, 6)), 'page' => $r['path'],
@@ -119,6 +119,9 @@ $topVisitors = all("SELECT pv.vid, SUM(pv.kind='use') uses, SUM(pv.kind='view') 
                     FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip WHERE $W GROUP BY pv.vid ORDER BY uses DESC, views DESC LIMIT 20", $R);
 $recent = all("SELECT pv.*, g.city, g.country, u.name uname FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip LEFT JOIN $U u ON u.id = pv.user_id
                WHERE $W ORDER BY pv.id DESC LIMIT 60", $R);
+$lastErr = (string) setting('analytics_last_error', '');
+$firstRow = (string) (scalar("SELECT MIN(created_at) FROM $PV") ?? '');
+$lastRow  = (string) (scalar("SELECT MAX(created_at) FROM $PV") ?? '');
 $geoPending = (int) (scalar("SELECT COUNT(DISTINCT pv.ip) FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip WHERE g.ip IS NULL AND pv.ip IS NOT NULL") ?? 0);
 
 $fmt = fn($n) => number_format((int) $n);
@@ -137,6 +140,17 @@ admin_head('Live Analytics');
   .an-scroll { max-height: 460px; overflow: auto; }
   .num { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>
+
+<!-- Tracking status -->
+<div class="kt-card p-4 mb-5 text-sm flex flex-wrap gap-x-6 gap-y-1 items-center">
+  <?php if ($firstRow): ?>
+    <span>✅ ટ્રેકિંગ ચાલુ છે. ડેટા <b><?= e(date('d M Y, H:i', strtotime($firstRow))) ?></b> થી ગણાય છે.</span>
+    <span class="opacity-70">છેલ્લી મુલાકાત: <?= e(an_ago($lastRow)) ?> પહેલાં</span>
+  <?php else: ?>
+    <span>⏳ હજી કોઈ મુલાકાત નોંધાઈ નથી. ચકાસવા માટે, admin તરીકે લોગિન <b>ન</b> હોય એવા browser કે ફોનમાં (દા.ત. Incognito) વેબસાઈટ ખોલો. 15 સેકન્ડમાં અહીં "અત્યારે લાઇવ" માં દેખાશે.</span>
+  <?php endif; ?>
+  <?php if ($lastErr): ?><span class="text-red-600">⚠️ છેલ્લી ટ્રેકિંગ ભૂલ: <span class="font-mono text-xs"><?= e($lastErr) ?></span></span><?php endif; ?>
+</div>
 
 <!-- Filter -->
 <form method="get" class="kt-card p-4 mb-5 flex flex-wrap items-end gap-2">

@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             kt_track($in['t'], (string) ($in['v'] ?? ''), (string) ($in['p'] ?? '/'),
                 isset($in['s']) ? (string) $in['s'] : null, (string) ($in['r'] ?? ''), (string) ($in['l'] ?? ''));
-        } catch (Throwable $e) { /* never break the page */ }
+        } catch (Throwable $e) { kt_analytics_error($e); /* never break the page */ }
     }
 }
 http_response_code(204);

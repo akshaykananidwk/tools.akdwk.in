@@ -27,12 +27,19 @@ $revenueToday = (float) kpi_scalar(
     "SELECT COALESCE(SUM(amount),0) FROM " . tbl('payments') . "
      WHERE status = 'paid' AND DATE(created_at) = :d", [':d' => $today]);
 
+// Visitor numbers come from the same real-visitor data as Live Analytics
+// (browsers only: no bots, no admin), so both pages always agree.
+require_once __DIR__ . '/../includes/analytics.php';
+try { kt_analytics_ensure(); } catch (Throwable $e) {}
 $usagesToday = (int) kpi_scalar(
-    "SELECT COUNT(*) FROM " . tbl('tool_usage') . " WHERE DATE(created_at) = :d", [':d' => $today]);
-
+    "SELECT COUNT(*) FROM " . tbl('page_views') . " WHERE kind = 'use' AND created_at BETWEEN :a AND :b",
+    [':a' => "$today 00:00:00", ':b' => "$today 23:59:59"]);
+$visitorsToday = (int) kpi_scalar(
+    "SELECT COUNT(DISTINCT vid) FROM " . tbl('page_views') . " WHERE created_at BETWEEN :a AND :b",
+    [':a' => "$today 00:00:00", ':b' => "$today 23:59:59"]);
 $liveVisitors = (int) kpi_scalar(
-    "SELECT COUNT(DISTINCT ip) FROM " . tbl('tool_usage') . "
-     WHERE created_at >= (NOW() - INTERVAL 15 MINUTE)");
+    "SELECT COUNT(*) FROM " . tbl('live_visitors') . " WHERE last_seen >= :t",
+    [':t' => date('Y-m-d H:i:s', time() - KT_LIVE_WINDOW)]);
 
 $totalTools = (int) kpi_scalar("SELECT COUNT(*) FROM " . tbl('tools'));
 
@@ -48,9 +55,8 @@ $chartLabels = [];
 $chartData   = [];
 $series = [];
 try {
-    foreach (all("SELECT DATE(created_at) d, COUNT(*) c FROM " . tbl('tool_usage') . "
-                  WHERE created_at >= (CURDATE() - INTERVAL 13 DAY)
-                  GROUP BY DATE(created_at)") as $r) {
+    foreach (all("SELECT DATE(created_at) d, COUNT(DISTINCT vid) c FROM " . tbl('page_views') . "
+                  WHERE created_at >= :since GROUP BY DATE(created_at)", [':since' => date('Y-m-d', strtotime('-13 days')) . ' 00:00:00']) as $r) {
         $series[$r['d']] = (int) $r['c'];
     }
 } catch (Throwable $e) { $series = []; }
@@ -73,8 +79,9 @@ $cards = [
     ['કુલ યુઝર્સ',         number_format($totalUsers),  'users',              'var(--krishna-blue)'],
     ['એક્ટિવ પેઇડ પ્લાન',  number_format($activePaid),  'badge-check',        'var(--morpankh-green)'],
     ['આજની આવક',          money($revenueToday),        'badge-indian-rupee', 'var(--saffron)'],
+    ['આજના મુલાકાતીઓ',     number_format($visitorsToday), 'users-round',      'var(--peacock-teal)'],
     ['આજે ટૂલ વપરાશ',     number_format($usagesToday), 'activity',           'var(--peacock-teal)'],
-    ['લાઇવ વિઝિટર્સ (15 મિ.)', number_format($liveVisitors), 'radio',        'var(--gold)'],
+    ['અત્યારે લાઇવ',       number_format($liveVisitors), 'radio',            'var(--gold)'],
     ['કુલ ટૂલ્સ',          number_format($totalTools),  'wrench',             'var(--krishna-blue)'],
 ];
 
@@ -96,7 +103,7 @@ admin_head('ડેશબોર્ડ');
 
 <div class="grid gap-4 lg:grid-cols-3 mt-5">
   <div class="kt-card p-5 lg:col-span-2">
-    <h2 class="section-title text-base mb-3">છેલ્લા 14 દિવસનો ટૂલ વપરાશ</h2>
+    <h2 class="section-title text-base mb-3">છેલ્લા 14 દિવસના મુલાકાતીઓ <a href="<?= SITE_URL ?>/admin/analytics.php" class="text-xs font-normal underline ml-2">પૂરો રિપોર્ટ →</a></h2>
     <canvas id="usageChart" height="110"></canvas>
   </div>
   <div class="kt-card p-5">
@@ -153,7 +160,7 @@ admin_head('ડેશબોર્ડ');
     data: {
       labels: <?= json_encode($chartLabels, JSON_UNESCAPED_UNICODE) ?>,
       datasets: [{
-        label: 'વપરાશ',
+        label: 'મુલાકાતીઓ',
         data: <?= json_encode($chartData) ?>,
         borderColor: '#F59E0B',
         backgroundColor: 'rgba(245,158,11,.15)',

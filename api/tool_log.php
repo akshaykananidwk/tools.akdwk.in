@@ -40,6 +40,6 @@ try {
 try {
     require_once __DIR__ . '/../includes/analytics.php';
     kt_track('use', (string) ($body['v'] ?? ''), (string) ($body['p'] ?? '/'), (string) ($body['s'] ?? '') ?: null);
-} catch (Throwable $e) { /* non-fatal */ }
+} catch (Throwable $e) { if (function_exists('kt_analytics_error')) kt_analytics_error($e); }
 
 json_out(['ok' => true]);

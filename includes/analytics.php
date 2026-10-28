@@ -58,6 +58,13 @@ function kt_analytics_ensure(): void {
     set_setting('analytics_schema', '1');
 }
 
+/** Remember the latest tracking failure (shown on the Live Analytics page) and log it. */
+function kt_analytics_error(Throwable $e): void {
+    $msg = date('Y-m-d H:i:s') . ' — ' . mb_substr($e->getMessage(), 0, 400);
+    error_log('[analytics] ' . $msg);
+    try { set_setting('analytics_last_error', $msg); } catch (Throwable $e2) {}
+}
+
 /** Crawlers and preview bots are not visitors. */
 function kt_is_bot_ua(string $ua): bool {
     return $ua === '' || (bool) preg_match('/bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|whatsapp|curl|wget|python|java\//i', $ua);
@@ -107,10 +114,11 @@ function kt_track(string $kind, string $vid, string $path, ?string $slug = null,
     if ($kind === 'view' || $kind === 'ping') {
         q("INSERT INTO " . tbl('live_visitors') . " (vid, user_id, path, slug, ip, device, first_seen, last_seen)
            VALUES (:v, :u, :p, :s, :ip, :d, :t, :t2)
-           ON DUPLICATE KEY UPDATE first_seen = IF(last_seen < NOW() - INTERVAL 30 MINUTE, VALUES(first_seen), first_seen),
+           ON DUPLICATE KEY UPDATE first_seen = IF(last_seen < :gap, VALUES(first_seen), first_seen),
              user_id = VALUES(user_id), path = VALUES(path), slug = VALUES(slug),
              ip = VALUES(ip), device = VALUES(device), last_seen = VALUES(last_seen)",
-          [':v' => $vid, ':u' => $uid, ':p' => $path, ':s' => $slug, ':ip' => $ip, ':d' => $device, ':t' => $now, ':t2' => $now]);
+          [':v' => $vid, ':u' => $uid, ':p' => $path, ':s' => $slug, ':ip' => $ip, ':d' => $device, ':t' => $now, ':t2' => $now,
+           ':gap' => date('Y-m-d H:i:s', time() - 1800)]);
     }
     return true;
 }
@@ -123,8 +131,8 @@ function kt_job_analytics_geo(): string {
     kt_analytics_ensure();
     $rows = all("SELECT DISTINCT pv.ip FROM " . tbl('page_views') . " pv
                  LEFT JOIN " . tbl('ip_geo') . " g ON g.ip = pv.ip
-                 WHERE pv.ip IS NOT NULL AND g.ip IS NULL AND pv.created_at > NOW() - INTERVAL 7 DAY
-                 LIMIT 100");
+                 WHERE pv.ip IS NOT NULL AND g.ip IS NULL AND pv.created_at > :since
+                 LIMIT 100", [':since' => date('Y-m-d H:i:s', strtotime('-7 days'))]);
     $ips = [];
     foreach ($rows as $r) {
         if (filter_var($r['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $ips[] = $r['ip'];
@@ -168,7 +176,7 @@ function kt_geo_ipwhois(array $ips): array {
 /** Cron: keep tables small — 13 months of views and 1 day of live rows (the geo cache is kept). */
 function kt_job_analytics_prune(): string {
     kt_analytics_ensure();
-    $a = q("DELETE FROM " . tbl('page_views') . " WHERE created_at < NOW() - INTERVAL 395 DAY")->rowCount();
-    $b = q("DELETE FROM " . tbl('live_visitors') . " WHERE last_seen < NOW() - INTERVAL 1 DAY")->rowCount();
+    $a = q("DELETE FROM " . tbl('page_views') . " WHERE created_at < :t", [':t' => date('Y-m-d H:i:s', strtotime('-395 days'))])->rowCount();
+    $b = q("DELETE FROM " . tbl('live_visitors') . " WHERE last_seen < :t", [':t' => date('Y-m-d H:i:s', strtotime('-1 day'))])->rowCount();
     return "Pruned views:$a live:$b";
 }

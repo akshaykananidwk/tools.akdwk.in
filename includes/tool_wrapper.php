@@ -60,9 +60,11 @@ function render_tool_page(string $slug): void {
     $cat = null;
     foreach (kt_categories() as $c) if ($c['slug'] === $tool['cat']) $cat = $c;
 
-    // Log usage (best-effort) + bump view count.
+    // Log usage (best-effort) + bump view count. Crawlers are skipped so Google
+    // indexing hundreds of pages does not look like visitors.
+    require_once __DIR__ . '/analytics.php';
     try {
-        if (!empty($tool['db_id'])) {
+        if (!empty($tool['db_id']) && !kt_is_bot_ua($_SERVER['HTTP_USER_AGENT'] ?? '')) {
             insert('tool_usage', [
                 'user_id'    => current_user()['id'] ?? null,
                 'tool_id'    => $tool['db_id'],
