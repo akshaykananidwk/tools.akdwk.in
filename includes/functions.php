@@ -103,6 +103,16 @@ function kt_en_text(?string $value, string $fallback = ''): string {
     return preg_match('/[\x{0A80}-\x{0AFF}]/u', $value) ? $fallback : $value;
 }
 
+/** Plan feature list ("a|b|c") in English; the installer seeded these in Gujarati. */
+function kt_plan_features_en(string $features): array {
+    static $map = ['કોઈપણ ટૂલ' => 'Any tool', 'દરરોજ 3 વખત' => '3 uses per day', 'મહત્તમ 5 MB ફાઇલ' => 'Files up to 5 MB',
+        'આઉટપુટ પર વોટરમાર્ક' => 'Watermark on output', 'અમર્યાદિત ઉપયોગ' => 'Unlimited use', '100 MB ફાઇલ' => 'Files up to 100 MB',
+        'બેચ મોડ' => 'Batch mode', 'વોટરમાર્ક વગર' => 'No watermark', 'ઈમેલ સપોર્ટ' => 'Email support',
+        'માસિકના બધા લાભ' => 'Everything in Monthly', 'પ્રાયોરિટી ક્યૂ' => 'Priority queue', 'API કી' => 'API key',
+        'બલ્ક ZIP' => 'Bulk ZIP download', 'સેવ્ડ ફાઇલ્સ' => 'Saved files'];
+    return array_values(array_filter(array_map(fn($f) => kt_en_text($map[trim($f)] ?? trim($f), ''), explode('|', $features))));
+}
+
 /** Pick the language-appropriate field from a row with _gu/_en variants. */
 function loc(array $row, string $base): string {
     $suffix = current_lang() === 'en' ? '_en' : '_gu';

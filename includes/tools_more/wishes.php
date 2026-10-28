@@ -1145,7 +1145,7 @@ return [
        "May Shri Krishna grant moksha to the soul of {name} and give the family patience and courage. Om Shanti 🙏",
        "Words fall short, but we share your grief from the heart. Respectful tribute to {name}. 🙏\n- {from}",
      ],
-     'faq' => [['What is the respectful way to write the name?', 'In Gujarati, “સ્વ.” (swargastha) is written before the name of the departed; the messages already add it. You can include “Shri” or “Smt.” in the name box.', 'સ્વર્ગસ્થનું નામ માનભેર કેવી રીતે લખવું?', 'ગુજરાતીમાં નામ પહેલાં “સ્વ.” લખાય છે, સંદેશમાં તે પહેલેથી છે. નામમાં “શ્રી” કે “શ્રીમતી” ઉમેરી શકો.']]],
+     'faq' => [['What is the respectful way to write the name?', 'The prefix “Late” (Swargastha, short “Sva.”) is written before the name of the departed; the messages already add it. You can include “Shri” or “Smt.” in the name box.', 'સ્વર્ગસ્થનું નામ માનભેર કેવી રીતે લખવું?', 'ગુજરાતીમાં નામ પહેલાં “સ્વ.” લખાય છે, સંદેશમાં તે પહેલેથી છે. નામમાં “શ્રી” કે “શ્રીમતી” ઉમેરી શકો.']]],
 
     ['slug' => 'shraddhanjali-card-maker', 'cat' => $C, 'type' => 'card', 'icon' => 'flower',
      'en' => 'Shraddhanjali (Tribute) Card Maker', 'gu' => 'શ્રદ્ધાંજલિ કાર્ડ મેકર',

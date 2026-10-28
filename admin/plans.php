@@ -68,7 +68,7 @@ admin_head('Plans');
     </div>
     <div>
       <label class="kt-label text-xs">Features (|)</label>
-      <textarea name="features" rows="4" class="kt-input !py-1.5 text-sm"><?= e($p['features'] ?? '') ?></textarea>
+      <textarea name="features" rows="4" class="kt-input !py-1.5 text-sm"><?= e(implode('|', kt_plan_features_en($p['features'] ?? ''))) ?></textarea>
     </div>
     <label class="flex items-center gap-2 text-sm">
       <input type="checkbox" name="is_active" <?= (int) $p['is_active'] === 1 ? 'checked' : '' ?>> Active

@@ -15,13 +15,7 @@ require __DIR__ . '/includes/header.php';
 </div>
 <div class="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
   <?php foreach ($plans as $p):
-    // Plan features are stored in Gujarati by the installer; show the English wording.
-    $featEn = ['કોઈપણ ટૂલ' => 'Any tool', 'દરરોજ 3 વખત' => '3 uses per day', 'મહત્તમ 5 MB ફાઇલ' => 'Files up to 5 MB',
-        'આઉટપુટ પર વોટરમાર્ક' => 'Watermark on output', 'અમર્યાદિત ઉપયોગ' => 'Unlimited use', '100 MB ફાઇલ' => 'Files up to 100 MB',
-        'બેચ મોડ' => 'Batch mode', 'વોટરમાર્ક વગર' => 'No watermark', 'ઈમેલ સપોર્ટ' => 'Email support',
-        'માસિકના બધા લાભ' => 'Everything in Monthly', 'પ્રાયોરિટી ક્યૂ' => 'Priority queue', 'API કી' => 'API key',
-        'બલ્ક ZIP' => 'Bulk ZIP download', 'સેવ્ડ ફાઇલ્સ' => 'Saved files'];
-    $feats = array_filter(array_map(fn($f) => kt_en_text($featEn[trim($f)] ?? trim($f), ''), explode('|', $p['features'] ?? '')));
+    $feats = kt_plan_features_en($p['features'] ?? '');
     $yearly = (int) $p['duration_days'] >= 365; ?>
     <div class="kt-card p-6 flex flex-col <?= $yearly ? 'border-2' : '' ?>" style="<?= $yearly ? 'border-color:var(--gold)' : '' ?>">
       <?php if ($yearly): ?><div class="badge-premium self-start mb-2"><?= t('best_value') ?></div><?php endif; ?>
