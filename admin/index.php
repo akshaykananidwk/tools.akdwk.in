@@ -76,16 +76,16 @@ try {
 } catch (Throwable $e) { $activity = []; }
 
 $cards = [
-    ['કુલ યુઝર્સ',         number_format($totalUsers),  'users',              'var(--krishna-blue)'],
-    ['એક્ટિવ પેઇડ પ્લાન',  number_format($activePaid),  'badge-check',        'var(--morpankh-green)'],
-    ['આજની આવક',          money($revenueToday),        'badge-indian-rupee', 'var(--saffron)'],
-    ['આજના મુલાકાતીઓ',     number_format($visitorsToday), 'users-round',      'var(--peacock-teal)'],
-    ['આજે ટૂલ વપરાશ',     number_format($usagesToday), 'activity',           'var(--peacock-teal)'],
-    ['અત્યારે લાઇવ',       number_format($liveVisitors), 'radio',            'var(--gold)'],
-    ['કુલ ટૂલ્સ',          number_format($totalTools),  'wrench',             'var(--krishna-blue)'],
+    ['Total users',        number_format($totalUsers),  'users',              'var(--krishna-blue)'],
+    ['Active paid plans',  number_format($activePaid),  'badge-check',        'var(--morpankh-green)'],
+    ['Revenue today',      money($revenueToday),        'badge-indian-rupee', 'var(--saffron)'],
+    ['Visitors today',     number_format($visitorsToday), 'users-round',      'var(--peacock-teal)'],
+    ['Tool uses today',    number_format($usagesToday), 'activity',           'var(--peacock-teal)'],
+    ['Live now',           number_format($liveVisitors), 'radio',            'var(--gold)'],
+    ['Total tools',        number_format($totalTools),  'wrench',             'var(--krishna-blue)'],
 ];
 
-admin_head('ડેશબોર્ડ');
+admin_head('Dashboard');
 ?>
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
   <?php foreach ($cards as [$label, $value, $icon, $color]): ?>
@@ -103,11 +103,11 @@ admin_head('ડેશબોર્ડ');
 
 <div class="grid gap-4 lg:grid-cols-3 mt-5">
   <div class="kt-card p-5 lg:col-span-2">
-    <h2 class="section-title text-base mb-3">છેલ્લા 14 દિવસના મુલાકાતીઓ <a href="<?= SITE_URL ?>/admin/analytics.php" class="text-xs font-normal underline ml-2">પૂરો રિપોર્ટ →</a></h2>
+    <h2 class="section-title text-base mb-3">Visitors, last 14 days <a href="<?= SITE_URL ?>/admin/analytics.php" class="text-xs font-normal underline ml-2">Full report →</a></h2>
     <canvas id="usageChart" height="110"></canvas>
   </div>
   <div class="kt-card p-5">
-    <h2 class="section-title text-base mb-3">ટોપ 5 ટૂલ્સ (વ્યૂઝ)</h2>
+    <h2 class="section-title text-base mb-3">Top 5 tools (views)</h2>
     <?php if ($topTools): ?>
       <ol class="space-y-2">
         <?php foreach ($topTools as $i => $trow): ?>
@@ -121,21 +121,21 @@ admin_head('ડેશબોર્ડ');
         <?php endforeach; ?>
       </ol>
     <?php else: ?>
-      <p class="text-sm opacity-60">કોઈ ડેટા નથી.</p>
+      <p class="text-sm opacity-60">No data yet.</p>
     <?php endif; ?>
   </div>
 </div>
 
 <div class="kt-card p-5 mt-5">
-  <h2 class="section-title text-base mb-3">તાજેતરની પ્રવૃત્તિ</h2>
+  <h2 class="section-title text-base mb-3">Recent activity</h2>
   <?php if ($activity): ?>
     <div class="overflow-x-auto">
       <table class="kt-table">
-        <thead><tr><th>યુઝર</th><th>ક્રિયા</th><th>વિગત</th><th>IP</th><th>સમય</th></tr></thead>
+        <thead><tr><th>User</th><th>Action</th><th>Details</th><th>IP</th><th>Time</th></tr></thead>
         <tbody>
         <?php foreach ($activity as $a): ?>
           <tr>
-            <td><?= e($a['uname'] ?? 'ગેસ્ટ') ?></td>
+            <td><?= e($a['uname'] ?? 'Guest') ?></td>
             <td><span class="badge-premium text-xs"><?= e($a['action'] ?? '') ?></span></td>
             <td class="opacity-70 max-w-[280px] truncate"><?= e($a['details'] ?? '') ?></td>
             <td class="opacity-60 text-xs"><?= e($a['ip'] ?? '') ?></td>
@@ -146,7 +146,7 @@ admin_head('ડેશબોર્ડ');
       </table>
     </div>
   <?php else: ?>
-    <p class="text-sm opacity-60">કોઈ પ્રવૃત્તિ નથી.</p>
+    <p class="text-sm opacity-60">No activity yet.</p>
   <?php endif; ?>
 </div>
 
@@ -160,7 +160,7 @@ admin_head('ડેશબોર્ડ');
     data: {
       labels: <?= json_encode($chartLabels, JSON_UNESCAPED_UNICODE) ?>,
       datasets: [{
-        label: 'મુલાકાતીઓ',
+        label: 'Visitors',
         data: <?= json_encode($chartData) ?>,
         borderColor: '#F59E0B',
         backgroundColor: 'rgba(245,158,11,.15)',

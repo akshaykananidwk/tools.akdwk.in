@@ -16,7 +16,7 @@ $fest     = festival_theme();
 $user     = current_user();
 $gaId     = setting('ga_id', defined('GA_ID') ? GA_ID : '');
 ?><!DOCTYPE html>
-<html lang="<?= e($lang) ?>" data-theme="light" class="<?= $lang === 'gu' ? 'gu' : '' ?>">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -37,9 +37,6 @@ $siteName = brand_name();
 <?php if (!empty($page_keywords)): ?><meta name="keywords" content="<?= e($page_keywords) ?>"><?php endif; ?>
 <meta name="author" content="AK Computer, Dwarka">
 <link rel="canonical" href="<?= e($canonical) ?>">
-<link rel="alternate" hreflang="en" href="<?= e($canonical . $sep . 'lang=en') ?>">
-<link rel="alternate" hreflang="gu" href="<?= e($canonical . $sep . 'lang=gu') ?>">
-<link rel="alternate" hreflang="x-default" href="<?= e($canonical) ?>">
 <!-- Open Graph -->
 <meta property="og:site_name" content="<?= e($siteName) ?>">
 <meta property="og:title" content="<?= e($title) ?>">
@@ -47,8 +44,7 @@ $siteName = brand_name();
 <meta property="og:image" content="<?= e($og) ?>">
 <meta property="og:url" content="<?= e($canonical) ?>">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="<?= $lang === 'gu' ? 'gu_IN' : 'en_IN' ?>">
-<meta property="og:locale:alternate" content="<?= $lang === 'gu' ? 'en_IN' : 'gu_IN' ?>">
+<meta property="og:locale" content="en_IN">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<?= e($title) ?>">
@@ -95,7 +91,7 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
 
 
 <?php if ($fest === 'janmashtami'): ?>
-<div class="festival-ribbon text-sm">🦚 જન્માષ્ટમી ઓફર — વાર્ષિક પ્લાન પર ખાસ છૂટ! 🎉</div>
+<div class="festival-ribbon text-sm">🦚 Happy Janmashtami from Krishna Tools! 🎉</div>
 <?php endif; ?>
 
 <header class="sticky top-0 z-40 backdrop-blur bg-[color:var(--card)]/90 border-b" style="border-color:var(--border)">
@@ -118,9 +114,6 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
       <button onclick="ktToggleTheme()" class="btn btn-ghost !px-2" title="Theme" aria-label="Theme">
         <i data-lucide="moon-star" class="w-4 h-4"></i>
       </button>
-      <a href="?lang=<?= $lang === 'gu' ? 'en' : 'gu' ?>" class="btn btn-ghost !px-2 text-sm font-bold" title="Language">
-        <?= $lang === 'gu' ? 'EN' : 'ગુ' ?>
-      </a>
       <?php if ($user): ?>
         <a href="<?= SITE_URL ?>/dashboard.php" class="btn btn-ghost !px-2" title="<?= t('dashboard') ?>"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></a>
         <?php if (is_admin()): ?><a href="<?= SITE_URL ?>/admin/" class="btn btn-ghost !px-2" title="Admin"><i data-lucide="shield" class="w-4 h-4"></i></a><?php endif; ?>

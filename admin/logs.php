@@ -16,9 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['action'] ?? '') === 'clear_errors' && $errFile && is_file($errFile)) {
         if (@file_put_contents($errFile, '') !== false) {
             activity_log((int) current_user()['id'], 'admin_clear_error_log', '');
-            $flash = 'એરર લોગ ખાલી થયો.';
+            $flash = 'Error log cleared.';
         } else {
-            $flash = 'લોગ ખાલી કરવામાં નિષ્ફળ (પરમિશન તપાસો).';
+            $flash = 'Could not clear the log (check permissions).';
         }
     }
 }
@@ -46,7 +46,7 @@ if ($errFile && is_file($errFile)) {
     } catch (Throwable $e) { $errLines = []; }
 }
 
-admin_head('લોગ્સ');
+admin_head('Logs');
 ?>
 <?php if ($flash): ?>
   <div class="kt-card p-3 mb-4 text-sm" style="border-color:var(--gold)"><?= e($flash) ?></div>
@@ -54,34 +54,34 @@ admin_head('લોગ્સ');
 
 <div class="kt-card p-5 mb-5">
   <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-    <h2 class="section-title text-base">એરર લોગ (છેલ્લી 200 લાઇન)</h2>
+    <h2 class="section-title text-base">Error Log (last 200 lines)</h2>
     <?php if ($errLines): ?>
-      <form method="post" onsubmit="return confirm('એરર લોગ ખાલી કરવો છે?');">
+      <form method="post" onsubmit="return confirm('Clear the error log?');">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="clear_errors">
-        <button class="btn btn-ghost text-sm" style="color:#DC2626"><i data-lucide="trash-2" class="w-4 h-4"></i> ક્લિયર</button>
+        <button class="btn btn-ghost text-sm" style="color:#DC2626"><i data-lucide="trash-2" class="w-4 h-4"></i> Clear</button>
       </form>
     <?php endif; ?>
   </div>
   <?php if ($errLines): ?>
     <pre class="text-xs p-3 rounded-lg overflow-auto" style="background:rgba(0,0,0,.06);max-height:400px;white-space:pre-wrap"><?php foreach ($errLines as $line) echo e($line) . "\n"; ?></pre>
   <?php else: ?>
-    <p class="opacity-60 text-sm">એરર લોગ ખાલી છે અથવા મળ્યો નહીં.</p>
+    <p class="opacity-60 text-sm">Error log is empty or not found.</p>
   <?php endif; ?>
 </div>
 
 <div class="kt-card p-5">
-  <h2 class="section-title text-base mb-3">એક્ટિવિટી લોગ (કુલ <?= number_format($actTotal) ?>)</h2>
+  <h2 class="section-title text-base mb-3">Activity Log (total <?= number_format($actTotal) ?>)</h2>
   <div class="overflow-x-auto">
     <table class="kt-table">
-      <thead><tr><th>#</th><th>યુઝર</th><th>ક્રિયા</th><th>વિગત</th><th>IP</th><th>સમય</th></tr></thead>
+      <thead><tr><th>#</th><th>User</th><th>Action</th><th>Details</th><th>IP</th><th>Time</th></tr></thead>
       <tbody>
       <?php if (!$acts): ?>
-        <tr><td colspan="6" class="text-center opacity-60 py-6">કોઈ લોગ નથી.</td></tr>
+        <tr><td colspan="6" class="text-center opacity-60 py-6">No logs.</td></tr>
       <?php else: foreach ($acts as $a): ?>
         <tr>
           <td class="opacity-60"><?= (int) $a['id'] ?></td>
-          <td><?= e($a['uname'] ?? 'ગેસ્ટ') ?></td>
+          <td><?= e($a['uname'] ?? 'Guest') ?></td>
           <td><span class="badge-premium text-xs"><?= e($a['action'] ?? '') ?></span></td>
           <td class="opacity-70 text-xs max-w-[320px] truncate"><?= e($a['details'] ?? '') ?></td>
           <td class="opacity-60 text-xs"><?= e($a['ip'] ?? '') ?></td>

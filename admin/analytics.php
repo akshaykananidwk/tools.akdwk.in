@@ -23,15 +23,16 @@ function an_tool_name(?string $slug): string {
 }
 function an_place(array $r): string {
     $p = array_unique(array_filter([$r['city'] ?? '', $r['country'] ?? ''], fn($x) => $x !== '' && $x !== null));
-    if (in_array('Local', $p, true)) return 'લોકલ નેટવર્ક';
-    return $p ? implode(', ', $p) : 'શોધાઈ રહ્યું છે…';
+    if (in_array('Local', $p, true)) return 'Local network';
+    return $p ? implode(', ', $p) : 'Locating…';
 }
 function an_ago(string $dt): string {
     $s = max(0, time() - strtotime($dt));
-    if ($s < 60) return $s . ' સેકન્ડ';
-    if ($s < 3600) return floor($s / 60) . ' મિનિટ';
-    if ($s < 86400) return floor($s / 3600) . ' કલાક';
-    return floor($s / 86400) . ' દિવસ';
+    if ($s < 60) return $s . ' sec';
+    if ($s < 3600) return floor($s / 60) . ' min';
+    if ($s < 86400) return floor($s / 3600) . ' hr';
+    $n = (int) floor($s / 86400);
+    return $n . ($n === 1 ? ' day' : ' days');
 }
 
 /* ---------- Live JSON (polled every 15 s by the page) ---------- */
@@ -43,7 +44,7 @@ function an_live(): array {
                  ORDER BY lv.last_seen DESC LIMIT 200", [':t' => date('Y-m-d H:i:s', time() - KT_LIVE_WINDOW)]);
     $out = [];
     foreach ($rows as $r) {
-        $out[] = ['who' => $r['uname'] ?: ('મુલાકાતી #' . substr($r['vid'], 0, 6)), 'page' => $r['path'],
+        $out[] = ['who' => $r['uname'] ?: ('Visitor #' . substr($r['vid'], 0, 6)), 'page' => $r['path'],
             'tool' => $r['slug'] ? an_tool_name($r['slug']) : '', 'place' => an_place($r), 'device' => $r['device'] ?: '',
             'since' => an_ago($r['first_seen']), 'seen' => an_ago($r['last_seen'])];
     }
@@ -54,12 +55,12 @@ if (isset($_GET['live'])) { json_out(['ok' => true, 'count' => count($l = an_liv
 /* ---------- Date range ---------- */
 $today = date('Y-m-d');
 $presets = [
-    'today'     => ['આજે', $today, $today],
-    'yesterday' => ['ગઈકાલે', date('Y-m-d', strtotime('-1 day')), date('Y-m-d', strtotime('-1 day'))],
-    '7d'        => ['છેલ્લા 7 દિવસ', date('Y-m-d', strtotime('-6 days')), $today],
-    '30d'       => ['છેલ્લા 30 દિવસ', date('Y-m-d', strtotime('-29 days')), $today],
-    'month'     => ['આ મહિનો', date('Y-m-01'), $today],
-    'lastmonth' => ['ગયો મહિનો', date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('last day of last month'))],
+    'today'     => ['Today', $today, $today],
+    'yesterday' => ['Yesterday', date('Y-m-d', strtotime('-1 day')), date('Y-m-d', strtotime('-1 day'))],
+    '7d'        => ['Last 7 days', date('Y-m-d', strtotime('-6 days')), $today],
+    '30d'       => ['Last 30 days', date('Y-m-d', strtotime('-29 days')), $today],
+    'month'     => ['This month', date('Y-m-01'), $today],
+    'lastmonth' => ['Last month', date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('last day of last month'))],
 ];
 $preset = $_GET['range'] ?? (isset($_GET['from']) ? 'custom' : '7d');
 if (isset($presets[$preset])) { [, $from, $to] = $presets[$preset]; }
@@ -125,8 +126,8 @@ $lastRow  = (string) (scalar("SELECT MAX(created_at) FROM $PV") ?? '');
 $geoPending = (int) (scalar("SELECT COUNT(DISTINCT pv.ip) FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip WHERE g.ip IS NULL AND pv.ip IS NOT NULL") ?? 0);
 
 $fmt = fn($n) => number_format((int) $n);
-$deviceGu = ['mobile' => '📱 મોબાઇલ', 'desktop' => '💻 કમ્પ્યુટર', 'tablet' => '📲 ટેબ્લેટ', '' => '—'];
-$langGu = ['gu' => 'ગુજરાતી', 'en' => 'English', '' => '—'];
+$deviceGu = ['mobile' => '📱 Mobile', 'desktop' => '💻 Desktop', 'tablet' => '📲 Tablet', '' => '—'];
+$langGu = ['gu' => 'Gujarati', 'en' => 'English', '' => '—'];
 $pct = fn($a, $b) => $b ? round(($a - $b) / $b * 100) : null;
 
 admin_head('Live Analytics');
@@ -144,12 +145,12 @@ admin_head('Live Analytics');
 <!-- Tracking status -->
 <div class="kt-card p-4 mb-5 text-sm flex flex-wrap gap-x-6 gap-y-1 items-center">
   <?php if ($firstRow): ?>
-    <span>✅ ટ્રેકિંગ ચાલુ છે. ડેટા <b><?= e(date('d M Y, H:i', strtotime($firstRow))) ?></b> થી ગણાય છે.</span>
-    <span class="opacity-70">છેલ્લી મુલાકાત: <?= e(an_ago($lastRow)) ?> પહેલાં</span>
+    <span>✅ Tracking is on. Data counted since <b><?= e(date('d M Y, H:i', strtotime($firstRow))) ?></b>.</span>
+    <span class="opacity-70">Last visit: <?= e(an_ago($lastRow)) ?> ago</span>
   <?php else: ?>
-    <span>⏳ હજી કોઈ મુલાકાત નોંધાઈ નથી. ચકાસવા માટે, admin તરીકે લોગિન <b>ન</b> હોય એવા browser કે ફોનમાં (દા.ત. Incognito) વેબસાઈટ ખોલો. 15 સેકન્ડમાં અહીં "અત્યારે લાઇવ" માં દેખાશે.</span>
+    <span>⏳ No visits recorded yet. To test, open the website in a browser or phone where you are <b>not</b> logged in as admin (e.g. Incognito). It will show under "Live now" within 15 seconds.</span>
   <?php endif; ?>
-  <?php if ($lastErr): ?><span class="text-red-600">⚠️ છેલ્લી ટ્રેકિંગ ભૂલ: <span class="font-mono text-xs"><?= e($lastErr) ?></span></span><?php endif; ?>
+  <?php if ($lastErr): ?><span class="text-red-600">⚠️ Last tracking error: <span class="font-mono text-xs"><?= e($lastErr) ?></span></span><?php endif; ?>
 </div>
 
 <!-- Filter -->
@@ -158,45 +159,45 @@ admin_head('Live Analytics');
     <a href="?range=<?= $k ?>" class="btn <?= $preset === $k ? 'btn-primary' : 'btn-ghost' ?> !py-1.5 text-sm"><?= e($label) ?></a>
   <?php endforeach; ?>
   <div class="flex items-end gap-2 ml-auto flex-wrap">
-    <label class="text-xs">થી<input type="date" name="from" value="<?= e($from) ?>" class="kt-input !py-1.5"></label>
-    <label class="text-xs">સુધી<input type="date" name="to" value="<?= e($to) ?>" class="kt-input !py-1.5"></label>
-    <button class="btn btn-cta !py-1.5 text-sm">ફિલ્ટર</button>
+    <label class="text-xs">From<input type="date" name="from" value="<?= e($from) ?>" class="kt-input !py-1.5"></label>
+    <label class="text-xs">To<input type="date" name="to" value="<?= e($to) ?>" class="kt-input !py-1.5"></label>
+    <button class="btn btn-cta !py-1.5 text-sm">Filter</button>
   </div>
 </form>
 
 <!-- KPIs -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
   <div class="kt-card kpi p-5 an-kpi border-2" style="border-color:#16a34a">
-    <div class="text-sm opacity-70 flex items-center gap-2"><span class="an-live-dot"></span> અત્યારે લાઇવ</div>
-    <b id="anLiveCount"><?= count($live) ?></b><div class="text-xs opacity-60">છેલ્લી <?= KT_LIVE_WINDOW ?> સેકન્ડમાં સક્રિય</div>
+    <div class="text-sm opacity-70 flex items-center gap-2"><span class="an-live-dot"></span> Live now</div>
+    <b id="anLiveCount"><?= count($live) ?></b><div class="text-xs opacity-60">Active in the last <?= KT_LIVE_WINDOW ?> sec</div>
   </div>
-  <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">આજના મુલાકાતીઓ</div><b><?= $fmt($kToday['visitors']) ?></b>
-    <div class="text-xs opacity-60"><?= $fmt($kToday['views']) ?> વ્યૂ · <?= $fmt($kToday['uses']) ?> ટૂલ વપરાશ
+  <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">Visitors today</div><b><?= $fmt($kToday['visitors']) ?></b>
+    <div class="text-xs opacity-60"><?= $fmt($kToday['views']) ?> views · <?= $fmt($kToday['uses']) ?> tool uses
       <?php if (($p = $pct($kToday['visitors'], $kYest['visitors'])) !== null): ?> · <span style="color:<?= $p >= 0 ? '#16a34a' : '#dc2626' ?>"><?= $p >= 0 ? '▲' : '▼' ?><?= abs($p) ?>%</span><?php endif; ?></div></div>
-  <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">ગઈકાલે</div><b><?= $fmt($kYest['visitors']) ?></b>
-    <div class="text-xs opacity-60"><?= $fmt($kYest['views']) ?> વ્યૂ · <?= $fmt($kYest['uses']) ?> ટૂલ વપરાશ</div></div>
-  <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">આ મહિને</div><b><?= $fmt($kMonth['visitors']) ?></b>
-    <div class="text-xs opacity-60"><?= $fmt($kMonth['views']) ?> વ્યૂ · <?= $fmt($kMonth['uses']) ?> ટૂલ વપરાશ</div></div>
+  <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">Yesterday</div><b><?= $fmt($kYest['visitors']) ?></b>
+    <div class="text-xs opacity-60"><?= $fmt($kYest['views']) ?> views · <?= $fmt($kYest['uses']) ?> tool uses</div></div>
+  <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">This month</div><b><?= $fmt($kMonth['visitors']) ?></b>
+    <div class="text-xs opacity-60"><?= $fmt($kMonth['views']) ?> views · <?= $fmt($kMonth['uses']) ?> tool uses</div></div>
 </div>
 
 <div class="kt-card p-4 mb-5 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-  <div><span class="opacity-60">પસંદ કરેલ સમય (<?= e(date('d M Y', strtotime($from))) ?> – <?= e(date('d M Y', strtotime($to))) ?>):</span></div>
-  <div>મુલાકાતીઓ <b><?= $fmt($kRange['visitors']) ?></b></div>
-  <div>નવા મુલાકાતીઓ <b><?= $fmt($newVis) ?></b></div>
-  <div>પેજ વ્યૂ <b><?= $fmt($kRange['views']) ?></b></div>
-  <div>ટૂલ વપરાશ <b><?= $fmt($kRange['uses']) ?></b></div>
-  <div>વ્યૂ / મુલાકાતી <b><?= $kRange['visitors'] ? number_format($kRange['views'] / $kRange['visitors'], 1) : '0' ?></b></div>
-  <div class="opacity-60">શરૂઆતથી કુલ મુલાકાતીઓ <b><?= $fmt($kAll) ?></b></div>
+  <div><span class="opacity-60">Selected period (<?= e(date('d M Y', strtotime($from))) ?> – <?= e(date('d M Y', strtotime($to))) ?>):</span></div>
+  <div>Visitors <b><?= $fmt($kRange['visitors']) ?></b></div>
+  <div>New visitors <b><?= $fmt($newVis) ?></b></div>
+  <div>Page views <b><?= $fmt($kRange['views']) ?></b></div>
+  <div>Tool uses <b><?= $fmt($kRange['uses']) ?></b></div>
+  <div>Views / visitor <b><?= $kRange['visitors'] ? number_format($kRange['views'] / $kRange['visitors'], 1) : '0' ?></b></div>
+  <div class="opacity-60">All-time visitors <b><?= $fmt($kAll) ?></b></div>
 </div>
 
 <!-- Live list -->
 <div class="kt-card p-5 mb-5">
   <div class="flex items-center gap-2 mb-3 flex-wrap">
-    <h2 class="section-title text-base m-0"><span class="an-live-dot"></span> અત્યારે વેબસાઈટ પર કોણ છે</h2>
-    <span class="text-xs opacity-60 ml-auto" id="anLiveAt">દર 15 સેકન્ડે આપોઆપ અપડેટ</span>
+    <h2 class="section-title text-base m-0"><span class="an-live-dot"></span> Who is on the site right now</h2>
+    <span class="text-xs opacity-60 ml-auto" id="anLiveAt">Auto-updates every 15 sec</span>
   </div>
   <div class="overflow-x-auto an-scroll">
-    <table class="kt-table"><thead><tr><th>મુલાકાતી</th><th>અત્યારનું પેજ / ટૂલ</th><th>શહેર</th><th>ડિવાઇસ</th><th>સાઇટ પર</th><th>છેલ્લે સક્રિય</th></tr></thead>
+    <table class="kt-table"><thead><tr><th>Visitor</th><th>Current page / tool</th><th>City</th><th>Device</th><th>On site</th><th>Last active</th></tr></thead>
       <tbody id="anLiveBody"></tbody></table>
   </div>
 </div>
@@ -204,11 +205,11 @@ admin_head('Live Analytics');
 <!-- Charts -->
 <div class="grid lg:grid-cols-3 gap-5 mb-5">
   <div class="kt-card p-5 lg:col-span-2 min-w-0">
-    <h2 class="section-title text-base mb-3">દિવસ પ્રમાણે મુલાકાતીઓ અને વ્યૂ</h2>
+    <h2 class="section-title text-base mb-3">Visitors and views by day</h2>
     <canvas id="anDaily" height="120"></canvas>
   </div>
   <div class="kt-card p-5 min-w-0">
-    <h2 class="section-title text-base mb-3">કલાક પ્રમાણે વ્યૂ</h2>
+    <h2 class="section-title text-base mb-3">Views by hour</h2>
     <canvas id="anHourly" height="180"></canvas>
   </div>
 </div>
@@ -223,7 +224,7 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
     echo '<div class="overflow-x-auto an-scroll"><table class="kt-table"><thead><tr>';
     foreach ($heads as $i => $h) echo '<th class="' . ($i ? 'num' : '') . '">' . e($h) . '</th>';
     echo '</tr></thead><tbody>';
-    if (!$rows) echo '<tr><td colspan="' . count($heads) . '" class="opacity-60">આ સમયમાં હજી ડેટા નથી.</td></tr>';
+    if (!$rows) echo '<tr><td colspan="' . count($heads) . '" class="opacity-60">No data for this period yet.</td></tr>';
     foreach ($rows as $r) {
         $c = array_values($cells($r));
         echo '<tr><td><div>' . $c[0] . '</div><div class="an-bar mt-1" style="width:' . max(2, round($num($c[1]) / $max * 100)) . '%"></div></td>';
@@ -235,50 +236,50 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
 ?>
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
-  <?php an_table('શહેર પ્રમાણે મુલાકાતીઓ', ['શહેર', 'મુલાકાતીઓ', 'વ્યૂ'], $cities,
-      fn($r) => [e($r['city'] !== '' ? $r['city'] . ($r['region'] ? ', ' . $r['region'] : '') : 'શોધાઈ રહ્યું છે…') . ' <span class="opacity-50 text-xs">' . e($r['country']) . '</span>', $fmt($r['visitors']), $fmt($r['views'])],
-      $geoPending ? "{$geoPending} નવા IP નું શહેર હજી શોધવાનું બાકી છે (દર 5 મિનિટે આપોઆપ શોધાય છે)." : ''); ?>
-  <?php an_table('દેશ', ['દેશ', 'મુલાકાતીઓ'], $countries, fn($r) => [e($r['country'] ?: 'શોધાઈ રહ્યું છે…'), $fmt($r['visitors'])]); ?>
+  <?php an_table('Visitors by city', ['City', 'Visitors', 'Views'], $cities,
+      fn($r) => [e($r['city'] !== '' ? $r['city'] . ($r['region'] ? ', ' . $r['region'] : '') : 'Locating…') . ' <span class="opacity-50 text-xs">' . e($r['country']) . '</span>', $fmt($r['visitors']), $fmt($r['views'])],
+      $geoPending ? "City lookup pending for {$geoPending} new IPs (runs automatically every 5 minutes)." : ''); ?>
+  <?php an_table('Countries', ['Country', 'Visitors'], $countries, fn($r) => [e($r['country'] ?: 'Locating…'), $fmt($r['visitors'])]); ?>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
-  <?php an_table('સૌથી વધુ વપરાતાં ટૂલ્સ (ખરેખર વાપર્યાં)', ['ટૂલ', 'વપરાશ', 'યુઝર'], $toolUses,
+  <?php an_table('Most used tools (actual uses)', ['Tool', 'Uses', 'Users'], $toolUses,
       fn($r) => ['<a class="hover:underline" target="_blank" href="' . SITE_URL . '/tool/' . e($r['slug']) . '">' . e(an_tool_name($r['slug'])) . '</a>', $fmt($r['uses']), $fmt($r['users'])],
-      'ગણતરી કરી, ફાઇલ ડાઉનલોડ કરી કે મેસેજ બનાવ્યો હોય ત્યારે ગણાય.'); ?>
-  <?php an_table('સૌથી વધુ ખોલાયેલાં ટૂલ પેજ', ['ટૂલ', 'વ્યૂ', 'મુલાકાતીઓ'], $toolViews,
+      'Counted when a calculation is run, a file is downloaded or a message is generated.'); ?>
+  <?php an_table('Most opened tool pages', ['Tool', 'Views', 'Visitors'], $toolViews,
       fn($r) => ['<a class="hover:underline" target="_blank" href="' . SITE_URL . '/tool/' . e($r['slug']) . '">' . e(an_tool_name($r['slug'])) . '</a>', $fmt($r['views']), $fmt($r['visitors'])]); ?>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
-  <?php an_table('સૌથી વધુ જોવાયેલાં પેજ', ['પેજ', 'વ્યૂ', 'મુલાકાતીઓ'], $pages,
+  <?php an_table('Most viewed pages', ['Page', 'Views', 'Visitors'], $pages,
       fn($r) => ['<a class="hover:underline font-mono text-xs break-all" target="_blank" href="' . SITE_URL . e($r['path']) . '">' . e($r['path']) . '</a>', $fmt($r['views']), $fmt($r['visitors'])]); ?>
-  <?php an_table('મુલાકાતીઓ ક્યાંથી આવ્યા', ['સ્રોત', 'વ્યૂ'], $refs,
-      fn($r) => [e($r['host'] ?: 'સીધા / બુકમાર્ક / એપ'), $fmt($r['views'])]); ?>
+  <?php an_table('Traffic sources', ['Source', 'Views'], $refs,
+      fn($r) => [e($r['host'] ?: 'Direct / bookmark / app'), $fmt($r['views'])]); ?>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
-  <?php an_table('ડિવાઇસ', ['ડિવાઇસ', 'મુલાકાતીઓ'], $devices, fn($r) => [$deviceGu[$r['device']] ?? e($r['device']), $fmt($r['visitors'])]); ?>
-  <?php an_table('ભાષા', ['ભાષા', 'વ્યૂ'], $langs, fn($r) => [$langGu[$r['lang']] ?? e($r['lang']), $fmt($r['views'])]); ?>
+  <?php an_table('Devices', ['Device', 'Visitors'], $devices, fn($r) => [$deviceGu[$r['device']] ?? e($r['device']), $fmt($r['visitors'])]); ?>
+  <?php an_table('Languages', ['Language', 'Views'], $langs, fn($r) => [$langGu[$r['lang']] ?? e($r['lang']), $fmt($r['views'])]); ?>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
-  <?php an_table('સૌથી વધુ ટૂલ વાપરતા લોગિન યુઝર', ['યુઝર', 'ટૂલ વપરાશ', 'વ્યૂ', 'છેલ્લે'], $topUsers,
-      fn($r) => ['<a class="hover:underline" href="' . SITE_URL . '/admin/users.php?q=' . urlencode($r['email']) . '">' . e($r['name']) . '</a> <span class="opacity-50 text-xs">' . e($r['email']) . '</span>', $fmt($r['uses']), $fmt($r['views']), e(an_ago($r['last'])) . ' પહેલાં'],
-      'ફક્ત લોગિન કરેલા યુઝર. બાકીના મુલાકાતીઓ બાજુના ટેબલમાં છે.'); ?>
-  <?php an_table('સૌથી સક્રિય મુલાકાતીઓ (લોગિન વગર પણ)', ['મુલાકાતી', 'ટૂલ વપરાશ', 'વ્યૂ', 'દિવસ'], $topVisitors,
+  <?php an_table('Top logged-in users by tool use', ['User', 'Tool uses', 'Views', 'Last seen'], $topUsers,
+      fn($r) => ['<a class="hover:underline" href="' . SITE_URL . '/admin/users.php?q=' . urlencode($r['email']) . '">' . e($r['name']) . '</a> <span class="opacity-50 text-xs">' . e($r['email']) . '</span>', $fmt($r['uses']), $fmt($r['views']), e(an_ago($r['last'])) . ' ago'],
+      'Logged-in users only. Other visitors are in the next table.'); ?>
+  <?php an_table('Most active visitors (incl. not logged in)', ['Visitor', 'Tool uses', 'Views', 'Days'], $topVisitors,
       fn($r) => ['#' . e(substr($r['vid'], 0, 6)) . ' <span class="opacity-60 text-xs">' . e(an_place($r)) . ' · ' . ($deviceGu[$r['device'] ?? ''] ?? '') . '</span>', $fmt($r['uses']), $fmt($r['views']), $fmt($r['days'])]); ?>
 </div>
 
 <div class="kt-card p-5 mb-5">
-  <h2 class="section-title text-base mb-3">તાજેતરની પ્રવૃત્તિ</h2>
+  <h2 class="section-title text-base mb-3">Recent activity</h2>
   <div class="overflow-x-auto an-scroll">
-    <table class="kt-table"><thead><tr><th>સમય</th><th>મુલાકાતી</th><th>શું કર્યું</th><th>શહેર</th><th>ડિવાઇસ</th></tr></thead><tbody>
-    <?php if (!$recent): ?><tr><td colspan="5" class="opacity-60">આ સમયમાં હજી ડેટા નથી.</td></tr><?php endif; ?>
+    <table class="kt-table"><thead><tr><th>Time</th><th>Visitor</th><th>Action</th><th>City</th><th>Device</th></tr></thead><tbody>
+    <?php if (!$recent): ?><tr><td colspan="5" class="opacity-60">No data for this period yet.</td></tr><?php endif; ?>
     <?php foreach ($recent as $r): ?>
       <tr>
         <td class="whitespace-nowrap text-xs"><?= e(date('d M, H:i:s', strtotime($r['created_at']))) ?></td>
         <td><?= e($r['uname'] ?: '#' . substr($r['vid'], 0, 6)) ?></td>
-        <td><?= $r['kind'] === 'use' ? '🛠️ વાપર્યું: <b>' . e(an_tool_name($r['slug'])) . '</b>' : '👁️ ' . ($r['slug'] && str_starts_with($r['path'], '/tool/') ? e(an_tool_name($r['slug'])) : '<span class="font-mono text-xs">' . e($r['path']) . '</span>') ?></td>
+        <td><?= $r['kind'] === 'use' ? '🛠️ Used: <b>' . e(an_tool_name($r['slug'])) . '</b>' : '👁️ ' . ($r['slug'] && str_starts_with($r['path'], '/tool/') ? e(an_tool_name($r['slug'])) : '<span class="font-mono text-xs">' . e($r['path']) . '</span>') ?></td>
         <td><?= e(an_place($r)) ?></td>
         <td><?= $deviceGu[$r['device'] ?? ''] ?? '' ?></td>
       </tr>
@@ -287,7 +288,7 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
   </div>
 </div>
 
-<p class="text-xs opacity-60 mb-6">નોંધ: મુલાકાતીને તેના browser માં રાખેલા random ID થી ઓળખાય છે. એક વ્યક્તિ બે ડિવાઇસ કે browser વાપરે તો બે મુલાકાતી ગણાય. Admin તરીકે લોગિન હો ત્યારે તમારી પોતાની મુલાકાત ગણાતી નથી. Search engine bots ગણાતા નથી. શહેર IP પરથી અંદાજે શોધાય છે; મોબાઇલ નેટવર્ક પર ક્યારેક નજીકનું મોટું શહેર બતાવે.</p>
+<p class="text-xs opacity-60 mb-6">Note: visitors are identified by a random ID stored in their browser, so one person using two devices or browsers counts as two visitors. Your own visits are not counted while you are logged in as admin. Search engine bots are not counted. City is estimated from the IP; on mobile networks it may show a nearby larger city.</p>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -297,12 +298,12 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
   if (window.Chart) {
     var labels = Object.keys(daily).map(function (d) { var p = d.split('-'); return p[2] + '/' + p[1]; });
     new Chart(document.getElementById('anDaily'), { type: 'line', data: { labels: labels, datasets: [
-      { label: 'મુલાકાતીઓ', data: Object.values(daily).map(function (x) { return x.v; }), borderColor: teal, backgroundColor: 'rgba(14,116,144,.12)', fill: true, tension: .3, borderWidth: 2, pointRadius: 2 },
-      { label: 'પેજ વ્યૂ', data: Object.values(daily).map(function (x) { return x.p; }), borderColor: saffron, backgroundColor: 'transparent', tension: .3, borderWidth: 2, pointRadius: 2 },
-      { label: 'ટૂલ વપરાશ', data: Object.values(daily).map(function (x) { return x.u; }), borderColor: '#7C3AED', backgroundColor: 'transparent', borderDash: [4, 4], tension: .3, borderWidth: 2, pointRadius: 0 }
+      { label: 'Visitors', data: Object.values(daily).map(function (x) { return x.v; }), borderColor: teal, backgroundColor: 'rgba(14,116,144,.12)', fill: true, tension: .3, borderWidth: 2, pointRadius: 2 },
+      { label: 'Page views', data: Object.values(daily).map(function (x) { return x.p; }), borderColor: saffron, backgroundColor: 'transparent', tension: .3, borderWidth: 2, pointRadius: 2 },
+      { label: 'Tool uses', data: Object.values(daily).map(function (x) { return x.u; }), borderColor: '#7C3AED', backgroundColor: 'transparent', borderDash: [4, 4], tension: .3, borderWidth: 2, pointRadius: 0 }
     ] }, options: { responsive: true, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
     new Chart(document.getElementById('anHourly'), { type: 'bar', data: { labels: hourly.map(function (_, h) { return h; }), datasets: [
-      { label: 'વ્યૂ', data: hourly, backgroundColor: 'rgba(14,116,144,.7)', borderRadius: 4 } ] },
+      { label: 'Views', data: hourly, backgroundColor: 'rgba(14,116,144,.7)', borderRadius: 4 } ] },
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
   }
 
@@ -314,14 +315,14 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
     cnt.textContent = rows.length;
     body.innerHTML = rows.length ? rows.map(function (r) {
       return '<tr><td>' + esc(r.who) + '</td><td>' + (r.tool ? '<b>' + esc(r.tool) + '</b><br>' : '') + '<span class="font-mono text-xs opacity-70 break-all">' + esc(r.page) + '</span></td><td>' +
-        esc(r.place) + '</td><td>' + (dev[r.device] || '') + '</td><td class="whitespace-nowrap">' + esc(r.since) + '</td><td class="whitespace-nowrap">' + esc(r.seen) + ' પહેલાં</td></tr>';
-    }).join('') : '<tr><td colspan="6" class="opacity-60">અત્યારે કોઈ લાઇવ નથી.</td></tr>';
+        esc(r.place) + '</td><td>' + (dev[r.device] || '') + '</td><td class="whitespace-nowrap">' + esc(r.since) + '</td><td class="whitespace-nowrap">' + esc(r.seen) + ' ago</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="opacity-60">No one is live right now.</td></tr>';
   }
   paint(<?= json_encode($live, JSON_UNESCAPED_UNICODE) ?>);
   setInterval(function () {
     if (document.hidden) return;
     fetch('?live=1', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); })
-      .then(function (j) { if (j.ok) { paint(j.rows); at.textContent = 'છેલ્લું અપડેટ ' + j.at; } }).catch(function () {});
+      .then(function (j) { if (j.ok) { paint(j.rows); at.textContent = 'Last updated ' + j.at; } }).catch(function () {});
   }, 15000);
 })();
 </script>

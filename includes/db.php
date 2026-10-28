@@ -42,7 +42,7 @@ function db(): PDO {
             @error_log('[' . date('c') . '] DB connect failed: ' . $e->getMessage() . "\n", 3, KT_LOGS . '/error.log');
         }
         http_response_code(500);
-        exit('ડેટાબેઝ કનેક્શન નિષ્ફળ. કૃપા કરી પછીથી પ્રયત્ન કરો. / Database connection failed.');
+        exit('Database connection failed. Please try again later.');
     }
     return $pdo;
 }

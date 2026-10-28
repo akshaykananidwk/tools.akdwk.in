@@ -5,7 +5,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 $en = current_lang() === 'en';
 $posts = all("SELECT * FROM " . tbl('blog_posts') . " WHERE is_published = 1 ORDER BY created_at DESC, id DESC");
 
-$page_title = t('blog') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('blog') . ' — ' . brand_name();
 $page_desc  = $en ? 'Guides and tips on tools, CCTV, PDF, images and more.' : 'ટૂલ્સ, CCTV, PDF, ઇમેજ અને વધુ પર માર્ગદર્શિકા અને ટિપ્સ.';
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],
@@ -26,7 +26,7 @@ require __DIR__ . '/../includes/header.php';
           <?php endif; ?>
           <div class="text-xs opacity-60 mb-1"><?= $post['created_at'] ? e(date('d M Y', strtotime($post['created_at']))) : '' ?></div>
           <h2 class="font-bold text-lg leading-snug mb-2"><?= e(loc($post, 'title')) ?></h2>
-          <p class="text-sm opacity-70 line-clamp-3"><?= e($post['meta_desc']) ?></p>
+          <p class="text-sm opacity-70 line-clamp-3"><?= e(mb_substr(trim(strip_tags(loc($post, 'content'))), 0, 180)) ?></p>
           <span class="text-sm text-[color:var(--peacock-teal)] mt-3 inline-flex items-center gap-1">
             <?= $en ? 'Read more' : 'વધુ વાંચો' ?> <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </span>

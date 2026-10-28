@@ -14,7 +14,7 @@ $subs = all("SELECT s.*, p.name_gu, p.name_en FROM " . tbl('subscriptions') . " 
              LEFT JOIN " . tbl('plans') . " p ON p.id = s.plan_id
              WHERE s.user_id = :u ORDER BY s.id DESC", [':u' => $user['id']]);
 
-$page_title = ($en ? 'Billing' : 'બિલિંગ') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = ($en ? 'Billing' : 'બિલિંગ') . ' — ' . brand_name();
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],
     ['label' => t('dashboard'), 'url' => SITE_URL . '/dashboard.php'],

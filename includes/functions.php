@@ -57,13 +57,8 @@ function set_setting(string $key, $value): void {
 
 /* ── i18n ────────────────────────────────────────────────── */
 function current_lang(): string {
-    kt_session_start();
-    if (isset($_GET['lang']) && in_array($_GET['lang'], ['gu', 'en'], true)) {
-        $_SESSION['lang'] = $_GET['lang'];
-    }
-    // Default language is admin-configurable (Settings → default_lang); English
-    // by default. A visitor's toggle choice (session) always wins.
-    return $_SESSION['lang'] ?? setting('default_lang', (defined('DEFAULT_LANG') ? DEFAULT_LANG : 'en'));
+    // The whole site (public pages and admin) runs in English only.
+    return 'en';
 }
 
 function lang_pack(): array {
@@ -99,8 +94,13 @@ function asset_ver(): string {
 
 /** The brand/site name in the current language (English default: "Krishna Tools"). */
 function brand_name(): string {
-    if (current_lang() === 'en') return setting('site_name_en', 'Krishna Tools');
-    return setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+    return setting('site_name_en', 'Krishna Tools');
+}
+
+/** English-only site: a stored value written in Gujarati script is replaced by $fallback. */
+function kt_en_text(?string $value, string $fallback = ''): string {
+    $value = (string) $value;
+    return preg_match('/[\x{0A80}-\x{0AFF}]/u', $value) ? $fallback : $value;
 }
 
 /** Pick the language-appropriate field from a row with _gu/_en variants. */

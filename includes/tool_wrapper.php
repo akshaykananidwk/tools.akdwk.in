@@ -82,8 +82,8 @@ function render_tool_page(string $slug): void {
 
     $en = current_lang() === 'en';
     $page_title = $en
-        ? $name . ' — Free Online Tool | ' . setting('site_name', 'Krishna Tools')
-        : $name . ' — ફ્રી ઓનલાઇન ટૂલ | ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+        ? $name . ' — Free Online Tool | ' . brand_name()
+        : $name . ' — ફ્રી ઓનલાઇન ટૂલ | ' . brand_name();
     $page_desc  = $desc . ($en ? ' Fast, free and secure — works in your browser. By AK Computer, Dwarka.' : ' ઝડપી, ફ્રી અને સુરક્ષિત.');
     $page_canonical = SITE_URL . '/tool/' . $tool['slug'];
     $page_keywords = $tool['name_en'] . ', ' . $tool['slug'] . ', online tool, free, ' . $tool['cat'] . ' tools';
@@ -213,11 +213,11 @@ function render_tool_page(string $slug): void {
 
 function render_tool_404(): void {
     http_response_code(404);
-    $page_title = '404 — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+    $page_title = '404 — ' . brand_name();
     require __DIR__ . '/header.php';
     echo '<div class="kt-card p-10 text-center mt-10 max-w-lg mx-auto">
       <div class="text-6xl mb-3">🦚</div>
-      <h1 class="text-2xl font-bold mb-2">ટૂલ મળ્યું નહીં</h1>
+      <h1 class="text-2xl font-bold mb-2">Tool not found</h1>
       <p class="opacity-70 mb-5">This tool was not found.</p>
       <a href="' . SITE_URL . '/" class="btn btn-primary">' . t('home') . '</a></div>';
     require __DIR__ . '/footer.php';

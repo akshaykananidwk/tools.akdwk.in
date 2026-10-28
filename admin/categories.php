@@ -23,13 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'color'      => $color,
             ], ['id' => $cid]);
             activity_log((int) current_user()['id'], 'admin_category_update', 'category #' . $cid);
-            $flash = 'કેટેગરી સેવ થઈ.';
+            $flash = 'Category saved.';
         } else {
-            $flash = 'કેટેગરી મળી નહીં.';
+            $flash = 'Category not found.';
         }
     } catch (Throwable $e) {
         kt_error_log('admin categories: ' . $e->getMessage());
-        $flash = 'સેવ કરવામાં ભૂલ આવી.';
+        $flash = 'Could not save. Please try again.';
     }
 }
 
@@ -37,7 +37,7 @@ $cats = [];
 try { $cats = all("SELECT * FROM " . tbl('categories') . " ORDER BY sort_order ASC, id ASC"); }
 catch (Throwable $e) { kt_error_log('admin categories list: ' . $e->getMessage()); }
 
-admin_head('કેટેગરી');
+admin_head('Categories');
 ?>
 <?php if ($flash): ?>
   <div class="kt-card p-3 mb-4 text-sm" style="border-color:var(--gold)"><?= e($flash) ?></div>
@@ -45,7 +45,7 @@ admin_head('કેટેગરી');
 
 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 <?php if (!$cats): ?>
-  <div class="kt-card p-6 text-center opacity-60">કોઈ કેટેગરી નથી.</div>
+  <div class="kt-card p-6 text-center opacity-60">No categories yet.</div>
 <?php else: foreach ($cats as $c): ?>
   <form method="post" class="kt-card p-5 space-y-3">
     <?= csrf_field() ?>
@@ -57,13 +57,13 @@ admin_head('કેટેગરી');
       <h2 class="section-title text-base"><?= e(loc($c, 'name')) ?></h2>
       <span class="text-xs opacity-60 ms-auto">#<?= (int) $c['id'] ?></span>
     </div>
-    <div><label class="kt-label text-xs">નામ (ગુ)</label><input name="name_gu" class="kt-input !py-1.5" value="<?= e($c['name_gu']) ?>"></div>
+    <input type="hidden" name="name_gu" value="<?= e($c['name_gu']) ?>">
     <div><label class="kt-label text-xs">Name (EN)</label><input name="name_en" class="kt-input !py-1.5" value="<?= e($c['name_en']) ?>"></div>
     <div class="grid grid-cols-2 gap-2">
-      <div><label class="kt-label text-xs">ક્રમ</label><input name="sort_order" type="number" class="kt-input !py-1.5" value="<?= (int) $c['sort_order'] ?>"></div>
-      <div><label class="kt-label text-xs">કલર (hex)</label><input name="color" class="kt-input !py-1.5" value="<?= e($c['color'] ?? '') ?>" placeholder="#1E3A8A"></div>
+      <div><label class="kt-label text-xs">Order</label><input name="sort_order" type="number" class="kt-input !py-1.5" value="<?= (int) $c['sort_order'] ?>"></div>
+      <div><label class="kt-label text-xs">Color (hex)</label><input name="color" class="kt-input !py-1.5" value="<?= e($c['color'] ?? '') ?>" placeholder="#1E3A8A"></div>
     </div>
-    <button class="btn btn-primary w-full justify-center"><i data-lucide="save" class="w-4 h-4"></i> સેવ કરો</button>
+    <button class="btn btn-primary w-full justify-center"><i data-lucide="save" class="w-4 h-4"></i> Save</button>
   </form>
 <?php endforeach; endif; ?>
 </div>

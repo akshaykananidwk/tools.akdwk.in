@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$page_title = t('forgot_password') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('forgot_password') . ' — ' . brand_name();
 require __DIR__ . '/includes/header.php';
 ?>
 <div class="max-w-md mx-auto mt-8">

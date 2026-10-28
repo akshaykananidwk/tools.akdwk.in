@@ -34,9 +34,9 @@ function admin_nav_links(): array {
  */
 function admin_head(string $title): void {
     $current = basename($_SERVER['SCRIPT_NAME'] ?? 'index.php');
-    $siteName = setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+    $siteName = brand_name();
     ?><!DOCTYPE html>
-<html lang="gu" data-theme="light" class="gu">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -97,8 +97,8 @@ function admin_head(string $title): void {
         </a>
       <?php endforeach; ?>
       <div class="my-2 mx-4 border-t border-white/10"></div>
-      <a href="<?= SITE_URL ?>/" class="admin-link"><i data-lucide="external-link" class="w-[18px] h-[18px]"></i><span>સાઇટ જુઓ</span></a>
-      <a href="<?= SITE_URL ?>/logout.php" class="admin-link"><i data-lucide="log-out" class="w-[18px] h-[18px]"></i><span>લોગઆઉટ</span></a>
+      <a href="<?= SITE_URL ?>/" class="admin-link"><i data-lucide="external-link" class="w-[18px] h-[18px]"></i><span>View site</span></a>
+      <a href="<?= SITE_URL ?>/logout.php" class="admin-link"><i data-lucide="log-out" class="w-[18px] h-[18px]"></i><span>Logout</span></a>
     </nav>
   </aside>
   <div class="admin-scrim" id="adminScrim" onclick="ktAdminMenu(false)"></div>
@@ -168,7 +168,7 @@ function admin_pager(int $page, int $total, int $perPage): string {
     $prev = max(1, $page - 1);
     $next = min($pages, $page + 1);
     $out .= '<a class="btn btn-ghost !py-1 !px-3" href="?' . e(admin_qs(['page' => $prev])) . '">‹</a>';
-    $out .= '<span class="opacity-70">પાનું ' . $page . ' / ' . $pages . '</span>';
+    $out .= '<span class="opacity-70">Page ' . $page . ' / ' . $pages . '</span>';
     $out .= '<a class="btn btn-ghost !py-1 !px-3" href="?' . e(admin_qs(['page' => $next])) . '">›</a>';
     $out .= '</div>';
     return $out;

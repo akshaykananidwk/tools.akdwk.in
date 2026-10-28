@@ -18,7 +18,7 @@ $cnTools = stripos($cn, 'tools') !== false || stripos($cn, 'ટૂલ્સ') !=
 $sample = implode(', ', array_map(fn($t) => loc($t, 'name'), array_slice($tools, 0, 4)));
 $page_title = $en
     ? "{$cnTools} — {$n} Free Online Tools | " . brand_name()
-    : "{$cnTools} — {$n} ફ્રી ઓનલાઇન ટૂલ્સ | " . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+    : "{$cnTools} — {$n} ફ્રી ઓનલાઇન ટૂલ્સ | " . brand_name();
 $page_desc = $en
     ? "{$n} free {$cnTools} in Gujarati and English: {$sample} and more. No login, works on mobile."
     : "{$n} ફ્રી {$cnTools} ગુજરાતી અને English માં: {$sample} અને વધુ. લોગિન વગર, મોબાઇલ પર ચાલે.";

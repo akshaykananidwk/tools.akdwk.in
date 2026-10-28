@@ -138,7 +138,7 @@ $desc = $plan ? loc($plan, 'name') . ' ' . ($en ? 'Plan' : 'પ્લાન') : 
   </div>
 
   <div class="footer">
-    🦚 <?= e(setting('site_name', 'કૃષ્ણા ટૂલ્સ')) ?> · <?= e($shopName) ?>, દ્વારકા · <?= $en ? 'Thank you!' : 'આભાર! હરે કૃષ્ણ.' ?>
+    🦚 <?= e(brand_name()) ?> · <?= e($shopName) ?>, Dwarka · <?= $en ? 'Thank you!' : 'આભાર! હરે કૃષ્ણ.' ?>
   </div>
 </div>
 </body>

@@ -20,7 +20,7 @@ $siteUrl = install_site_url();
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>કૃષ્ણા ટૂલ્સ — ઇન્સ્ટોલેશન</title>
+<title>Krishna Tools — Installation</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@500;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/krishna.css">
@@ -30,7 +30,7 @@ $siteUrl = install_site_url();
 <div class="hero-krishna">
   <div class="max-w-3xl mx-auto px-4 py-8 text-center">
     <div class="text-5xl mb-2">🦚</div>
-    <h1 class="brand-title text-3xl md:text-4xl">કૃષ્ણા ટૂલ્સ ઇન્સ્ટોલેશન</h1>
+    <h1 class="brand-title text-3xl md:text-4xl">Krishna Tools Installation</h1>
     <p class="opacity-70">Krishna Tools Setup Wizard · AK Computer, Dwarka</p>
   </div>
 </div>
@@ -38,7 +38,7 @@ $siteUrl = install_site_url();
 <div class="max-w-3xl mx-auto px-4 pb-16">
   <!-- Step indicator -->
   <div class="flex items-center justify-between mb-6 text-xs" id="stepBar">
-    <?php foreach (['સિસ્ટમ ચેક', 'ડેટાબેઝ', 'સાઇટ & એડમિન', 'ઇન્ટિગ્રેશન', 'ઇન્સ્ટોલ'] as $i => $label): ?>
+    <?php foreach (['System Check', 'Database', 'Site & Admin', 'Integrations', 'Install'] as $i => $label): ?>
       <div class="flex-1 text-center step-ind" data-s="<?= $i + 1 ?>">
         <div class="w-8 h-8 mx-auto rounded-full flex items-center justify-center font-bold border-2 dot" style="border-color:var(--border)"><?= $i + 1 ?></div>
         <div class="mt-1 opacity-70"><?= $label ?></div>
@@ -49,7 +49,7 @@ $siteUrl = install_site_url();
 
   <!-- STEP 1: Requirements -->
   <section class="kt-card p-5 step-panel" data-step="1">
-    <h2 class="section-title text-xl mb-1">1. સિસ્ટમ જરૂરિયાત તપાસ</h2>
+    <h2 class="section-title text-xl mb-1">1. System Requirements Check</h2>
     <div class="divider-gold mb-4"></div>
     <table class="w-full text-sm">
       <?php foreach ($reqs as $key => $r):
@@ -65,17 +65,17 @@ $siteUrl = install_site_url();
     </table>
     <?php if ($hasFail): ?>
       <div class="mt-4 p-3 rounded-lg text-sm" style="background:rgba(220,38,38,.1);color:#DC2626">
-        ❌ કેટલીક જરૂરિયાત પૂરી નથી. ઉપરના ફિક્સ કરો, પછી <b>ફરી ચેક કરો</b>.</div>
+        ❌ Some requirements are not met. Fix the items above, then click <b>Check Again</b>.</div>
     <?php endif; ?>
     <div class="flex gap-2 mt-5">
-      <button onclick="location.reload()" class="btn btn-ghost"><i>↻</i> ફરી ચેક કરો</button>
-      <button onclick="goStep(2)" class="btn btn-primary <?= $hasFail ? 'opacity-40 pointer-events-none' : '' ?>">આગળ વધો →</button>
+      <button onclick="location.reload()" class="btn btn-ghost"><i>↻</i> Check Again</button>
+      <button onclick="goStep(2)" class="btn btn-primary <?= $hasFail ? 'opacity-40 pointer-events-none' : '' ?>">Continue →</button>
     </div>
   </section>
 
   <!-- STEP 2: Database -->
   <section class="kt-card p-5 step-panel hidden" data-step="2">
-    <h2 class="section-title text-xl mb-1">2. ડેટાબેઝ કનેક્શન</h2>
+    <h2 class="section-title text-xl mb-1">2. Database Connection</h2>
     <div class="divider-gold mb-4"></div>
     <div class="grid sm:grid-cols-2 gap-4">
       <div><label class="kt-label">Database Host <span class="opacity-50">(localhost)</span></label><input class="kt-input" id="db_host" value="localhost"></div>
@@ -86,18 +86,18 @@ $siteUrl = install_site_url();
     </div>
     <div id="dbMsg" class="mt-3 text-sm"></div>
     <div class="flex gap-2 mt-5">
-      <button onclick="goStep(1)" class="btn btn-ghost">← પાછળ</button>
-      <button onclick="testDb()" class="btn btn-gold">કનેક્શન ટેસ્ટ કરો</button>
-      <button onclick="goStep(3)" id="db_next" class="btn btn-primary opacity-40 pointer-events-none">આગળ વધો →</button>
+      <button onclick="goStep(1)" class="btn btn-ghost">← Back</button>
+      <button onclick="testDb()" class="btn btn-gold">Test Connection</button>
+      <button onclick="goStep(3)" id="db_next" class="btn btn-primary opacity-40 pointer-events-none">Continue →</button>
     </div>
   </section>
 
   <!-- STEP 3: Site + Admin -->
   <section class="kt-card p-5 step-panel hidden" data-step="3">
-    <h2 class="section-title text-xl mb-1">3. સાઇટ અને એડમિન સેટઅપ</h2>
+    <h2 class="section-title text-xl mb-1">3. Site & Admin Setup</h2>
     <div class="divider-gold mb-4"></div>
     <div class="grid sm:grid-cols-2 gap-4">
-      <div><label class="kt-label">Site Name</label><input class="kt-input" id="site_name" value="કૃષ્ણા ટૂલ્સ"></div>
+      <div><label class="kt-label">Site Name</label><input class="kt-input" id="site_name" value="Krishna Tools"></div>
       <div><label class="kt-label">Site URL</label><input class="kt-input" id="site_url" value="<?= htmlspecialchars($siteUrl) ?>"></div>
       <div><label class="kt-label">Shop Name</label><input class="kt-input" id="shop_name" value="AK Computer"></div>
       <div><label class="kt-label">Shop Address</label><input class="kt-input" id="shop_address" value="Dwarka, Gujarat"></div>
@@ -109,26 +109,26 @@ $siteUrl = install_site_url();
       <div><label class="kt-label">Admin Email (login)</label><input type="email" class="kt-input" id="admin_email"></div>
       <div><label class="kt-label">Admin Password <span class="opacity-50">(min 8)</span></label><input type="password" class="kt-input" id="admin_password" oninput="pwMeter(this.value)"><div class="h-1.5 rounded mt-1" id="pwbar" style="background:rgba(0,0,0,.1)"></div></div>
       <div><label class="kt-label">Confirm Password</label><input type="password" class="kt-input" id="admin_password2"></div>
-      <div><label class="kt-label">Default Language</label><select class="kt-select" id="lang"><option value="en">English</option><option value="gu">ગુજરાતી</option></select></div>
+      <div><label class="kt-label">Default Language</label><select class="kt-select" id="lang"><option value="en">English</option><option value="gu">Gujarati</option></select></div>
       <div><label class="kt-label">Timezone</label><input class="kt-input" id="tz" value="Asia/Kolkata"></div>
     </div>
     <div id="siteMsg" class="mt-3 text-sm"></div>
     <div class="flex gap-2 mt-5">
-      <button onclick="goStep(2)" class="btn btn-ghost">← પાછળ</button>
-      <button onclick="validSite()&&goStep(4)" class="btn btn-primary">આગળ વધો →</button>
+      <button onclick="goStep(2)" class="btn btn-ghost">← Back</button>
+      <button onclick="validSite()&&goStep(4)" class="btn btn-primary">Continue →</button>
     </div>
   </section>
 
   <!-- STEP 4: Integrations -->
   <section class="kt-card p-5 step-panel hidden" data-step="4">
-    <h2 class="section-title text-xl mb-1">4. ઇન્ટિગ્રેશન <span class="text-sm opacity-60">(દરેક વૈકલ્પિક)</span></h2>
+    <h2 class="section-title text-xl mb-1">4. Integrations <span class="text-sm opacity-60">(all optional)</span></h2>
     <div class="divider-gold mb-4"></div>
 
     <details class="mb-3" open><summary class="font-semibold cursor-pointer py-2">💳 Razorpay</summary>
       <div class="grid sm:grid-cols-2 gap-3 mt-2">
         <input class="kt-input" id="rzp_key" placeholder="Key ID (rzp_live_...)">
         <input class="kt-input" id="rzp_secret" placeholder="Key Secret">
-        <div class="sm:col-span-2"><button onclick="testRzp()" class="btn btn-gold text-sm">ટેસ્ટ</button> <span id="rzpMsg" class="text-sm"></span></div>
+        <div class="sm:col-span-2"><button onclick="testRzp()" class="btn btn-gold text-sm">Test</button> <span id="rzpMsg" class="text-sm"></span></div>
       </div></details>
 
     <details class="mb-3"><summary class="font-semibold cursor-pointer py-2">✉️ SMTP Email</summary>
@@ -138,7 +138,7 @@ $siteUrl = install_site_url();
         <input class="kt-input" id="smtp_user" placeholder="Username">
         <input type="password" class="kt-input" id="smtp_pass" placeholder="Password">
         <input class="kt-input sm:col-span-2" id="smtp_from" placeholder="From Name" value="Krishna Tools">
-        <div class="sm:col-span-2"><button onclick="testSmtp()" class="btn btn-gold text-sm">ટેસ્ટ કનેક્શન</button> <span id="smtpMsg" class="text-sm"></span></div>
+        <div class="sm:col-span-2"><button onclick="testSmtp()" class="btn btn-gold text-sm">Test Connection</button> <span id="smtpMsg" class="text-sm"></span></div>
       </div></details>
 
     <details class="mb-3" open><summary class="font-semibold cursor-pointer py-2">🟢 WhatsApp API (bulk.akdwk.in)</summary>
@@ -148,8 +148,8 @@ $siteUrl = install_site_url();
         <input class="kt-input" id="wa_key" value="7016034943" placeholder="API Key">
         <input class="kt-input" id="wa_session" value="9978123146" placeholder="Session ID">
         <input class="kt-input" id="wa_sender" value="919978123146" placeholder="Sender Number">
-        <input class="kt-input" id="wa_testnum" placeholder="ટેસ્ટ નંબર (919978123146)">
-        <div class="sm:col-span-2"><button onclick="testWa()" class="btn btn-wa text-sm">WhatsApp ટેસ્ટ મેસેજ મોકલો</button> <span id="waMsg" class="text-sm"></span></div>
+        <input class="kt-input" id="wa_testnum" placeholder="Test number (919978123146)">
+        <div class="sm:col-span-2"><button onclick="testWa()" class="btn btn-wa text-sm">Send WhatsApp Test Message</button> <span id="waMsg" class="text-sm"></span></div>
         <div class="sm:col-span-2 text-xs opacity-60" id="waRaw"></div>
       </div></details>
 
@@ -157,20 +157,20 @@ $siteUrl = install_site_url();
       <input class="kt-input mt-2" id="ga_id" placeholder="G-XXXXXXXXXX"></details>
 
     <div class="flex gap-2 mt-5">
-      <button onclick="goStep(3)" class="btn btn-ghost">← પાછળ</button>
-      <button onclick="goStep(5)" class="btn btn-primary">આગળ વધો →</button>
+      <button onclick="goStep(3)" class="btn btn-ghost">← Back</button>
+      <button onclick="goStep(5)" class="btn btn-primary">Continue →</button>
     </div>
   </section>
 
   <!-- STEP 5: Install -->
   <section class="kt-card p-5 step-panel hidden" data-step="5">
-    <h2 class="section-title text-xl mb-1">5. ઇન્સ્ટોલ કરો</h2>
+    <h2 class="section-title text-xl mb-1">5. Install</h2>
     <div class="divider-gold mb-4"></div>
     <div id="installLog" class="font-mono text-sm space-y-1 min-h-[200px]"></div>
     <div id="installDone" class="hidden"></div>
     <div class="flex gap-2 mt-5" id="installBtns">
-      <button onclick="goStep(4)" class="btn btn-ghost">← પાછળ</button>
-      <button onclick="runInstall()" id="startBtn" class="btn btn-cta text-lg">🦚 ઇન્સ્ટોલ શરૂ કરો</button>
+      <button onclick="goStep(4)" class="btn btn-ghost">← Back</button>
+      <button onclick="runInstall()" id="startBtn" class="btn btn-cta text-lg">🦚 Start Installation</button>
     </div>
   </section>
 </div>
@@ -199,7 +199,7 @@ function pwMeter(v) {
   document.getElementById('pwbar').style.background = `linear-gradient(90deg,${c} ${s}%,rgba(0,0,0,.1) ${s}%)`;
 }
 async function testDb() {
-  const msg = document.getElementById('dbMsg'); msg.innerHTML = '<span class="opacity-60">⏳ ટેસ્ટ...</span>';
+  const msg = document.getElementById('dbMsg'); msg.innerHTML = '<span class="opacity-60">⏳ Testing...</span>';
   const d = await post({ action: 'db_test', host: db_host.value, name: db_name.value, user: db_user.value, pass: db_pass.value, prefix: db_prefix.value });
   msg.innerHTML = `<span style="color:${d.ok ? 'var(--morpankh-green)' : '#DC2626'}">${d.ok ? d.msg : d.error}</span>`;
   const nx = document.getElementById('db_next');
@@ -207,15 +207,15 @@ async function testDb() {
 }
 function validSite() {
   const m = document.getElementById('siteMsg');
-  if (!/^[^@]+@[^@]+\.[^@]+$/.test(admin_email.value)) { m.innerHTML = '<span style="color:#DC2626">માન્ય ઈમેલ આપો</span>'; return false; }
-  if (admin_password.value.length < 8) { m.innerHTML = '<span style="color:#DC2626">પાસવર્ડ ઓછામાં ઓછો 8 અક્ષર</span>'; return false; }
-  if (admin_password.value !== admin_password2.value) { m.innerHTML = '<span style="color:#DC2626">પાસવર્ડ મેળ ખાતા નથી</span>'; return false; }
+  if (!/^[^@]+@[^@]+\.[^@]+$/.test(admin_email.value)) { m.innerHTML = '<span style="color:#DC2626">Enter a valid email</span>'; return false; }
+  if (admin_password.value.length < 8) { m.innerHTML = '<span style="color:#DC2626">Password must be at least 8 characters</span>'; return false; }
+  if (admin_password.value !== admin_password2.value) { m.innerHTML = '<span style="color:#DC2626">Passwords do not match</span>'; return false; }
   m.innerHTML = ''; return true;
 }
 async function testWa() {
   const m = document.getElementById('waMsg'); m.textContent = '⏳...';
   const d = await post({ action: 'wa_test', base: wa_base.value, key: wa_key.value, session: wa_session.value, number: wa_testnum.value || wa_sender.value });
-  m.innerHTML = d.ok ? '<span style="color:var(--morpankh-green)">✅ મોકલ્યું!</span>' : `<span style="color:#DC2626">${d.error || '❌ ' + (d.msg || 'નિષ્ફળ')}</span>`;
+  m.innerHTML = d.ok ? '<span style="color:var(--morpankh-green)">✅ Sent!</span>' : `<span style="color:#DC2626">${d.error || '❌ ' + (d.msg || 'Failed')}</span>`;
   document.getElementById('waRaw').textContent = d.raw || d.msg || '';
 }
 async function testSmtp() {
@@ -229,7 +229,7 @@ async function testRzp() {
   m.innerHTML = `<span style="color:${d.ok ? 'var(--morpankh-green)' : '#DC2626'}">${d.ok ? d.msg : (d.error || d.msg)}</span>`;
 }
 
-const LABELS = {1:'ડેટાબેઝ ટેબલ બનાવી રહ્યા છીએ...',2:'કેટેગરી ઉમેરી રહ્યા છીએ...',3:'ટૂલ્સ રજીસ્ટર કરી રહ્યા છીએ...',4:'પ્લાન બનાવી રહ્યા છીએ...',5:'WhatsApp ટેમ્પ્લેટ ઉમેરી રહ્યા છીએ...',6:'એડમિન એકાઉન્ટ બનાવી રહ્યા છીએ...',7:'સેટિંગ્સ સેવ કરી રહ્યા છીએ...',8:'config/config.php લખી રહ્યા છીએ...',9:'.htaccess બનાવી રહ્યા છીએ...',10:'ફોલ્ડર સ્ટ્રક્ચર બનાવી રહ્યા છીએ...',11:'install.lock બનાવી રહ્યા છીએ...'};
+const LABELS = {1:'Creating database tables...',2:'Adding categories...',3:'Registering tools...',4:'Creating plans...',5:'Adding WhatsApp templates...',6:'Creating admin account...',7:'Saving settings...',8:'Writing config/config.php...',9:'Creating .htaccess...',10:'Creating folder structure...',11:'Creating install.lock...'};
 function collectWizard() {
   return {
     site_name: site_name.value, site_url: site_url.value, lang: lang.value, tz: tz.value,
@@ -265,19 +265,19 @@ function finishInstall(d) {
   const cron = `* * * * * php ${'{'}HOME{'}'}/public_html/cron/run.php >/dev/null 2>&1`;
   box.innerHTML = `
     <div class="text-center py-4"><div class="text-6xl">🦚</div>
-      <h3 class="brand-title text-2xl mt-2">ઇન્સ્ટોલેશન પૂર્ણ! હરે કૃષ્ણ</h3></div>
+      <h3 class="brand-title text-2xl mt-2">Installation complete! Hare Krishna</h3></div>
     <div class="kt-card p-4 mt-2 text-sm space-y-2">
-      <div>🔐 <b>એડમિન પેનલ:</b> <a class="text-[color:var(--peacock-teal)] underline" href="${d.admin_url}">${d.admin_url}</a></div>
-      <div>📧 <b>લોગિન ઈમેલ:</b> ${d.admin_email}</div>
-      <div>🔗 <b>WhatsApp Webhook URL</b> (bulk.akdwk.in પેનલમાં પેસ્ટ કરો):<br><code class="text-xs break-all">${d.webhook}</code></div>
-      <div>⏱️ <b>CRON કમાન્ડ</b> (cPanel > Cron Jobs માં ઉમેરો):<pre class="text-xs mt-1 p-2 rounded" style="background:rgba(0,0,0,.05);white-space:pre-wrap">${cron}</pre></div>
+      <div>🔐 <b>Admin panel:</b> <a class="text-[color:var(--peacock-teal)] underline" href="${d.admin_url}">${d.admin_url}</a></div>
+      <div>📧 <b>Login email:</b> ${d.admin_email}</div>
+      <div>🔗 <b>WhatsApp Webhook URL</b> (paste it in the bulk.akdwk.in panel):<br><code class="text-xs break-all">${d.webhook}</code></div>
+      <div>⏱️ <b>CRON command</b> (add it in cPanel > Cron Jobs):<pre class="text-xs mt-1 p-2 rounded" style="background:rgba(0,0,0,.05);white-space:pre-wrap">${cron}</pre></div>
     </div>
     <div class="p-3 rounded-lg mt-3 text-sm" style="background:rgba(234,88,12,.1);color:var(--saffron)">
-      ⚠️ સુરક્ષા માટે હવે <b>/install/</b> ફોલ્ડર ડિલીટ કરો.</div>
+      ⚠️ For security, delete the <b>/install/</b> folder now.</div>
     <div class="flex gap-2 mt-4 flex-wrap">
-      <a href="../" class="btn btn-primary">વેબસાઇટ ખોલો</a>
-      <a href="${d.admin_url}" class="btn btn-gold">એડમિન પેનલ</a>
-      <button onclick="autoDelete()" class="btn btn-ghost">🗑️ ઓટો ડિલીટ કરો</button>
+      <a href="../" class="btn btn-primary">Open Website</a>
+      <a href="${d.admin_url}" class="btn btn-gold">Admin Panel</a>
+      <button onclick="autoDelete()" class="btn btn-ghost">🗑️ Auto Delete</button>
     </div>`;
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }

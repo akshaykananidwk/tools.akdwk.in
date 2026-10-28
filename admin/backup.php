@@ -108,35 +108,35 @@ try {
     foreach ($rows as $r) $tables[] = $r;
 } catch (Throwable $e) { kt_error_log('admin backup list: ' . $e->getMessage()); }
 
-admin_head('બેકઅપ');
+admin_head('Backup');
 ?>
 <div class="kt-card p-6 max-w-2xl">
   <div class="flex items-center gap-3 mb-3">
     <span class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(30,58,138,.12);color:var(--krishna-blue)"><i data-lucide="database-backup" class="w-6 h-6"></i></span>
     <div>
-      <h2 class="section-title text-base m-0">ડેટાબેઝ બેકઅપ</h2>
-      <p class="text-sm opacity-70 m-0">બધા <code><?= e(DB_PREFIX) ?>*</code> ટેબલનો <code>.sql</code> ડમ્પ ડાઉનલોડ કરો.</p>
+      <h2 class="section-title text-base m-0">Database Backup</h2>
+      <p class="text-sm opacity-70 m-0">Download a <code>.sql</code> dump of all <code><?= e(DB_PREFIX) ?>*</code> tables.</p>
     </div>
   </div>
 
   <?php if ($tables): ?>
     <div class="text-sm mb-4">
-      <div class="kt-label !mb-1">ટેબલ્સ (<?= count($tables) ?>):</div>
+      <div class="kt-label !mb-1">Tables (<?= count($tables) ?>):</div>
       <div class="flex flex-wrap gap-1.5">
         <?php foreach ($tables as $t): ?>
           <span class="badge-premium text-xs"><?= e($t['t']) ?> (<?= number_format((int) ($t['r'] ?? 0)) ?>)</span>
         <?php endforeach; ?>
       </div>
-      <p class="text-xs opacity-50 mt-2">રો સંખ્યા અંદાજિત છે (information_schema).</p>
+      <p class="text-xs opacity-50 mt-2">Row counts are approximate (information_schema).</p>
     </div>
   <?php else: ?>
-    <p class="text-sm opacity-60 mb-4">કોઈ ટેબલ મળ્યું નહીં.</p>
+    <p class="text-sm opacity-60 mb-4">No tables found.</p>
   <?php endif; ?>
 
   <form method="post">
     <?= csrf_field() ?>
-    <button class="btn btn-primary"><i data-lucide="download" class="w-4 h-4"></i> બેકઅપ ડાઉનલોડ કરો</button>
+    <button class="btn btn-primary"><i data-lucide="download" class="w-4 h-4"></i> Download Backup</button>
   </form>
-  <p class="text-xs opacity-60 mt-3">મોટા ડેટાબેઝ માટે ડાઉનલોડ થોડો સમય લઈ શકે. ડમ્પ 500 રોના બેચમાં લખાય છે.</p>
+  <p class="text-xs opacity-60 mt-3">Large databases may take a while to download. The dump is written in batches of 500 rows.</p>
 </div>
 <?php admin_foot(); ?>

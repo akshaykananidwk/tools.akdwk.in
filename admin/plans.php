@@ -25,13 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'is_active'     => isset($_POST['is_active']) ? 1 : 0,
             ], ['id' => $pid]);
             activity_log((int) current_user()['id'], 'admin_plan_update', 'plan #' . $pid);
-            $flash = 'પ્લાન સેવ થયો.';
+            $flash = 'Plan saved.';
         } else {
-            $flash = 'પ્લાન મળ્યો નહીં.';
+            $flash = 'Plan not found.';
         }
     } catch (Throwable $e) {
         kt_error_log('admin plans: ' . $e->getMessage());
-        $flash = 'સેવ કરવામાં ભૂલ આવી.';
+        $flash = 'Could not save. Please try again.';
     }
 }
 
@@ -39,17 +39,17 @@ $plans = [];
 try { $plans = all("SELECT * FROM " . tbl('plans') . " ORDER BY price ASC, id ASC"); }
 catch (Throwable $e) { kt_error_log('admin plans list: ' . $e->getMessage()); }
 
-admin_head('પ્લાન્સ');
+admin_head('Plans');
 ?>
 <?php if ($flash): ?>
   <div class="kt-card p-3 mb-4 text-sm" style="border-color:var(--gold)"><?= e($flash) ?></div>
 <?php endif; ?>
 
-<p class="text-sm opacity-70 mb-4">ફીચર્સ પાઇપ (<code>|</code>) થી અલગ કરો. <code>daily_limit = 0</code> એટલે અમર્યાદિત.</p>
+<p class="text-sm opacity-70 mb-4">Separate features with a pipe (<code>|</code>). <code>daily_limit = 0</code> means unlimited.</p>
 
 <div class="grid gap-4 lg:grid-cols-3">
 <?php if (!$plans): ?>
-  <div class="kt-card p-6 text-center opacity-60">કોઈ પ્લાન નથી.</div>
+  <div class="kt-card p-6 text-center opacity-60">No plans yet.</div>
 <?php else: foreach ($plans as $p): ?>
   <form method="post" class="kt-card p-5 space-y-3">
     <?= csrf_field() ?>
@@ -59,21 +59,21 @@ admin_head('પ્લાન્સ');
       <span class="text-xs opacity-60">#<?= (int) $p['id'] ?></span>
     </div>
     <div class="grid grid-cols-2 gap-2">
-      <div><label class="kt-label text-xs">નામ (ગુ)</label><input name="name_gu" class="kt-input !py-1.5" value="<?= e($p['name_gu']) ?>"></div>
+      <input type="hidden" name="name_gu" value="<?= e($p['name_gu']) ?>">
       <div><label class="kt-label text-xs">Name (EN)</label><input name="name_en" class="kt-input !py-1.5" value="<?= e($p['name_en']) ?>"></div>
-      <div><label class="kt-label text-xs">કિંમત (₹)</label><input name="price" type="number" step="0.01" class="kt-input !py-1.5" value="<?= e((string) $p['price']) ?>"></div>
-      <div><label class="kt-label text-xs">દિવસ</label><input name="duration_days" type="number" class="kt-input !py-1.5" value="<?= (int) $p['duration_days'] ?>"></div>
-      <div><label class="kt-label text-xs">દૈનિક લિમિટ</label><input name="daily_limit" type="number" class="kt-input !py-1.5" value="<?= (int) $p['daily_limit'] ?>"></div>
-      <div><label class="kt-label text-xs">મહત્તમ MB</label><input name="max_file_mb" type="number" class="kt-input !py-1.5" value="<?= (int) $p['max_file_mb'] ?>"></div>
+      <div><label class="kt-label text-xs">Price (₹)</label><input name="price" type="number" step="0.01" class="kt-input !py-1.5" value="<?= e((string) $p['price']) ?>"></div>
+      <div><label class="kt-label text-xs">Days</label><input name="duration_days" type="number" class="kt-input !py-1.5" value="<?= (int) $p['duration_days'] ?>"></div>
+      <div><label class="kt-label text-xs">Daily limit</label><input name="daily_limit" type="number" class="kt-input !py-1.5" value="<?= (int) $p['daily_limit'] ?>"></div>
+      <div><label class="kt-label text-xs">Max MB</label><input name="max_file_mb" type="number" class="kt-input !py-1.5" value="<?= (int) $p['max_file_mb'] ?>"></div>
     </div>
     <div>
-      <label class="kt-label text-xs">ફીચર્સ (|)</label>
+      <label class="kt-label text-xs">Features (|)</label>
       <textarea name="features" rows="4" class="kt-input !py-1.5 text-sm"><?= e($p['features'] ?? '') ?></textarea>
     </div>
     <label class="flex items-center gap-2 text-sm">
-      <input type="checkbox" name="is_active" <?= (int) $p['is_active'] === 1 ? 'checked' : '' ?>> એક્ટિવ
+      <input type="checkbox" name="is_active" <?= (int) $p['is_active'] === 1 ? 'checked' : '' ?>> Active
     </label>
-    <button class="btn btn-primary w-full justify-center"><i data-lucide="save" class="w-4 h-4"></i> સેવ કરો</button>
+    <button class="btn btn-primary w-full justify-center"><i data-lucide="save" class="w-4 h-4"></i> Save</button>
   </form>
 <?php endforeach; endif; ?>
 </div>

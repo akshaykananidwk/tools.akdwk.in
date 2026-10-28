@@ -795,14 +795,14 @@ reg('base64-tool', function (mount, opt, ctx) {
   setActions([{ label: 'Encode', cls: 'btn-primary', icon: 'lock', onClick: enc }, { label: 'Decode', icon: 'unlock', onClick: dec }]); enc();
 });
 reg('url-tool', function (mount, opt, ctx) {
-  const ta = textArea(mount, 'https://tools.akdwk.in/?q=હરે કૃષ્ણ'); const box = resultBox(mount);
+  const ta = textArea(mount, 'https://tools.akdwk.in/?q=hare krishna & tools'); const box = resultBox(mount);
   setActions([{ label: 'Encode', cls: 'btn-primary', icon: 'lock', onClick: () => showText(box, encodeURIComponent(ta.value), 'encoded.txt', 'text/plain', ctx) }, { label: 'Decode', icon: 'unlock', onClick: () => { try { showText(box, decodeURIComponent(ta.value), 'decoded.txt', 'text/plain', ctx); } catch (e) { toast('Invalid', true); } } }]);
 });
 reg('lorem-gen', function (mount, opt, ctx) {
-  const ctrl = el(`<div class="grid sm:grid-cols-3 gap-3"><div><label class="kt-label">${T('ભાષા', 'Language')}</label><select class="kt-select lg"><option value="en">Latin</option><option value="gu">${T('ગુજરાતી', 'Gujarati')}</option></select></div><div><label class="kt-label">${T('ફકરા', 'Paragraphs')}</label><input type="number" class="kt-input np" value="3"></div></div>`); mount.appendChild(ctrl);
+  const ctrl = el(`<div class="grid sm:grid-cols-3 gap-3"><div><label class="kt-label">${T('ભાષા', 'Language')}</label><select class="kt-select lg"><option value="en">Latin</option><option value="gu">${T('English', 'English')}</option></select></div><div><label class="kt-label">${T('ફકરા', 'Paragraphs')}</label><input type="number" class="kt-input np" value="3"></div></div>`); mount.appendChild(ctrl);
   const box = resultBox(mount);
   const EN = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
-  const GUJ = 'કૃષ્ણ ભગવાનની કૃપાથી આ ટૂલ્સ બન્યાં છે. હરે કૃષ્ણ હરે રામ. કમ્પ્યુટર અને CCTV માટે શ્રેષ્ઠ સેવા દ્વારકામાં ઉપલબ્ધ છે.';
+  const GUJ = 'This is sample placeholder text for your design. Replace it with your real content before you publish. Good layouts read well even before the final words arrive.';
   const gen = () => { const n = +ctrl.querySelector('.np').value; const src = ctrl.querySelector('.lg').value === 'gu' ? GUJ : EN; const r = Array(n).fill(src).join('\n\n'); showText(box, r, 'lorem.txt', 'text/plain', ctx); };
   ctrl.oninput = gen; gen();
 });

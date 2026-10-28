@@ -31,14 +31,14 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
     </div>
     <div>
       <div class="font-semibold mb-2"><?= e(setting('shop_name', 'AK Computer')) ?></div>
-      <p class="opacity-70"><?= e(setting('shop_address', 'દ્વારકા, ગુજરાત')) ?></p>
+      <p class="opacity-70"><?= e(kt_en_text(setting('shop_address', 'Dwarka, Gujarat'), 'Dwarka, Gujarat')) ?></p>
       <p class="opacity-70 mt-1">📞 <?= e(setting('shop_phone', '9978123146')) ?></p>
       <a href="https://maps.google.com/?q=<?= urlencode(setting('shop_address', 'Dwarka, Gujarat')) ?>"
          target="_blank" rel="noopener" class="text-[color:var(--peacock-teal)] hover:underline mt-1 inline-block">Google Maps 📍</a>
     </div>
   </div>
-  <div class="text-center py-4 hare-krishna-mark text-[color:var(--gold)]">ॐ हरे कृष्ण हरे कृष्ण कृष्ण कृष्ण हरे हरे</div>
-  <div class="text-center pb-6 text-xs opacity-60">© <?= date('Y') ?> <?= e(brand_name()) ?> · <?= e(setting('shop_name', 'AK Computer')) ?>, દ્વારકા</div>
+  <div class="text-center py-4 hare-krishna-mark text-[color:var(--gold)]">Hare Krishna Hare Krishna, Krishna Krishna Hare Hare</div>
+  <div class="text-center pb-6 text-xs opacity-60">© <?= date('Y') ?> <?= e(brand_name()) ?> · <?= e(setting('shop_name', 'AK Computer')) ?>, Dwarka</div>
 </footer>
 
 <!-- Floating WhatsApp -->

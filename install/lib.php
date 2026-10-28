@@ -222,21 +222,21 @@ function install_requirements(): array {
     $r = [];
     $ok = fn($c) => $c ? 'ok' : 'fail';
     $r['php'] = [version_compare(PHP_VERSION, '8.1.0', '>=') ? 'ok' : 'fail', 'PHP ≥ 8.1 (' . PHP_VERSION . ')', 'cPanel > Select PHP Version > 8.1+'];
-    $r['pdo'] = [$ok(extension_loaded('pdo') && extension_loaded('pdo_mysql')), 'PDO + pdo_mysql', 'cPanel PHP extensions માં pdo_mysql ચાલુ કરો'];
-    $r['mbstring'] = [$ok(extension_loaded('mbstring')), 'mbstring', 'PHP extensions માં mbstring ચાલુ કરો'];
+    $r['pdo'] = [$ok(extension_loaded('pdo') && extension_loaded('pdo_mysql')), 'PDO + pdo_mysql', 'Enable pdo_mysql in cPanel PHP extensions'];
+    $r['mbstring'] = [$ok(extension_loaded('mbstring')), 'mbstring', 'Enable mbstring in PHP extensions'];
     $r['json'] = [$ok(extension_loaded('json')), 'json', 'PHP json extension'];
     $r['fileinfo'] = [$ok(extension_loaded('fileinfo')), 'fileinfo', 'PHP fileinfo extension'];
-    $r['curl'] = [$ok(extension_loaded('curl')), 'cURL (WhatsApp/Razorpay)', 'PHP curl extension ચાલુ કરો'];
-    $r['gd'] = [(extension_loaded('gd') || extension_loaded('imagick')) ? 'ok' : 'warn', 'GD અથવા Imagick', 'ઇમેજ ટૂલ્સ માટે ભલામણ'];
+    $r['curl'] = [$ok(extension_loaded('curl')), 'cURL (WhatsApp/Razorpay)', 'Enable the PHP curl extension'];
+    $r['gd'] = [(extension_loaded('gd') || extension_loaded('imagick')) ? 'ok' : 'warn', 'GD or Imagick', 'Recommended for image tools'];
     $r['zip'] = [extension_loaded('zip') ? 'ok' : 'warn', 'zip (bulk ZIP)', 'PHP zip extension'];
-    $r['openssl'] = [$ok(extension_loaded('openssl')), 'openssl (પેમેન્ટ સિગ્નેચર)', 'PHP openssl extension'];
+    $r['openssl'] = [$ok(extension_loaded('openssl')), 'openssl (payment signatures)', 'PHP openssl extension'];
     $r['session'] = [$ok(function_exists('session_start')), 'session support', '-'];
-    $r['fopen'] = [ini_get('allow_url_fopen') ? 'ok' : 'warn', 'allow_url_fopen', 'php.ini માં ચાલુ કરો'];
+    $r['fopen'] = [ini_get('allow_url_fopen') ? 'ok' : 'warn', 'allow_url_fopen', 'Enable it in php.ini'];
     $r['memory'] = [install_bytes(ini_get('memory_limit')) >= 256*1024*1024 ? 'ok' : 'warn', 'memory_limit ≥ 256M (' . ini_get('memory_limit') . ')', 'cPanel MultiPHP INI Editor'];
     $r['upload'] = [install_bytes(ini_get('upload_max_filesize')) >= 64*1024*1024 ? 'ok' : 'warn', 'upload_max_filesize ≥ 64M (' . ini_get('upload_max_filesize') . ')', 'cPanel MultiPHP INI Editor > upload_max_filesize = 64M'];
     $r['post'] = [install_bytes(ini_get('post_max_size')) >= 64*1024*1024 ? 'ok' : 'warn', 'post_max_size ≥ 64M (' . ini_get('post_max_size') . ')', 'cPanel MultiPHP INI Editor > post_max_size = 64M'];
     $r['exec'] = [((int) ini_get('max_execution_time') >= 120 || (int) ini_get('max_execution_time') === 0) ? 'ok' : 'warn', 'max_execution_time ≥ 120', 'cPanel MultiPHP INI Editor'];
-    $r['https'] = [(!empty($_SERVER['HTTPS']) || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') ? 'ok' : 'warn', 'HTTPS (WhatsApp webhook)', 'cPanel > SSL/TLS Status > AutoSSL ચલાવો'];
+    $r['https'] = [(!empty($_SERVER['HTTPS']) || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') ? 'ok' : 'warn', 'HTTPS (WhatsApp webhook)', 'Run cPanel > SSL/TLS Status > AutoSSL'];
 
     // Write tests.
     foreach (['config', 'uploads', 'uploads/temp', 'assets/img/logo', 'logs'] as $d) {
@@ -245,13 +245,13 @@ function install_requirements(): array {
         $test = $p . '/.kt_write_test';
         $wok = @file_put_contents($test, 'x') !== false;
         if ($wok) @unlink($test);
-        $r['write_' . str_replace('/', '_', $d)] = [$wok ? 'ok' : 'fail', "લખવાની પરવાનગી: /$d/", "cPanel File Manager > $d ફોલ્ડર પર Right Click > Permissions > 755 સેટ કરો"];
+        $r['write_' . str_replace('/', '_', $d)] = [$wok ? 'ok' : 'fail', "Write permission: /$d/", "cPanel File Manager > right-click the $d folder > Permissions > set 755"];
     }
 
     // Optional binaries (never blocking).
     foreach (['gs' => 'Ghostscript (PDF compress)', 'convert' => 'ImageMagick', 'ffmpeg' => 'FFmpeg (video)'] as $bin => $label) {
         $found = install_has_binary($bin);
-        $r['bin_' . $bin] = [$found ? 'ok' : 'warn', $label, $found ? '' : 'વૈકલ્પિક — JS fallback વપરાશે'];
+        $r['bin_' . $bin] = [$found ? 'ok' : 'warn', $label, $found ? '' : 'Optional — JS fallback will be used'];
     }
     return $r;
 }

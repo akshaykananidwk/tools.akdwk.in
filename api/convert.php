@@ -17,7 +17,7 @@ if (!rate_limit('convert', 20, 60)) json_out(['ok' => false, 'error' => 'Too man
 if (empty($_FILES['file']['tmp_name'])) json_out(['ok' => false, 'error' => 'No file']);
 $f = $_FILES['file'];
 $maxMb = kt_server_max_mb();
-if ($f['size'] > $maxMb * 1024 * 1024) json_out(['ok' => false, 'error' => "ફાઇલ {$maxMb}MB થી નાની હોવી જોઈએ"]);
+if ($f['size'] > $maxMb * 1024 * 1024) json_out(['ok' => false, 'error' => "File must be smaller than {$maxMb}MB"]);
 
 $op   = preg_replace('/[^a-z_]/', '', $_POST['op'] ?? '');
 $from = preg_replace('/[^a-z0-9]/', '', strtolower($_POST['from'] ?? ''));
@@ -39,7 +39,7 @@ function send_file(string $path, string $name): void {
     exit;
 }
 function no_binary(string $bin): void {
-    json_out(['ok' => false, 'error' => "સર્વર પર '$bin' ઇન્સ્ટોલ નથી. હોસ્ટિંગ પર ઇન્સ્ટોલ કરો અથવા બ્રાઉઝર ટૂલ વાપરો."]);
+    json_out(['ok' => false, 'error' => "'$bin' is not installed on the server. Install it on your hosting or use the browser tool."]);
 }
 
 try {
@@ -75,9 +75,9 @@ try {
     }
 
     @unlink($in);
-    json_out(['ok' => false, 'error' => 'આ કન્વર્ઝન સપોર્ટેડ નથી']);
+    json_out(['ok' => false, 'error' => 'This conversion is not supported']);
 } catch (Throwable $e) {
     @unlink($in);
     kt_error_log('convert: ' . $e->getMessage());
-    json_out(['ok' => false, 'error' => 'સર્વર એરર']);
+    json_out(['ok' => false, 'error' => 'Server error']);
 }

@@ -20,7 +20,7 @@ function kt_fmt_size(int $bytes): string {
     return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
 }
 
-$page_title = ($en ? 'Saved Files' : 'સેવ્ડ ફાઇલ્સ') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = ($en ? 'Saved Files' : 'સેવ્ડ ફાઇલ્સ') . ' — ' . brand_name();
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],
     ['label' => t('dashboard'), 'url' => SITE_URL . '/dashboard.php'],

@@ -15,7 +15,7 @@ $err = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     admin_login_csrf();
     if (!rate_limit('admin_login', 6, 300)) {
-        $err = 'ઘણા પ્રયત્નો થયા. કૃપા કરી થોડી વાર પછી પ્રયત્ન કરો.';
+        $err = 'Too many attempts. Please try again in a little while.';
     } else {
         $user = attempt_login($_POST['email'] ?? '', $_POST['password'] ?? '');
         if ($user && is_admin()) {
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && !is_admin()) {
             logout_user();
         }
-        $err = 'ઈમેલ કે પાસવર્ડ ખોટો છે, અથવા આ એકાઉન્ટ પાસે એડમિન અધિકાર નથી.';
+        $err = 'Wrong email or password, or this account does not have admin access.';
     }
 }
 
@@ -36,13 +36,13 @@ function admin_login_csrf(): void {
         exit('CSRF');
     }
 }
-$siteName = setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$siteName = brand_name();
 ?><!DOCTYPE html>
-<html lang="gu" data-theme="light" class="gu">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>એડમિન લોગિન — <?= e($siteName) ?></title>
+<title>Admin Login — <?= e($siteName) ?></title>
 <meta name="robots" content="noindex,nofollow">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +58,7 @@ $siteName = setting('site_name', 'કૃષ્ણા ટૂલ્સ');
       <div class="text-center mb-6">
         <div class="text-4xl">🦚</div>
         <h1 class="brand-title text-2xl mt-2"><?= e($siteName) ?></h1>
-        <p class="text-sm opacity-70 mt-1">એડમિન પેનલ લોગિન</p>
+        <p class="text-sm opacity-70 mt-1">Admin panel login</p>
       </div>
       <?php if ($err): ?>
         <div class="p-3 rounded-lg mb-4 text-sm flex items-center gap-2" style="background:rgba(220,38,38,.1);color:#DC2626">
@@ -68,19 +68,19 @@ $siteName = setting('site_name', 'કૃષ્ણા ટૂલ્સ');
       <form method="post" class="space-y-4">
         <?= csrf_field() ?>
         <div>
-          <label class="kt-label">ઈમેલ</label>
+          <label class="kt-label">Email</label>
           <input type="email" name="email" class="kt-input" required autofocus autocomplete="username">
         </div>
         <div>
-          <label class="kt-label">પાસવર્ડ</label>
+          <label class="kt-label">Password</label>
           <input type="password" name="password" class="kt-input" required autocomplete="current-password">
         </div>
         <button class="btn btn-primary w-full justify-center">
-          <i data-lucide="shield-check" class="w-4 h-4"></i> લોગિન કરો
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Log in
         </button>
       </form>
       <div class="text-center mt-5 text-sm">
-        <a href="<?= SITE_URL ?>/" class="text-[color:var(--peacock-teal)] hover:underline">← સાઇટ પર પાછા જાઓ</a>
+        <a href="<?= SITE_URL ?>/" class="text-[color:var(--peacock-teal)] hover:underline">← Back to site</a>
       </div>
     </div>
   </div>

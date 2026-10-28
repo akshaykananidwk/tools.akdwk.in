@@ -11,7 +11,7 @@ $post = $slug !== ''
 
 if (!$post) {
     http_response_code(404);
-    $page_title = ($en ? 'Not found' : 'મળ્યું નથી') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+    $page_title = ($en ? 'Not found' : 'મળ્યું નથી') . ' — ' . brand_name();
     require __DIR__ . '/../includes/header.php';
     echo '<div class="max-w-2xl mx-auto my-16 text-center">'
        . '<div class="text-5xl mb-3">🦚</div>'
@@ -26,12 +26,12 @@ $content = loc($post, 'content');
 $url     = SITE_URL . '/blog/' . $post['slug'];
 
 // Related: up to 3 other published posts.
-$related = all("SELECT slug, title_gu, title_en, meta_desc FROM " . tbl('blog_posts') . "
+$related = all("SELECT slug, title_gu, title_en, meta_desc, content_en, content_gu FROM " . tbl('blog_posts') . "
                 WHERE is_published = 1 AND id <> :id ORDER BY created_at DESC, id DESC LIMIT 3",
                [':id' => $post['id']]);
 
-$page_title = $title . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
-$page_desc  = $post['meta_desc'] ?: mb_substr(strip_tags($content), 0, 155);
+$page_title = $title . ' — ' . brand_name();
+$page_desc  = mb_substr(trim(strip_tags($content)), 0, 155);
 if (!empty($post['image'])) $page_og = $post['image'];
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],
@@ -54,7 +54,7 @@ $jsonLd = [
             'author' => ['@type' => 'Organization', 'name' => setting('shop_name', 'AK Computer')],
             'publisher' => [
                 '@type' => 'Organization',
-                'name' => setting('site_name', 'કૃષ્ણા ટૂલ્સ'),
+                'name' => brand_name(),
                 'logo' => ['@type' => 'ImageObject', 'url' => SITE_URL . '/assets/img/logo/logo.svg'],
             ],
         ] + (!empty($post['image']) ? ['image' => $post['image']] : []),
@@ -97,7 +97,7 @@ require __DIR__ . '/../includes/header.php';
         <?php foreach ($related as $r): ?>
           <a href="<?= SITE_URL ?>/blog/<?= e($r['slug']) ?>" class="kt-card p-4 block hover:shadow-lg transition-shadow">
             <h3 class="font-semibold text-sm leading-snug"><?= e(loc($r, 'title')) ?></h3>
-            <p class="text-xs opacity-60 mt-1 line-clamp-2"><?= e($r['meta_desc']) ?></p>
+            <p class="text-xs opacity-60 mt-1 line-clamp-2"><?= e(mb_substr(trim(strip_tags(loc($r, 'content'))), 0, 120)) ?></p>
           </a>
         <?php endforeach; ?>
       </div>

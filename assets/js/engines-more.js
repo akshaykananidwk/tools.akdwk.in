@@ -103,7 +103,7 @@ reg('textgen', function (mount, opt, ctx) {
       : `<input class="kt-input" id="${id}" type="${f.type === 'number' ? 'number' : (f.type || 'text')}" value="${esc(f.val ?? '')}">`;
     form.appendChild(el(`<div><label class="kt-label" for="${id}">${f.label}</label>${ctrl}</div>`));
   });
-  if (hasGu && hasEn) {
+  if (GU && hasGu && hasEn) {
     form.appendChild(el(`<div><label class="kt-label" for="f__lang">${T('ભાષા', 'Language')}</label>
       <select class="kt-select" id="f__lang"><option value="gu" ${GU ? 'selected' : ''}>ગુજરાતી</option><option value="en" ${GU ? '' : 'selected'}>English</option></select></div>`));
   }
@@ -114,7 +114,7 @@ reg('textgen', function (mount, opt, ctx) {
   function run() {
     const v = {};
     fields.forEach(f => { const n = $('#f_' + f.k); v[f.k] = n ? n.value.trim() : ''; });
-    const lang = $('#f__lang') ? $('#f__lang').value : (hasGu ? 'gu' : 'en');
+    const lang = $('#f__lang') ? $('#f__lang').value : (GU && hasGu ? 'gu' : (hasEn ? 'en' : 'gu'));
     const list = (lang === 'gu' ? opt.tpl_gu : opt.tpl_en) || [];
     const texts = list.map(t => fill(t, v).replace(/[ \t]+\n/g, '\n').replace(/ {2,}/g, ' ').trim());
     all = texts.join('\n\n');

@@ -11,7 +11,7 @@ $err = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     kt_session_start();
     if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) { http_response_code(419); exit('CSRF'); }
-    if (!rate_limit('register', 5, 600)) { $err = 'ઘણા પ્રયત્નો. પછી પ્રયત્ન કરો.'; }
+    if (!rate_limit('register', 5, 600)) { $err = 'Too many attempts. Please try again later.'; }
     elseif (!honeypot_ok()) { $err = 'Spam detected.'; }
     else {
         $name = trim($_POST['name'] ?? '');
@@ -20,9 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass = $_POST['password'] ?? '';
         $ref = trim($_POST['referral'] ?? '');
         if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($pass) < 8) {
-            $err = 'બધા ફીલ્ડ ભરો (પાસવર્ડ ઓછામાં ઓછો 8 અક્ષર).';
+            $err = 'Please fill in all fields (password at least 8 characters).';
         } elseif (one("SELECT id FROM " . tbl('users') . " WHERE email = :e", [':e' => $email])) {
-            $err = 'આ ઈમેલ પહેલેથી નોંધાયેલ છે.';
+            $err = 'This email is already registered.';
         } else {
             $referrer = $ref ? one("SELECT id FROM " . tbl('users') . " WHERE referral_code = :r", [':r' => $ref]) : null;
             $free = plan_free();
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-$page_title = t('register') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('register') . ' — ' . brand_name();
 require __DIR__ . '/includes/header.php';
 ?>
 <div class="max-w-md mx-auto mt-8">

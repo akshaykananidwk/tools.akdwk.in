@@ -47,9 +47,9 @@ $reply = '';
 $choice = strtolower(trim($text));
 
 function wa_menu($site): string {
-    return "🦚 નમસ્તે! કૃષ્ણા ટૂલ્સ માં આપનું સ્વાગત છે.\n\n"
-        . "1️⃣ ટૂલ્સ લિસ્ટ\n2️⃣ પ્લાન અને કિંમત\n3️⃣ મારો પ્લાન સ્ટેટસ\n"
-        . "4️⃣ CCTV સ્ટોરેજ કેલ્ક્યુલેટર\n5️⃣ શોપ સંપર્ક / લોકેશન\n0️⃣ સપોર્ટ (એજન્ટ સાથે વાત)";
+    return "🦚 Namaste! Welcome to Krishna Tools.\n\n"
+        . "1️⃣ Tools list\n2️⃣ Plans & pricing\n3️⃣ My plan status\n"
+        . "4️⃣ CCTV storage calculator\n5️⃣ Shop contact / location\n0️⃣ Support (talk to an agent)";
 }
 
 // CCTV mini-calculator conversational flow (state: cctv_cams → cctv_res → cctv_days).
@@ -57,11 +57,11 @@ if (str_starts_with($state, 'cctv_')) {
     $data = json_decode($sess['data'] ?? '{}', true) ?: [];
     if ($state === 'cctv_cams') {
         $data['cams'] = max(1, (int) $choice);
-        $reply = "કેમેરાનું રિઝોલ્યુશન લખો:\n1 = 2MP\n2 = 4MP\n3 = 8MP (4K)";
+        $reply = "Enter the camera resolution:\n1 = 2MP\n2 = 4MP\n3 = 8MP (4K)";
         wa_set_state($from, 'cctv_res', $data);
     } elseif ($state === 'cctv_res') {
         $map = ['1' => 2, '2' => 4, '3' => 8]; $data['mp'] = $map[$choice] ?? 2;
-        $reply = "કેટલા દિવસનું રેકોર્ડિંગ રાખવું છે? (દા.ત. 30)";
+        $reply = "How many days of recording do you want to keep? (e.g. 30)";
         wa_set_state($from, 'cctv_days', $data);
     } elseif ($state === 'cctv_days') {
         $days = max(1, (int) $choice);
@@ -70,10 +70,10 @@ if (str_starts_with($state, 'cctv_')) {
         $gb = $kbps * 1000 / 8 * 3600 * 24 * $days / 1e9 * ($data['cams'] ?? 1);
         $tb = $gb / 1000;
         $hdd = 0; foreach ([1,2,4,6,8,10] as $x) { if ($x >= $tb * 1.1) { $hdd = $x; break; } }
-        $reply = "🎥 અંદાજ:\nકેમેરા: {$data['cams']}, {$data['mp']}MP, {$days} દિવસ\n"
-            . "કુલ સ્ટોરેજ: " . round($gb) . " GB (" . round($tb, 2) . " TB)\n"
-            . "ભલામણ HDD: " . ($hdd ?: ceil($tb)) . " TB\n\n"
-            . "પૂરું ટૂલ: $site/tool/cctv-storage-calculator\n\nમેનૂ માટે 'menu' લખો.";
+        $reply = "🎥 Estimate:\nCameras: {$data['cams']}, {$data['mp']}MP, {$days} days\n"
+            . "Total storage: " . round($gb) . " GB (" . round($tb, 2) . " TB)\n"
+            . "Recommended HDD: " . ($hdd ?: ceil($tb)) . " TB\n\n"
+            . "Full tool: $site/tool/cctv-storage-calculator\n\nType 'menu' for the menu.";
         wa_set_state($from, 'menu', []);
     }
     wa_reply($from, $reply); http_response_code(200); echo 'ok'; exit;
@@ -82,36 +82,36 @@ if (str_starts_with($state, 'cctv_')) {
 switch ($choice) {
     case '1':
         $top = array_slice(kt_tools(), 0, 10);
-        $reply = "🛠️ લોકપ્રિય ટૂલ્સ:\n";
-        foreach ($top as $t) $reply .= "• {$t['name_gu']}: $site/tool/{$t['slug']}\n";
-        $reply .= "\nબધા ટૂલ્સ: $site";
+        $reply = "🛠️ Popular tools:\n";
+        foreach ($top as $t) $reply .= "• " . ($t['name_en'] ?: $t['name_gu']) . ": $site/tool/{$t['slug']}\n";
+        $reply .= "\nAll tools: $site";
         break;
     case '2':
-        $reply = "💎 પ્લાન:\n• ફ્રી — ₹0 (દરરોજ 3 વખત)\n• માસિક — ₹99/મહિનો (અમર્યાદિત)\n• વાર્ષિક — ₹499/વર્ષ (BEST VALUE, 58% બચત)\n\nખરીદો: $site/pricing.php";
+        $reply = "💎 Plans:\n• Free — ₹0 (3 uses per day)\n• Monthly — ₹99/month (unlimited)\n• Yearly — ₹499/year (BEST VALUE, save 58%)\n\nBuy: $site/pricing.php";
         break;
     case '3':
         $u = one("SELECT * FROM " . tbl('users') . " WHERE phone LIKE :p", [':p' => '%' . substr($from, -10)]);
         if ($u && $u['plan_expiry'] && strtotime($u['plan_expiry']) > time()) {
             $plan = one("SELECT * FROM " . tbl('plans') . " WHERE id = :id", [':id' => $u['plan_id']]);
             $left = ceil((strtotime($u['plan_expiry']) - time()) / 86400);
-            $reply = "✅ {$u['name']}, આપનો પ્લાન: " . ($plan['name_gu'] ?? '-') . "\nબાકી દિવસ: $left\nસમાપ્તિ: " . date('d-m-Y', strtotime($u['plan_expiry']));
+            $reply = "✅ {$u['name']}, your plan: " . (($plan['name_en'] ?? '') !== '' ? $plan['name_en'] : ($plan['name_gu'] ?? '-')) . "\nDays left: $left\nExpires: " . date('d-m-Y', strtotime($u['plan_expiry']));
         } else {
-            $reply = "આપનો કોઈ સક્રિય પ્લાન મળ્યો નહીં. ખરીદો: $site/pricing.php";
+            $reply = "No active plan found. Buy one: $site/pricing.php";
         }
         break;
     case '4':
-        $reply = "🎥 CCTV સ્ટોરેજ કેલ્ક્યુલેટર\nકેટલા કેમેરા છે? સંખ્યા લખો (દા.ત. 4)";
+        $reply = "🎥 CCTV storage calculator\nHow many cameras do you have? Enter a number (e.g. 4)";
         wa_set_state($from, 'cctv_cams', []);
         wa_reply($from, $reply); http_response_code(200); echo 'ok'; exit;
     case '5':
-        $reply = "🏪 AK Computer\n📍 $shopAddr\n📞 $shopPhone\n🗺️ https://maps.google.com/?q=" . urlencode($shopAddr) . "\n\nકમ્પ્યુટર અને CCTV — હરે કૃષ્ણ 🦚";
+        $reply = "🏪 AK Computer\n📍 $shopAddr\n📞 $shopPhone\n🗺️ https://maps.google.com/?q=" . urlencode($shopAddr) . "\n\nComputers & CCTV — Hare Krishna 🦚";
         break;
     case '0':
         // Flag conversation for the admin Live Chat inbox.
         wa_set_state($from, 'agent', ['flagged' => date('c')]);
         try { insert('contact_messages', ['name' => 'WhatsApp ' . $from, 'phone' => $from,
-            'message' => 'IVR: સપોર્ટ એજન્ટ સાથે વાત કરવા માંગે છે', 'created_at' => date('Y-m-d H:i:s')]); } catch (Throwable $e) {}
-        $reply = "🙏 આપની વિનંતી નોંધાઈ. અમારો એજન્ટ ટૂંક સમયમાં સંપર્ક કરશે.\nમેનૂ માટે 'menu' લખો.";
+            'message' => 'IVR: wants to talk to a support agent', 'created_at' => date('Y-m-d H:i:s')]); } catch (Throwable $e) {}
+        $reply = "🙏 Your request has been noted. Our agent will contact you shortly.\nType 'menu' for the menu.";
         break;
     default:
         $reply = wa_menu($site);

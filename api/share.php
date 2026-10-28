@@ -19,28 +19,28 @@ if (!rate_limit('wa_share', 10, 60)) json_out(['ok' => false, 'error' => 'Too ma
 
 $user = current_user();
 $number = normalize_phone($_POST['number'] ?? (json_decode(file_get_contents('php://input'), true)['number'] ?? ''));
-if (strlen($number) < 12) json_out(['ok' => false, 'error' => 'માન્ય નંબર આપો (91XXXXXXXXXX)']);
+if (strlen($number) < 12) json_out(['ok' => false, 'error' => 'Enter a valid number (91XXXXXXXXXX)']);
 
 // File share (multipart) vs text share (JSON body).
 if (!empty($_FILES['file']['tmp_name'])) {
     $f = $_FILES['file'];
-    if ($f['size'] > 25 * 1024 * 1024) json_out(['ok' => false, 'error' => 'ફાઇલ ખૂબ મોટી (25MB max)']);
+    if ($f['size'] > 25 * 1024 * 1024) json_out(['ok' => false, 'error' => 'File too large (25MB max)']);
 
     // MIME whitelist.
     $allowed = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'application/zip', 'text/plain', 'text/csv', 'application/json'];
     $mime = mime_content_type($f['tmp_name']) ?: '';
-    if (!in_array($mime, $allowed, true)) json_out(['ok' => false, 'error' => 'આ ફાઇલ પ્રકાર માન્ય નથી']);
+    if (!in_array($mime, $allowed, true)) json_out(['ok' => false, 'error' => 'This file type is not allowed']);
 
     $token = rand_token(16);
     $dir = KT_UPLOADS . '/share/' . $token;
     @mkdir($dir, 0755, true);
     $name = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($f['name'])) ?: 'file';
     $path = $dir . '/' . $name;
-    if (!move_uploaded_file($f['tmp_name'], $path)) json_out(['ok' => false, 'error' => 'અપલોડ નિષ્ફળ']);
+    if (!move_uploaded_file($f['tmp_name'], $path)) json_out(['ok' => false, 'error' => 'Upload failed']);
 
     $publicUrl = SITE_URL . '/uploads/share/' . $token . '/' . rawurlencode($name);
     $msg = $_POST['message'] ?? '';
-    $res = wa()->sendMedia($number, $msg ?: ('🦚 ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ')), $publicUrl, (int) $user['id']);
+    $res = wa()->sendMedia($number, $msg ?: ('🦚 ' . brand_name()), $publicUrl, (int) $user['id']);
 
     // Record for the 2-hour purge (cron + on-load sweep).
     try {
@@ -49,12 +49,12 @@ if (!empty($_FILES['file']['tmp_name'])) {
             'expires_at' => date('Y-m-d H:i:s', time() + 7200)]);
     } catch (Throwable $e) {}
 
-    json_out(['ok' => $res['ok'], 'error' => $res['ok'] ? '' : 'WhatsApp મોકલવામાં નિષ્ફળ']);
+    json_out(['ok' => $res['ok'], 'error' => $res['ok'] ? '' : 'Failed to send WhatsApp message']);
 }
 
 // Text share.
 $body = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 $message = trim($body['message'] ?? '');
-if ($message === '') json_out(['ok' => false, 'error' => 'સંદેશ ખાલી છે']);
+if ($message === '') json_out(['ok' => false, 'error' => 'Message is empty']);
 $res = wa()->send($number, $message, (int) $user['id']);
-json_out(['ok' => $res['ok'], 'error' => $res['ok'] ? '' : 'WhatsApp મોકલવામાં નિષ્ફળ']);
+json_out(['ok' => $res['ok'], 'error' => $res['ok'] ? '' : 'Failed to send WhatsApp message']);

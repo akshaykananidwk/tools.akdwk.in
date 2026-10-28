@@ -17,15 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mid = (int) ($_POST['msg_id'] ?? 0);
             if ($mid) {
                 update('contact_messages', ['is_read' => $action === 'read' ? 1 : 0], ['id' => $mid]);
-                $flash = 'અપડેટ થયું.';
+                $flash = 'Updated.';
             }
         } elseif ($action === 'read_all') {
             q("UPDATE " . tbl('contact_messages') . " SET is_read = 1 WHERE is_read = 0");
-            $flash = 'બધા વાંચેલા તરીકે માર્ક થયા.';
+            $flash = 'All marked as read.';
         }
     } catch (Throwable $e) {
         kt_error_log('admin contact: ' . $e->getMessage());
-        $flash = 'ભૂલ આવી.';
+        $flash = 'Something went wrong.';
     }
 }
 
@@ -43,7 +43,7 @@ try {
     kt_error_log('admin contact list: ' . $e->getMessage());
 }
 
-admin_head('સંપર્ક');
+admin_head('Contact');
 ?>
 <?php if ($flash): ?>
   <div class="kt-card p-3 mb-4 text-sm" style="border-color:var(--gold)"><?= e($flash) ?></div>
@@ -51,19 +51,19 @@ admin_head('સંપર્ક');
 
 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
   <div class="flex items-center gap-2">
-    <span class="badge-premium">ન વાંચેલા: <?= number_format($unread) ?></span>
-    <span class="opacity-60 text-sm">કુલ: <?= number_format($total) ?></span>
+    <span class="badge-premium">Unread: <?= number_format($unread) ?></span>
+    <span class="opacity-60 text-sm">Total: <?= number_format($total) ?></span>
   </div>
   <?php if ($unread > 0): ?>
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="read_all">
-      <button class="btn btn-ghost text-sm"><i data-lucide="check-check" class="w-4 h-4"></i> બધા વાંચેલા કરો</button>
+      <button class="btn btn-ghost text-sm"><i data-lucide="check-check" class="w-4 h-4"></i> Mark all as read</button>
     </form>
   <?php endif; ?>
 </div>
 
 <div class="space-y-3">
 <?php if (!$msgs): ?>
-  <div class="kt-card p-6 text-center opacity-60">કોઈ સંદેશ નથી.</div>
+  <div class="kt-card p-6 text-center opacity-60">No messages.</div>
 <?php else: foreach ($msgs as $m):
     $isRead = (int) $m['is_read'] === 1; ?>
   <div class="kt-card p-4 <?= $isRead ? 'opacity-70' : '' ?>" style="<?= $isRead ? '' : 'border-color:var(--gold)' ?>">
@@ -81,12 +81,12 @@ admin_head('સંપર્ક');
         <?= csrf_field() ?>
         <input type="hidden" name="msg_id" value="<?= (int) $m['id'] ?>">
         <input type="hidden" name="action" value="<?= $isRead ? 'unread' : 'read' ?>">
-        <button class="btn btn-ghost !py-1 !px-3 text-sm"><?= $isRead ? 'ન વાંચેલ કરો' : 'વાંચેલ કરો' ?></button>
+        <button class="btn btn-ghost !py-1 !px-3 text-sm"><?= $isRead ? 'Mark unread' : 'Mark read' ?></button>
       </form>
     </div>
     <p class="mt-2 text-sm whitespace-pre-wrap"><?= e($m['message'] ?? '') ?></p>
     <?php if (!empty($m['phone'])): ?>
-      <a href="<?= SITE_URL ?>/admin/whatsapp.php" class="text-xs text-[color:var(--peacock-teal)] hover:underline mt-1 inline-block">વ્હોટ્સએપથી જવાબ આપો →</a>
+      <a href="<?= SITE_URL ?>/admin/whatsapp.php" class="text-xs text-[color:var(--peacock-teal)] hover:underline mt-1 inline-block">Reply via WhatsApp →</a>
     <?php endif; ?>
   </div>
 <?php endforeach; endif; ?>

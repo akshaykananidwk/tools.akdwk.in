@@ -11,18 +11,18 @@ $next = $_GET['next'] ?? ($_POST['next'] ?? '/dashboard.php');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify_page();
     if (!rate_limit('login', 6, 300)) {
-        $err = 'ઘણા પ્રયત્નો. થોડી વાર પછી પ્રયત્ન કરો.';
+        $err = 'Too many attempts. Please try again in a few minutes.';
     } elseif (!honeypot_ok()) {
         $err = 'Spam detected.';
     } else {
         $user = attempt_login($_POST['email'] ?? '', $_POST['password'] ?? '');
         if ($user) redirect(str_starts_with($next, '/') ? SITE_URL . $next : SITE_URL . '/dashboard.php');
-        $err = 'ઈમેલ કે પાસવર્ડ ખોટો છે.';
+        $err = 'Incorrect email or password.';
     }
 }
 function csrf_verify_page() { kt_session_start(); if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) { http_response_code(419); exit('CSRF'); } }
 
-$page_title = t('login') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('login') . ' — ' . brand_name();
 require __DIR__ . '/includes/header.php';
 ?>
 <div class="max-w-md mx-auto mt-8">

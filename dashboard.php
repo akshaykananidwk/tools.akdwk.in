@@ -29,7 +29,7 @@ try { foreach (all("SELECT t.slug, t.name_gu, t.name_en, t.icon FROM " . tbl('fa
                     JOIN " . tbl('tools') . " t ON t.id = f.tool_id WHERE f.user_id = :u LIMIT 8",
                     [':u' => $user['id']]) as $r) $favs[] = $r; } catch (Throwable $e) {}
 
-$page_title = t('dashboard') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('dashboard') . ' — ' . brand_name();
 $extra_head = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -63,7 +63,7 @@ require __DIR__ . '/includes/header.php';
   <div class="kt-card p-5" style="background:linear-gradient(135deg,rgba(30,58,138,.07),rgba(245,158,11,.07))">
     <div class="text-xs opacity-60"><?= t('daily_shlok') ?></div>
     <div class="mt-2 font-semibold" style="font-family:'Baloo Bhai 2'"><?= e($shlok['sanskrit']) ?></div>
-    <div class="text-sm opacity-70 mt-1"><?= e($shlok['gu']) ?></div>
+    <div class="text-sm opacity-70 mt-1"><?= e($shlok['en'] ?? $shlok['gu']) ?></div>
   </div>
 </div>
 

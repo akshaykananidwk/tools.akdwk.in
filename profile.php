@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $en = current_lang() === 'en';
-$page_title = t('profile') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('profile') . ' — ' . brand_name();
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],
     ['label' => t('dashboard'), 'url' => SITE_URL . '/dashboard.php'],

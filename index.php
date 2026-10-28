@@ -15,7 +15,7 @@ $en = current_lang() === 'en';
 $nTools = (int) (floor(count($tools) / 50) * 50); // "700+" style rounded count
 $page_title = $en
     ? brand_name() . " — {$nTools}+ Free Online Tools in Gujarati & English"
-    : setting('site_name', 'કૃષ્ણા ટૂલ્સ') . " — {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ ગુજરાતીમાં";
+    : brand_name() . " — {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ ગુજરાતીમાં";
 $page_desc  = $en
     ? "Krishna Tools by AK Computer, Dwarka — {$nTools}+ free online tools for everyone: PDF & image, restaurant, hotel, salon, doctor, contractor, electrician, printing, student, farmer, finance, birthday wishes and more. No login, works in your browser."
     : "AK Computer, દ્વારકા દ્વારા {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ — PDF, ઇમેજ, રેસ્ટોરન્ટ, હોટલ, સલૂન, ડૉક્ટર, કોન્ટ્રાક્ટર, ઇલેક્ટ્રિશિયન, વિદ્યાર્થી, ખેડૂત, શુભેચ્છા અને ઘણું બધું. લોગિન વગર, સંપૂર્ણ ફ્રી.";

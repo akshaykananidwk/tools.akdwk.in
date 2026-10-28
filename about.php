@@ -4,10 +4,10 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $en = current_lang() === 'en';
 $shopName    = setting('shop_name', 'AK Computer');
-$shopAddress = setting('shop_address', 'દ્વારકા, ગુજરાત');
+$shopAddress = kt_en_text(setting('shop_address', 'Dwarka, Gujarat'), 'Dwarka, Gujarat');
 $shopWaLink  = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '919978123146')));
 
-$page_title = t('about') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('about') . ' — ' . brand_name();
 $page_desc  = $en
     ? 'About AK Computer, Dwarka — a computer and CCTV shop building free online tools for Gujarat.'
     : 'AK Computer, દ્વારકા વિશે — કમ્પ્યુટર અને CCTV શોપ, ગુજરાત માટે ફ્રી ઓનલાઇન ટૂલ્સ.';
@@ -25,7 +25,7 @@ require __DIR__ . '/includes/header.php';
   </div>
 
   <div class="kt-card p-6 mb-5">
-    <h2 class="font-bold text-xl mb-3" style="color:var(--peacock-teal)"><?= e($shopName) ?>, દ્વારકા</h2>
+    <h2 class="font-bold text-xl mb-3" style="color:var(--peacock-teal)"><?= e($shopName) ?>, Dwarka</h2>
     <?php if ($en): ?>
       <p class="opacity-80 leading-relaxed">
         <?= e($shopName) ?> is a trusted computer and CCTV shop based in Dwarka, Gujarat. For years we have
@@ -34,7 +34,7 @@ require __DIR__ . '/includes/header.php';
       </p>
       <p class="opacity-80 leading-relaxed mt-3">
         Krishna Tools is our gift to the community — a collection of <?= kt_tool_count_label() ?>+ genuinely useful online tools
-        (image, PDF, CCTV calculators, business utilities and more), built Gujarati-first so everyone can
+        (image, PDF, CCTV calculators, business utilities and more), made simple so everyone can
         use them with ease. Most tools run right inside your browser, so your files stay private.
       </p>
     <?php else: ?>

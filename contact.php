@@ -52,7 +52,7 @@ $shopAddress = setting('shop_address', 'Dwarka, Gujarat');
 $shopPhone   = setting('shop_phone', '9978123146');
 $shopWaLink  = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '919978123146')));
 
-$page_title = t('contact') . ' — ' . setting('site_name', 'કૃષ્ણા ટૂલ્સ');
+$page_title = t('contact') . ' — ' . brand_name();
 $page_desc  = $en ? 'Contact AK Computer, Dwarka — computer & CCTV shop.' : 'AK Computer, દ્વારકા સાથે સંપર્ક — કમ્પ્યુટર અને CCTV શોપ.';
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],

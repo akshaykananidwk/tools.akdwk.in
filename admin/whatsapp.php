@@ -25,9 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($num !== '' && $msg !== '') {
                 $res = wa()->send($num, $msg, (int) $me['id']);
                 $testResult = $res;
-                $flash = $res['ok'] ? 'ટેસ્ટ મેસેજ મોકલાયો.' : 'મોકલવામાં નિષ્ફળ.';
+                $flash = $res['ok'] ? 'Test message sent.' : 'Failed to send.';
             } else {
-                $flash = 'નંબર અને મેસેજ જરૂરી છે.';
+                $flash = 'Number and message are required.';
             }
         } elseif ($form === 'template') {
             $tid = (int) ($_POST['template_id'] ?? 0);
@@ -38,16 +38,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_active' => isset($_POST['is_active']) ? 1 : 0,
                 ], ['id' => $tid]);
                 activity_log((int) $me['id'], 'admin_wa_template', 'template #' . $tid);
-                $flash = 'ટેમ્પ્લેટ સેવ થયું.';
+                $flash = 'Template saved.';
             }
         } elseif ($form === 'broadcast') {
             $broadcastSummary = admin_wa_broadcast($_POST, (int) $me['id']);
-            $flash = 'બ્રોડકાસ્ટ પૂર્ણ: ' . $broadcastSummary['sent'] . ' મોકલાયા, '
-                   . $broadcastSummary['failed'] . ' નિષ્ફળ, ' . $broadcastSummary['skipped'] . ' છોડ્યા.';
+            $flash = 'Broadcast complete: ' . $broadcastSummary['sent'] . ' sent, '
+                   . $broadcastSummary['failed'] . ' failed, ' . $broadcastSummary['skipped'] . ' skipped.';
         }
     } catch (Throwable $e) {
         kt_error_log('admin whatsapp: ' . $e->getMessage());
-        $flash = 'ભૂલ આવી: ' . $e->getMessage();
+        $flash = 'Error: ' . $e->getMessage();
     }
 }
 
@@ -59,7 +59,7 @@ function admin_wa_broadcast(array $post, int $adminId): array {
     $cap = 200;
     $message = trim($post['bmessage'] ?? '');
     $audience = $post['audience'] ?? 'all';
-    if ($message === '') return ['sent' => 0, 'failed' => 0, 'skipped' => 0, 'total' => 0, 'note' => 'ખાલી મેસેજ'];
+    if ($message === '') return ['sent' => 0, 'failed' => 0, 'skipped' => 0, 'total' => 0, 'note' => 'Empty message'];
 
     // Collect target numbers.
     $numbers = [];
@@ -139,7 +139,7 @@ try {
     kt_error_log('admin whatsapp data: ' . $e->getMessage());
 }
 
-admin_head('વ્હોટ્સએપ');
+admin_head('WhatsApp');
 ?>
 <?php if ($flash): ?>
   <div class="kt-card p-3 mb-4 text-sm" style="border-color:var(--gold)"><?= e($flash) ?></div>
@@ -148,94 +148,94 @@ admin_head('વ્હોટ્સએપ');
 <!-- (a) Status + test send -->
 <div class="grid gap-4 lg:grid-cols-2 mb-5">
   <div class="kt-card p-5">
-    <h2 class="section-title text-base mb-3">કનેક્શન સ્ટેટસ</h2>
+    <h2 class="section-title text-base mb-3">Connection Status</h2>
     <?php if ($configured): ?>
       <div class="flex items-center gap-2 text-sm" style="color:var(--morpankh-green)">
-        <i data-lucide="check-circle-2" class="w-5 h-5"></i> WhatsApp API કન્ફિગર થયેલ છે.
+        <i data-lucide="check-circle-2" class="w-5 h-5"></i> WhatsApp API is configured.
       </div>
     <?php else: ?>
       <div class="flex items-center gap-2 text-sm" style="color:#DC2626">
-        <i data-lucide="x-circle" class="w-5 h-5"></i> કન્ફિગર નથી. <a href="settings.php" class="underline">સેટિંગ્સમાં</a> API કી ઉમેરો.
+        <i data-lucide="x-circle" class="w-5 h-5"></i> Not configured. Add an API key in <a href="settings.php" class="underline">Settings</a>.
       </div>
     <?php endif; ?>
     <?php if ($testResult !== null): ?>
       <div class="mt-3 text-xs">
-        <div class="kt-label !mb-1">API પ્રતિસાદ:</div>
+        <div class="kt-label !mb-1">API response:</div>
         <pre class="p-2 rounded-lg overflow-auto text-xs" style="background:rgba(0,0,0,.05);max-height:150px"><?= e(is_array($testResult) ? json_encode($testResult, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : (string) $testResult) ?></pre>
       </div>
     <?php endif; ?>
   </div>
   <div class="kt-card p-5">
-    <h2 class="section-title text-base mb-3">ટેસ્ટ મેસેજ મોકલો</h2>
+    <h2 class="section-title text-base mb-3">Send Test Message</h2>
     <form method="post" class="space-y-3">
       <?= csrf_field() ?>
       <input type="hidden" name="form" value="test">
-      <div><label class="kt-label text-xs">નંબર (91XXXXXXXXXX)</label><input name="number" class="kt-input !py-1.5" placeholder="919978123146" required></div>
-      <div><label class="kt-label text-xs">મેસેજ</label><textarea name="message" rows="3" class="kt-input !py-1.5" required></textarea></div>
-      <button class="btn btn-wa w-full justify-center"><i data-lucide="send" class="w-4 h-4"></i> મોકલો</button>
+      <div><label class="kt-label text-xs">Number (91XXXXXXXXXX)</label><input name="number" class="kt-input !py-1.5" placeholder="919978123146" required></div>
+      <div><label class="kt-label text-xs">Message</label><textarea name="message" rows="3" class="kt-input !py-1.5" required></textarea></div>
+      <button class="btn btn-wa w-full justify-center"><i data-lucide="send" class="w-4 h-4"></i> Send</button>
     </form>
   </div>
 </div>
 
 <!-- (d) Broadcast composer -->
 <div class="kt-card p-5 mb-5">
-  <h2 class="section-title text-base mb-1">બ્રોડકાસ્ટ</h2>
-  <p class="text-xs opacity-70 mb-3">દરેક મેસેજ વચ્ચે 3 સેકન્ડનો વિરામ. એક વખતમાં મહત્તમ 200 નંબર (વધારાના છોડી દેવાય).</p>
+  <h2 class="section-title text-base mb-1">Broadcast</h2>
+  <p class="text-xs opacity-70 mb-3">3-second pause between messages. Max 200 numbers per run (extra numbers are skipped).</p>
   <?php if ($broadcastSummary): ?>
     <div class="text-sm mb-3 p-3 rounded-lg" style="background:rgba(5,150,105,.1)">
-      કુલ <?= (int) $broadcastSummary['total'] ?> | મોકલાયા <?= (int) $broadcastSummary['sent'] ?> | નિષ્ફળ <?= (int) $broadcastSummary['failed'] ?> | છોડ્યા <?= (int) $broadcastSummary['skipped'] ?>
+      Total <?= (int) $broadcastSummary['total'] ?> | Sent <?= (int) $broadcastSummary['sent'] ?> | Failed <?= (int) $broadcastSummary['failed'] ?> | Skipped <?= (int) $broadcastSummary['skipped'] ?>
     </div>
   <?php endif; ?>
-  <form method="post" class="space-y-3" onsubmit="return confirm('બ્રોડકાસ્ટ મોકલવાની ખાતરી છે? આ સમય લેશે.');">
+  <form method="post" class="space-y-3" onsubmit="return confirm('Send this broadcast? It may take a while.');">
     <?= csrf_field() ?>
     <input type="hidden" name="form" value="broadcast">
-    <div><label class="kt-label text-xs">મેસેજ</label><textarea name="bmessage" rows="4" class="kt-input !py-1.5" required></textarea></div>
+    <div><label class="kt-label text-xs">Message</label><textarea name="bmessage" rows="4" class="kt-input !py-1.5" required></textarea></div>
     <div class="grid sm:grid-cols-2 gap-3">
       <div>
-        <label class="kt-label text-xs">ઓડિયન્સ</label>
+        <label class="kt-label text-xs">Audience</label>
         <select name="audience" class="kt-select !py-1.5" onchange="document.getElementById('planWrap').style.display=this.value==='plan'?'block':'none';document.getElementById('pasteWrap').style.display=this.value==='paste'?'block':'none';">
-          <option value="all">બધા એક્ટિવ યુઝર્સ</option>
-          <option value="plan">પ્લાન પ્રમાણે</option>
-          <option value="paste">નંબર પેસ્ટ કરો</option>
+          <option value="all">All active users</option>
+          <option value="plan">By plan</option>
+          <option value="paste">Paste numbers</option>
         </select>
       </div>
       <div id="planWrap" style="display:none">
-        <label class="kt-label text-xs">પ્લાન</label>
+        <label class="kt-label text-xs">Plan</label>
         <select name="plan_id" class="kt-select !py-1.5">
           <?php foreach ($plans as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e(loc($p, 'name')) ?></option><?php endforeach; ?>
         </select>
       </div>
     </div>
     <div id="pasteWrap" style="display:none">
-      <label class="kt-label text-xs">નંબર (સ્પેસ / કોમા / લાઇનથી અલગ)</label>
+      <label class="kt-label text-xs">Numbers (separated by space, comma or new line)</label>
       <textarea name="numbers" rows="3" class="kt-input !py-1.5" placeholder="919978123146, 919876543210"></textarea>
     </div>
-    <button class="btn btn-cta"><i data-lucide="megaphone" class="w-4 h-4"></i> બ્રોડકાસ્ટ મોકલો</button>
+    <button class="btn btn-cta"><i data-lucide="megaphone" class="w-4 h-4"></i> Send Broadcast</button>
   </form>
 </div>
 
 <!-- (c) Template editor -->
 <div class="kt-card p-5 mb-5">
-  <h2 class="section-title text-base mb-3">ટેમ્પ્લેટ એડિટર</h2>
+  <h2 class="section-title text-base mb-3">Template Editor</h2>
   <?php if (!$templates): ?>
-    <p class="opacity-60 text-sm">કોઈ ટેમ્પ્લેટ નથી.</p>
+    <p class="opacity-60 text-sm">No templates.</p>
   <?php else: ?>
     <div class="space-y-3">
       <?php foreach ($templates as $tpl): ?>
         <details class="border rounded-xl p-3" style="border-color:var(--border)">
           <summary class="cursor-pointer font-semibold flex items-center justify-between list-none">
-            <span><?= e($tpl['name_gu'] ?: $tpl['key_name']) ?> <span class="text-xs opacity-50">(<?= e($tpl['key_name']) ?>)</span></span>
-            <span class="text-xs" style="color:<?= (int) $tpl['is_active'] === 1 ? 'var(--morpankh-green)' : '#DC2626' ?>"><?= (int) $tpl['is_active'] === 1 ? 'એક્ટિવ' : 'નિષ્ક્રિય' ?></span>
+            <span><?= e(ucwords(str_replace('_', ' ', $tpl['key_name']))) ?> <span class="text-xs opacity-50">(<?= e($tpl['key_name']) ?>)</span></span>
+            <span class="text-xs" style="color:<?= (int) $tpl['is_active'] === 1 ? 'var(--morpankh-green)' : '#DC2626' ?>"><?= (int) $tpl['is_active'] === 1 ? 'Active' : 'Inactive' ?></span>
           </summary>
           <form method="post" class="mt-3 space-y-2">
             <?= csrf_field() ?>
             <input type="hidden" name="form" value="template">
             <input type="hidden" name="template_id" value="<?= (int) $tpl['id'] ?>">
-            <?php if ($tpl['variables']): ?><p class="text-xs opacity-60">વેરિએબલ્સ: <?= e($tpl['variables']) ?> (<code>:નામ</code> તરીકે વાપરો)</p><?php endif; ?>
-            <div><label class="kt-label text-xs">બોડી (ગુ)</label><textarea name="body_gu" rows="2" class="kt-input !py-1.5 text-sm"><?= e($tpl['body_gu'] ?? '') ?></textarea></div>
-            <div><label class="kt-label text-xs">Body (EN)</label><textarea name="body_en" rows="2" class="kt-input !py-1.5 text-sm"><?= e($tpl['body_en'] ?? '') ?></textarea></div>
-            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" <?= (int) $tpl['is_active'] === 1 ? 'checked' : '' ?>> એક્ટિવ</label>
-            <button class="btn btn-primary !py-1 text-sm"><i data-lucide="save" class="w-3.5 h-3.5"></i> સેવ કરો</button>
+            <?php if ($tpl['variables']): ?><p class="text-xs opacity-60">Variables: <?= e($tpl['variables']) ?> (use as <code>:name</code>)</p><?php endif; ?>
+            <div><label class="kt-label text-xs">Message text</label><textarea name="body_en" rows="2" class="kt-input !py-1.5 text-sm"><?= e($tpl['body_en'] ?? '') ?></textarea></div>
+            <input type="hidden" name="body_gu" value="<?= e($tpl['body_gu'] ?? '') ?>">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" <?= (int) $tpl['is_active'] === 1 ? 'checked' : '' ?>> Active</label>
+            <button class="btn btn-primary !py-1 text-sm"><i data-lucide="save" class="w-3.5 h-3.5"></i> Save</button>
           </form>
         </details>
       <?php endforeach; ?>
@@ -245,27 +245,27 @@ admin_head('વ્હોટ્સએપ');
 
 <!-- (b) Message logs -->
 <div class="kt-card p-5">
-  <h2 class="section-title text-base mb-3">મેસેજ લોગ્સ</h2>
+  <h2 class="section-title text-base mb-3">Message Logs</h2>
   <form method="get" class="flex flex-wrap gap-2 items-end mb-3">
-    <div><label class="kt-label text-xs">સ્ટેટસ</label>
+    <div><label class="kt-label text-xs">Status</label>
       <select name="status" class="kt-select !py-1.5">
         <?php foreach (['', 'sent', 'failed', 'not_configured'] as $s): ?>
-          <option value="<?= e($s) ?>" <?= $fStatus === $s ? 'selected' : '' ?>><?= $s === '' ? 'બધા' : e($s) ?></option>
+          <option value="<?= e($s) ?>" <?= $fStatus === $s ? 'selected' : '' ?>><?= $s === '' ? 'All' : e($s) ?></option>
         <?php endforeach; ?>
       </select>
     </div>
-    <div><label class="kt-label text-xs">નંબર</label><input name="number" value="<?= e($fNumber) ?>" class="kt-input !py-1.5"></div>
-    <div><label class="kt-label text-xs">તારીખ</label><input type="date" name="date" value="<?= e($fDate) ?>" class="kt-input !py-1.5"></div>
-    <button class="btn btn-primary">ફિલ્ટર</button>
-    <a href="whatsapp.php" class="btn btn-ghost">રિસેટ</a>
-    <span class="opacity-60 text-sm ms-auto">કુલ: <?= number_format($logTotal) ?></span>
+    <div><label class="kt-label text-xs">Number</label><input name="number" value="<?= e($fNumber) ?>" class="kt-input !py-1.5"></div>
+    <div><label class="kt-label text-xs">Date</label><input type="date" name="date" value="<?= e($fDate) ?>" class="kt-input !py-1.5"></div>
+    <button class="btn btn-primary">Filter</button>
+    <a href="whatsapp.php" class="btn btn-ghost">Reset</a>
+    <span class="opacity-60 text-sm ms-auto">Total: <?= number_format($logTotal) ?></span>
   </form>
   <div class="overflow-x-auto">
     <table class="kt-table">
-      <thead><tr><th>#</th><th>નંબર</th><th>પ્રકાર</th><th>મેસેજ</th><th>સ્ટેટસ</th><th>સમય</th></tr></thead>
+      <thead><tr><th>#</th><th>Number</th><th>Type</th><th>Message</th><th>Status</th><th>Time</th></tr></thead>
       <tbody>
       <?php if (!$logs): ?>
-        <tr><td colspan="6" class="text-center opacity-60 py-6">કોઈ લોગ નથી.</td></tr>
+        <tr><td colspan="6" class="text-center opacity-60 py-6">No logs.</td></tr>
       <?php else: foreach ($logs as $l): ?>
         <tr>
           <td class="opacity-60"><?= (int) $l['id'] ?></td>

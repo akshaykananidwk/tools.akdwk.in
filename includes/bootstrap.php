@@ -13,6 +13,13 @@ if (!is_file(dirname(__DIR__) . '/config/config.php')) {
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/auth.php';
 
+// English-only site: old ?lang=gu / ?lang=en links redirect permanently to the clean URL.
+if (isset($_GET['lang']) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+    $u = preg_replace('/([?&])lang=[a-z]{2}(&|$)/', '$1', $_SERVER['REQUEST_URI'] ?? '/');
+    header('Location: ' . rtrim(rtrim($u, '&'), '?'), true, 301);
+    exit;
+}
+
 // Maintenance mode (admins bypass).
 if (maintenance_active() && !is_admin() && !str_contains($_SERVER['REQUEST_URI'] ?? '', '/admin')) {
     http_response_code(503);
