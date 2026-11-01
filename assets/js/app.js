@@ -133,7 +133,17 @@ function waShareText(text) {
   }
 }
 async function waShareFile(blob, filename, caption) {
-  if (!KT.loggedIn) { toast(T('ફાઇલ શેર માટે લોગિન કરો', 'Login to share files'), true); return; }
+  if (!KT.loggedIn) {
+    // No login needed: use the phone's share sheet, or download the file and open WhatsApp.
+    try {
+      const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: caption || filename }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    downloadBlob(blob, filename);
+    toast('File downloaded — attach it in the WhatsApp chat');
+    setTimeout(() => window.open('https://wa.me/?text=' + encodeURIComponent(caption || filename), '_blank'), 600);
+    return;
+  }
   const num = prompt(T('WhatsApp નંબર (91XXXXXXXXXX):', 'WhatsApp number (91XXXXXXXXXX):'));
   if (!num) return;
   const fd = new FormData();

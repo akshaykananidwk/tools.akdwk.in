@@ -50,6 +50,13 @@ function an_live(): array {
     }
     return $out;
 }
+if (isset($_GET['geo'])) { // resolve visitor cities now (works even when the server cron is not set up)
+    @set_time_limit(40);
+    $msg = kt_job_analytics_geo();
+    json_out(['ok' => true, 'msg' => $msg, 'resolved' => (int) (preg_match('/Resolved (\d+)/', $msg, $m) ? $m[1] : 0),
+        'pending' => (int) (scalar("SELECT COUNT(DISTINCT pv.ip) FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip WHERE g.ip IS NULL AND pv.ip IS NOT NULL AND pv.created_at > :s", [':s' => date('Y-m-d H:i:s', strtotime('-7 days'))]) ?? 0),
+        'error' => (string) setting('analytics_geo_error', '')]);
+}
 if (isset($_GET['live'])) { json_out(['ok' => true, 'count' => count($l = an_live()), 'rows' => $l, 'at' => date('H:i:s')]); }
 
 /* ---------- Date range ---------- */
@@ -83,6 +90,7 @@ function an_totals(string $a, string $b): array {
 $kToday = an_totals("$today 00:00:00", "$today 23:59:59");
 $y = date('Y-m-d', strtotime('-1 day'));
 $kYest  = an_totals("$y 00:00:00", "$y 23:59:59");
+$kYestSoFar = an_totals("$y 00:00:00", $y . ' ' . date('H:i:s')); // yesterday up to this time of day, for a fair comparison
 $kMonth = an_totals(date('Y-m-01') . ' 00:00:00', "$today 23:59:59");
 $kRange = an_totals($R[':a'], $R[':b']);
 $kAll   = (int) (scalar("SELECT COUNT(DISTINCT vid) FROM $PV") ?? 0);
@@ -112,7 +120,10 @@ $toolUses = all("SELECT slug, COUNT(*) uses, COUNT(DISTINCT vid) users FROM $PV 
 $pages = all("SELECT path, COUNT(*) views, COUNT(DISTINCT vid) visitors FROM $PV pv WHERE $W AND kind='view' GROUP BY path ORDER BY views DESC LIMIT 25", $R);
 $refs = all("SELECT COALESCE(ref_host, '') host, COUNT(*) views FROM $PV pv WHERE $W AND kind='view' GROUP BY ref_host ORDER BY views DESC LIMIT 15", $R);
 $devices = all("SELECT COALESCE(device, '') device, COUNT(DISTINCT vid) visitors FROM $PV pv WHERE $W GROUP BY device ORDER BY visitors DESC", $R);
-$langs = all("SELECT COALESCE(lang, '') lang, COUNT(*) views FROM $PV pv WHERE $W AND kind='view' GROUP BY lang ORDER BY views DESC", $R);
+// Landing pages: the first page of each visitor in the period (where people arrive from Google etc.).
+$landing = all("SELECT pv.path, COUNT(*) visitors, SUM(pv.ref_host IS NOT NULL) from_search FROM $PV pv
+                JOIN (SELECT vid, MIN(id) first_id FROM $PV pv WHERE $W AND kind='view' GROUP BY vid) f ON f.first_id = pv.id
+                GROUP BY pv.path ORDER BY visitors DESC LIMIT 25", $R);
 $topUsers = all("SELECT u.id, u.name, u.email, SUM(pv.kind='use') uses, SUM(pv.kind='view') views, MAX(pv.created_at) last
                  FROM $PV pv JOIN $U u ON u.id = pv.user_id WHERE $W GROUP BY u.id, u.name, u.email ORDER BY uses DESC, views DESC LIMIT 20", $R);
 $topVisitors = all("SELECT pv.vid, SUM(pv.kind='use') uses, SUM(pv.kind='view') views, COUNT(DISTINCT DATE(pv.created_at)) days, MAX(pv.created_at) last,
@@ -123,11 +134,30 @@ $recent = all("SELECT pv.*, g.city, g.country, u.name uname FROM $PV pv LEFT JOI
 $lastErr = (string) setting('analytics_last_error', '');
 $firstRow = (string) (scalar("SELECT MIN(created_at) FROM $PV") ?? '');
 $lastRow  = (string) (scalar("SELECT MAX(created_at) FROM $PV") ?? '');
-$geoPending = (int) (scalar("SELECT COUNT(DISTINCT pv.ip) FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip WHERE g.ip IS NULL AND pv.ip IS NOT NULL") ?? 0);
+$geoPending = (int) (scalar("SELECT COUNT(DISTINCT pv.ip) FROM $PV pv LEFT JOIN $GEO g ON g.ip = pv.ip WHERE g.ip IS NULL AND pv.ip IS NOT NULL AND pv.created_at > :s", [':s' => date('Y-m-d H:i:s', strtotime('-7 days'))]) ?? 0);
+$geoErr = (string) setting('analytics_geo_error', '');
+
+/** Friendly name for a referrer host; Google web and the Google app are merged. */
+function an_source(string $h): string {
+    if ($h === '') return 'Direct / bookmark / app';
+    if (preg_match('/(^|\.)google\.|googlequicksearchbox/', $h)) return 'Google';
+    if (preg_match('/bing\./', $h)) return 'Bing';
+    if (preg_match('/(^|\.)(facebook|fb)\.|^m\.facebook|lm\.facebook/', $h)) return 'Facebook';
+    if (preg_match('/instagram/', $h)) return 'Instagram';
+    if (preg_match('/whatsapp|wa\.me/', $h)) return 'WhatsApp';
+    if (preg_match('/youtube/', $h)) return 'YouTube';
+    if (preg_match('/^t\.co$|twitter|x\.com/', $h)) return 'X / Twitter';
+    if (preg_match('/duckduckgo/', $h)) return 'DuckDuckGo';
+    if (preg_match('/yahoo/', $h)) return 'Yahoo';
+    return preg_replace('/^www\./', '', $h);
+}
+$srcAgg = [];
+foreach ($refs as $r) { $k = an_source((string) $r['host']); $srcAgg[$k] = ($srcAgg[$k] ?? 0) + (int) $r['views']; }
+arsort($srcAgg);
+$refs = array_map(fn($k, $v) => ['host' => $k, 'views' => $v], array_keys($srcAgg), $srcAgg);
 
 $fmt = fn($n) => number_format((int) $n);
 $deviceGu = ['mobile' => '📱 Mobile', 'desktop' => '💻 Desktop', 'tablet' => '📲 Tablet', '' => '—'];
-$langGu = ['gu' => 'Gujarati', 'en' => 'English', '' => '—'];
 $pct = fn($a, $b) => $b ? round(($a - $b) / $b * 100) : null;
 
 admin_head('Live Analytics');
@@ -147,6 +177,7 @@ admin_head('Live Analytics');
   <?php if ($firstRow): ?>
     <span>✅ Tracking is on. Data counted since <b><?= e(date('d M Y, H:i', strtotime($firstRow))) ?></b>.</span>
     <span class="opacity-70">Last visit: <?= e(an_ago($lastRow)) ?> ago</span>
+    <?php if (kt_analytics_excluded()): ?><span class="opacity-70">Your own browser is excluded from these numbers.</span><?php endif; ?>
   <?php else: ?>
     <span>⏳ No visits recorded yet. To test, open the website in a browser or phone where you are <b>not</b> logged in as admin (e.g. Incognito). It will show under "Live now" within 15 seconds.</span>
   <?php endif; ?>
@@ -173,7 +204,7 @@ admin_head('Live Analytics');
   </div>
   <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">Visitors today</div><b><?= $fmt($kToday['visitors']) ?></b>
     <div class="text-xs opacity-60"><?= $fmt($kToday['views']) ?> views · <?= $fmt($kToday['uses']) ?> tool uses
-      <?php if (($p = $pct($kToday['visitors'], $kYest['visitors'])) !== null): ?> · <span style="color:<?= $p >= 0 ? '#16a34a' : '#dc2626' ?>"><?= $p >= 0 ? '▲' : '▼' ?><?= abs($p) ?>%</span><?php endif; ?></div></div>
+      <?php if (($p = $pct($kToday['visitors'], $kYestSoFar['visitors'])) !== null): ?> · <span title="Compared with yesterday up to <?= e(date('H:i')) ?> (<?= $fmt($kYestSoFar['visitors']) ?> visitors)" style="color:<?= $p >= 0 ? '#16a34a' : '#dc2626' ?>"><?= $p >= 0 ? '▲' : '▼' ?><?= abs($p) ?>% vs same time yesterday</span><?php endif; ?></div></div>
   <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">Yesterday</div><b><?= $fmt($kYest['visitors']) ?></b>
     <div class="text-xs opacity-60"><?= $fmt($kYest['views']) ?> views · <?= $fmt($kYest['uses']) ?> tool uses</div></div>
   <div class="kt-card kpi p-5 an-kpi"><div class="text-sm opacity-70">This month</div><b><?= $fmt($kMonth['visitors']) ?></b>
@@ -181,9 +212,11 @@ admin_head('Live Analytics');
 </div>
 
 <div class="kt-card p-4 mb-5 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-  <div><span class="opacity-60">Selected period (<?= e(date('d M Y', strtotime($from))) ?> – <?= e(date('d M Y', strtotime($to))) ?>):</span></div>
+  <div><span class="opacity-60">Selected period (<?= e(date('d M Y', strtotime($from))) ?> – <?= e(date('d M Y', strtotime($to))) ?>):</span>
+    <?php if ($firstRow && $from < substr($firstRow, 0, 10)): ?><span class="text-xs opacity-60">— tracking started <?= e(date('d M', strtotime($firstRow))) ?>, so earlier days show 0</span><?php endif; ?></div>
   <div>Visitors <b><?= $fmt($kRange['visitors']) ?></b></div>
-  <div>New visitors <b><?= $fmt($newVis) ?></b></div>
+  <div title="Visitors whose first-ever visit falls in this period">New visitors <b><?= $fmt($newVis) ?></b></div>
+  <div title="Visitors who had already visited before this period">Returning <b><?= $fmt(max(0, $kRange['visitors'] - $newVis)) ?></b></div>
   <div>Page views <b><?= $fmt($kRange['views']) ?></b></div>
   <div>Tool uses <b><?= $fmt($kRange['uses']) ?></b></div>
   <div>Views / visitor <b><?= $kRange['visitors'] ? number_format($kRange['views'] / $kRange['visitors'], 1) : '0' ?></b></div>
@@ -237,8 +270,9 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
   <?php an_table('Visitors by city', ['City', 'Visitors', 'Views'], $cities,
-      fn($r) => [e($r['city'] !== '' ? $r['city'] . ($r['region'] ? ', ' . $r['region'] : '') : 'Locating…') . ' <span class="opacity-50 text-xs">' . e($r['country']) . '</span>', $fmt($r['visitors']), $fmt($r['views'])],
-      $geoPending ? "City lookup pending for {$geoPending} new IPs (runs automatically every 5 minutes)." : ''); ?>
+      fn($r) => [e($r['city'] !== '' ? $r['city'] . ($r['region'] && $r['region'] !== $r['city'] ? ', ' . $r['region'] : '') : ($r['country'] !== '' ? 'City not known' : 'Locating…')) . ' <span class="opacity-50 text-xs">' . e($r['country']) . '</span>', $fmt($r['visitors']), $fmt($r['views'])],
+      ($geoPending ? '<span id="anGeoNote">Finding the city for ' . $geoPending . ' new visitor IPs…</span>' : '')
+      . ($geoErr ? '<br><span class="text-red-600">⚠️ City lookup failed: ' . e($geoErr) . '. Your hosting may block outgoing connections to ip-api.com / ipwho.is — ask the host to allow them.</span>' : '')); ?>
   <?php an_table('Countries', ['Country', 'Visitors'], $countries, fn($r) => [e($r['country'] ?: 'Locating…'), $fmt($r['visitors'])]); ?>
 </div>
 
@@ -259,7 +293,9 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
   <?php an_table('Devices', ['Device', 'Visitors'], $devices, fn($r) => [$deviceGu[$r['device']] ?? e($r['device']), $fmt($r['visitors'])]); ?>
-  <?php an_table('Languages', ['Language', 'Views'], $langs, fn($r) => [$langGu[$r['lang']] ?? e($r['lang']), $fmt($r['views'])]); ?>
+  <?php an_table('Landing pages (first page a visitor opened)', ['Page', 'Visitors', 'From search / links'], $landing,
+      fn($r) => ['<a class="hover:underline font-mono text-xs break-all" target="_blank" href="' . SITE_URL . e($r['path']) . '">' . e($r['path']) . '</a>', $fmt($r['visitors']), $fmt($r['from_search'])],
+      'Shows which pages bring new people to the site.'); ?>
 </div>
 
 <div class="grid lg:grid-cols-2 gap-5 mb-5">
@@ -298,9 +334,9 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
   if (window.Chart) {
     var labels = Object.keys(daily).map(function (d) { var p = d.split('-'); return p[2] + '/' + p[1]; });
     new Chart(document.getElementById('anDaily'), { type: 'line', data: { labels: labels, datasets: [
-      { label: 'Visitors', data: Object.values(daily).map(function (x) { return x.v; }), borderColor: teal, backgroundColor: 'rgba(14,116,144,.12)', fill: true, tension: .3, borderWidth: 2, pointRadius: 2 },
-      { label: 'Page views', data: Object.values(daily).map(function (x) { return x.p; }), borderColor: saffron, backgroundColor: 'transparent', tension: .3, borderWidth: 2, pointRadius: 2 },
-      { label: 'Tool uses', data: Object.values(daily).map(function (x) { return x.u; }), borderColor: '#7C3AED', backgroundColor: 'transparent', borderDash: [4, 4], tension: .3, borderWidth: 2, pointRadius: 0 }
+      { label: 'Visitors', data: Object.values(daily).map(function (x) { return x.v; }), borderColor: teal, backgroundColor: 'rgba(14,116,144,.12)', fill: true, cubicInterpolationMode: 'monotone', borderWidth: 2, pointRadius: 2 },
+      { label: 'Page views', data: Object.values(daily).map(function (x) { return x.p; }), borderColor: saffron, backgroundColor: 'transparent', cubicInterpolationMode: 'monotone', borderWidth: 2, pointRadius: 2 },
+      { label: 'Tool uses', data: Object.values(daily).map(function (x) { return x.u; }), borderColor: '#7C3AED', backgroundColor: 'transparent', borderDash: [4, 4], cubicInterpolationMode: 'monotone', borderWidth: 2, pointRadius: 0 }
     ] }, options: { responsive: true, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
     new Chart(document.getElementById('anHourly'), { type: 'bar', data: { labels: hourly.map(function (_, h) { return h; }), datasets: [
       { label: 'Views', data: hourly, backgroundColor: 'rgba(14,116,144,.7)', borderRadius: 4 } ] },
@@ -319,6 +355,19 @@ function an_table(string $title, array $heads, array $rows, callable $cells, str
     }).join('') : '<tr><td colspan="6" class="opacity-60">No one is live right now.</td></tr>';
   }
   paint(<?= json_encode($live, JSON_UNESCAPED_UNICODE) ?>);
+
+  // Resolve visitor cities right away (does not depend on the server cron being set up).
+  <?php if ($geoPending): ?>
+  (function geo(round) {
+    var note = document.getElementById('anGeoNote');
+    fetch('?geo=1', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error) { if (note) note.innerHTML = '<span class="text-red-600">⚠️ City lookup failed: ' + esc(j.error) + '</span>'; return; }
+      if (j.pending > 0 && j.resolved > 0 && round < 5) { if (note) note.textContent = 'Finding cities… ' + j.pending + ' left'; setTimeout(function () { geo(round + 1); }, 1500); return; }
+      if (j.resolved > 0 || round > 0) { if (note) note.textContent = 'Cities updated — refreshing…'; location.reload(); }
+      else if (note) note.textContent = 'City lookup will retry automatically.';
+    }).catch(function () { if (note) note.textContent = 'City lookup will retry later.'; });
+  })(0);
+  <?php endif; ?>
   setInterval(function () {
     if (document.hidden) return;
     fetch('?live=1', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); })

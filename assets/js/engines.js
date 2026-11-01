@@ -415,23 +415,31 @@ reg('img-bulk', async function (mount, opt, ctx) {
 reg('passport-photo', async function (mount, opt, ctx) {
   loadCss(X.CDN.cropperCss); await need('cropper', 'jspdf');
   const input = fileInput(mount, { accept: 'image/*' });
-  const ctrl = el(`<div class="mt-3"><label class="kt-label">${T('પ્રીસેટ', 'Preset')}</label><select class="kt-select ps">
-    <option value="35,45">India 35×45mm</option><option value="51,51">US 2×2 inch</option><option value="35,45">UK 35×45mm</option></select></div>`);
+  const ctrl = el(`<div class="mt-3 grid sm:grid-cols-2 gap-3"><div><label class="kt-label">Size</label><select class="kt-select ps">
+    <option value="35,45">India / UK / EU — 35×45 mm</option><option value="51,51">US — 2×2 inch (51×51 mm)</option><option value="30,40">Small — 30×40 mm</option></select></div>
+    <div><label class="kt-label">Background</label><select class="kt-select bg"><option value="#ffffff">White</option><option value="#dbeafe">Light blue</option></select></div></div>`);
   mount.appendChild(ctrl);
   const stage = el('<div class="mt-3"></div>'); mount.appendChild(stage); const box = resultBox(mount); let cropper = null;
+  const size = () => ctrl.querySelector('.ps').value.split(',').map(Number);
+  ctrl.querySelector('.ps').onchange = () => { if (cropper) { const [w, h] = size(); cropper.setAspectRatio(w / h); } };
   input.onchange = () => {
     const f = input.files[0]; if (!f) return;
-    stage.innerHTML = `<img class="pim max-w-full"><button class="btn btn-primary mt-2 mk">${T('શીટ બનાવો (6 ફોટા)', 'Make sheet (6 photos)')}</button>`;
+    stage.innerHTML = `<div class="text-xs opacity-70 mb-2">Drag the box so the face fills most of it, then press the button.</div><div style="max-height:420px"><img class="pim max-w-full"></div><button class="btn btn-primary mt-2 mk">Make 4×6 print sheet</button>`;
     const im = stage.querySelector('.pim'); im.src = URL.createObjectURL(f);
-    const [w, h] = ctrl.querySelector('.ps').value.split(',').map(Number);
-    im.onload = () => { if (cropper) cropper.destroy(); cropper = new Cropper(im, { viewMode: 1, aspectRatio: w / h }); };
-    stage.querySelector('.mk').onclick = async () => {
-      const c = cropper.getCroppedCanvas({ width: 413, height: 531 });
-      const { jsPDF } = window.jspdf; const pdf = new jsPDF({ unit: 'mm', format: [152, 102] }); // 6x4 inch
+    im.onload = () => { if (cropper) cropper.destroy(); const [w, h] = size(); cropper = new Cropper(im, { viewMode: 1, aspectRatio: w / h, autoCropArea: 0.8 }); };
+    stage.querySelector('.mk').onclick = () => {
+      if (!cropper) return;
+      const [w, h] = size(); const dpmm = 300 / 25.4; // print at 300 dpi
+      const c = cropper.getCroppedCanvas({ width: Math.round(w * dpmm), height: Math.round(h * dpmm), fillColor: ctrl.querySelector('.bg').value, imageSmoothingQuality: 'high' });
+      const { jsPDF } = window.jspdf; const PW = 152.4, PH = 101.6; // 6×4 inch, landscape
+      const pdf = new jsPDF({ unit: 'mm', format: [PW, PH], orientation: 'landscape' });
+      const gap = 3, cols = Math.floor((PW - gap) / (w + gap)), rows = Math.floor((PH - gap) / (h + gap));
+      const x0 = (PW - (cols * w + (cols - 1) * gap)) / 2, y0 = (PH - (rows * h + (rows - 1) * gap)) / 2;
       const img = c.toDataURL('image/jpeg', 0.95);
-      let x = 6, y = 6;
-      for (let i = 0; i < 6; i++) { pdf.addImage(img, 'JPEG', x, y, 35, 45); x += 40; if (x > 130) { x = 6; y += 48; } }
-      showPreview(box, pdf.output('blob'), 'passport-sheet.pdf', ctx);
+      pdf.setDrawColor(190); pdf.setLineWidth(0.1);
+      for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) { const x = x0 + k * (w + gap), y = y0 + r * (h + gap); pdf.addImage(img, 'JPEG', x, y, w, h); pdf.rect(x, y, w, h); }
+      showPreview(box, pdf.output('blob'), 'passport-photos-4x6.pdf', ctx, `${cols * rows} passport photos (${w}×${h} mm) on a 4×6 inch sheet`);
+      c.toBlob(b => { if (!b) return; const a = el(`<button class="btn btn-ghost text-sm mt-2">Download single photo (JPG)</button>`); a.onclick = () => downloadBlob(b, 'passport-photo.jpg'); box.appendChild(a); }, 'image/jpeg', 0.95);
     };
   };
 });

@@ -91,15 +91,21 @@ function kt_geo_from_headers(string $ip): void {
  */
 function kt_track(string $kind, string $vid, string $path, ?string $slug = null, string $ref = '', string $lang = ''): bool {
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    if (!preg_match('/^[a-f0-9]{16}$/', $vid) || kt_is_bot_ua($ua)) return false;
-    if (function_exists('is_admin') && is_admin()) return false;
+    if (!preg_match('/^[a-f0-9]{16}$/', $vid)) return false;
     kt_analytics_ensure();
+    if (function_exists('is_admin') && is_admin()) { kt_analytics_exclude_vid($vid); return false; }
+    if (kt_is_bot_ua($ua)) return false;
+    if (in_array($vid, kt_analytics_excluded(), true)) return false; // the owner's browser, even when logged out
     $now = date('Y-m-d H:i:s');
     $ip = client_ip();
     $uid = function_exists('current_user') ? (current_user()['id'] ?? null) : null;
     $path = mb_substr('/' . ltrim(parse_url($path, PHP_URL_PATH) ?: '/', '/'), 0, 255);
     $slug = $slug !== null && preg_match('/^[a-z0-9.-]{1,120}$/', $slug) ? $slug : null;
     $device = kt_device($ua);
+
+    // One action can fire several "use" events at once (e.g. a button clicked repeatedly): count it once per 10 s.
+    if ($kind === 'use' && scalar("SELECT 1 FROM " . tbl('page_views') . " WHERE vid = :v AND kind = 'use' AND slug <=> :s AND created_at >= :t LIMIT 1",
+            [':v' => $vid, ':s' => $slug, ':t' => date('Y-m-d H:i:s', time() - 10)])) return false;
 
     if ($kind === 'view' || $kind === 'use') {
         $refHost = $ref !== '' ? (parse_url($ref, PHP_URL_HOST) ?: null) : null;
@@ -123,6 +129,41 @@ function kt_track(string $kind, string $vid, string $path, ?string $slug = null,
     return true;
 }
 
+/** Browser ids that belong to the site owner (seen while logged in as admin). */
+function kt_analytics_excluded(): array {
+    static $list = null;
+    if ($list === null) { $list = json_decode((string) setting('analytics_admin_vids', '[]'), true); if (!is_array($list)) $list = []; }
+    return $list;
+}
+
+/** Remember an admin's browser id and remove its past visits, so the owner's own browsing never shows in the report. */
+function kt_analytics_exclude_vid(string $vid): void {
+    if (!preg_match('/^[a-f0-9]{16}$/', $vid) || in_array($vid, kt_analytics_excluded(), true)) return;
+    $list = array_slice(array_merge([$vid], kt_analytics_excluded()), 0, 30);
+    set_setting('analytics_admin_vids', json_encode($list));
+    q("DELETE FROM " . tbl('page_views') . " WHERE vid = :v", [':v' => $vid]);
+    q("DELETE FROM " . tbl('live_visitors') . " WHERE vid = :v", [':v' => $vid]);
+}
+
+/** Small HTTP helper for the geo lookup: cURL when available, otherwise PHP streams. */
+function kt_geo_http(string $url, ?string $postJson = null, int $timeout = 10): ?string {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        $o = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_USERAGENT => 'KrishnaTools/1.0'];
+        if ($postJson !== null) $o += [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $postJson, CURLOPT_HTTPHEADER => ['Content-Type: application/json']];
+        curl_setopt_array($ch, $o);
+        $r = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($r === false || $code >= 400) { $GLOBALS['kt_geo_err'] = curl_error($ch) ?: "HTTP $code"; return null; }
+        return (string) $r;
+    }
+    $ctx = stream_context_create(['http' => ['method' => $postJson !== null ? 'POST' : 'GET', 'timeout' => $timeout,
+        'header' => "Content-Type: application/json\r\nUser-Agent: KrishnaTools/1.0\r\n", 'content' => (string) $postJson, 'ignore_errors' => false]]);
+    $r = @file_get_contents($url, false, $ctx);
+    if ($r === false) { $GLOBALS['kt_geo_err'] = 'outbound HTTP blocked'; return null; }
+    return $r;
+}
+
 /**
  * Cron: resolve up to 100 unknown visitor IPs per run via ip-api.com's batch API
  * (free, no key; 15 batch requests/minute). Private/local IPs are skipped.
@@ -136,23 +177,24 @@ function kt_job_analytics_geo(): string {
     $ips = [];
     foreach ($rows as $r) {
         if (filter_var($r['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $ips[] = $r['ip'];
-        else q("INSERT IGNORE INTO " . tbl('ip_geo') . " (ip, city, country, resolved_at) VALUES (:ip, 'Local', 'Local', NOW())", [':ip' => $r['ip']]);
+        else q("INSERT IGNORE INTO " . tbl('ip_geo') . " (ip, city, country, resolved_at) VALUES (:ip, 'Local', 'Local', :t)", [':ip' => $r['ip'], ':t' => date('Y-m-d H:i:s')]);
     }
-    if (!$ips) return 'No new IPs.';
+    if (!$ips) { set_setting('analytics_geo_error', ''); return 'No new IPs.'; }
     $body = json_encode(array_map(fn($ip) => ['query' => $ip, 'fields' => 'status,city,regionName,country,isp,query'], $ips));
-    $ch = curl_init('http://ip-api.com/batch');
-    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 15, CURLOPT_HTTPHEADER => ['Content-Type: application/json']]);
-    $res = json_decode((string) curl_exec($ch), true);
-    if (!is_array($res)) $res = kt_geo_ipwhois(array_slice($ips, 0, 25)); // HTTPS fallback when plain HTTP is blocked
-    if (!$res) return 'Geo lookup failed (will retry).';
+    $res = json_decode((string) kt_geo_http('http://ip-api.com/batch', $body, 12), true);
+    if (!is_array($res)) $res = kt_geo_ipwhois(array_slice($ips, 0, 20)); // HTTPS fallback when plain HTTP is blocked
+    if (!$res) {
+        set_setting('analytics_geo_error', date('d M H:i') . ' — ' . ($GLOBALS['kt_geo_err'] ?? 'no response'));
+        return 'Geo lookup failed (will retry): ' . ($GLOBALS['kt_geo_err'] ?? 'no response');
+    }
+    set_setting('analytics_geo_error', '');
     $n = 0;
     foreach ($res as $g) {
         if (empty($g['query'])) continue;
         $ok = ($g['status'] ?? '') === 'success';
-        q("INSERT INTO " . tbl('ip_geo') . " (ip, city, region, country, isp, resolved_at) VALUES (:ip, :c, :r, :co, :isp, NOW())
-           ON DUPLICATE KEY UPDATE city = VALUES(city), region = VALUES(region), country = VALUES(country), isp = VALUES(isp), resolved_at = NOW()",
-          [':ip' => $g['query'], ':c' => $ok ? mb_substr($g['city'] ?? '', 0, 80) : 'Unknown', ':r' => $ok ? mb_substr($g['regionName'] ?? '', 0, 80) : null,
+        q("INSERT INTO " . tbl('ip_geo') . " (ip, city, region, country, isp, resolved_at) VALUES (:ip, :c, :r, :co, :isp, :t)
+           ON DUPLICATE KEY UPDATE city = VALUES(city), region = VALUES(region), country = VALUES(country), isp = VALUES(isp), resolved_at = VALUES(resolved_at)",
+          [':t' => date('Y-m-d H:i:s'), ':ip' => $g['query'], ':c' => $ok ? mb_substr($g['city'] ?? '', 0, 80) : 'Unknown', ':r' => $ok ? mb_substr($g['regionName'] ?? '', 0, 80) : null,
            ':co' => $ok ? mb_substr($g['country'] ?? '', 0, 80) : 'Unknown', ':isp' => $ok ? mb_substr($g['isp'] ?? '', 0, 120) : null]);
         $n++;
     }
@@ -163,9 +205,7 @@ function kt_job_analytics_geo(): string {
 function kt_geo_ipwhois(array $ips): array {
     $out = [];
     foreach ($ips as $ip) {
-        $ch = curl_init('https://ipwho.is/' . rawurlencode($ip) . '?fields=success,city,region,country,connection');
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8]);
-        $g = json_decode((string) curl_exec($ch), true);
+        $g = json_decode((string) kt_geo_http('https://ipwho.is/' . rawurlencode($ip) . '?fields=success,city,region,country,connection', null, 6), true);
         if (!is_array($g)) break; // provider unreachable: retry next run
         $out[] = ['query' => $ip, 'status' => !empty($g['success']) ? 'success' : 'fail', 'city' => $g['city'] ?? '',
                   'regionName' => $g['region'] ?? '', 'country' => $g['country'] ?? '', 'isp' => $g['connection']['isp'] ?? ''];

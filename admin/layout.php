@@ -20,7 +20,7 @@ function admin_nav_links(): array {
         ['categories.php', 'folder-tree',      'Categories'],
         ['whatsapp.php',   'message-circle',   'WhatsApp'],
         ['contact.php',    'inbox',            'Contact'],
-        ['update.php',     'github',           'GitHub Update'],
+        ['update.php',     'git-branch',       'GitHub Update'],
         ['cron.php',       'clock',            'Cron / Scheduler'],
         ['logs.php',       'scroll-text',      'Logs'],
         ['settings.php',   'settings',         'Settings'],
@@ -139,6 +139,13 @@ function admin_foot(): void {
   }
   window.addEventListener('load', function(){ if(window.lucide) lucide.createIcons(); });
   document.addEventListener('DOMContentLoaded', function(){ if(window.lucide) lucide.createIcons(); });
+  // Mark this browser as the owner's so Live Analytics never counts it (even after logging out).
+  (function(){ try { var v = localStorage.getItem('kt-vid');
+    if (!/^[a-f0-9]{16}$/.test(v || '')) { var b = new Uint8Array(8); crypto.getRandomValues(b); v = Array.from(b, function (x) { return x.toString(16).padStart(2, '0'); }).join(''); localStorage.setItem('kt-vid', v); }
+    if (sessionStorage.getItem('kt-admin-marked') === v) return;
+    fetch('<?= SITE_URL ?>/api/track.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: 'ping', v: v, p: '/admin' }) })
+      .then(function(){ sessionStorage.setItem('kt-admin-marked', v); }).catch(function(){});
+  } catch (e) {} })();
 </script>
 </body>
 </html>
