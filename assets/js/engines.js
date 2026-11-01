@@ -887,34 +887,124 @@ function fovEngine(mount, opt, ctx) {
 }
 
 /* ---------- Document PDF generators (jsPDF) ---------- */
-function shopHeader(pdf, title) {
-  pdf.setFillColor(30, 58, 138); pdf.rect(0, 0, 210, 26, 'F');
-  pdf.setTextColor(255); pdf.setFontSize(18); pdf.text('AK Computer', 14, 12);
-  pdf.setFontSize(9); pdf.text('Dwarka, Gujarat · Computer & CCTV', 14, 19);
-  pdf.setTextColor(245, 158, 11); pdf.setFontSize(14); pdf.text(title, 196, 14, { align: 'right' });
-  pdf.setTextColor(0);
+/* ---------- Business letterhead (editable, remembered in this browser) ---------- */
+function bizLoad() { try { return JSON.parse(localStorage.getItem('kt-biz') || '{}'); } catch (e) { return {}; } }
+function bizSave(b) { try { localStorage.setItem('kt-biz', JSON.stringify(b)); } catch (e) {} }
+const RS = n => 'Rs. ' + (+n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function shopHeader(pdf, title, biz) {
+  biz = biz || {};
+  pdf.setFillColor(30, 58, 138); pdf.rect(0, 0, 210, 28, 'F');
+  pdf.setTextColor(255); pdf.setFont(undefined, 'bold'); pdf.setFontSize(17); pdf.text(String(biz._bn || 'AK Computer').slice(0, 40), 14, 12);
+  pdf.setFont(undefined, 'normal'); pdf.setFontSize(9);
+  const line2 = [biz._ba || (biz._bn ? '' : 'Dwarka, Gujarat · Computer & CCTV'), biz._bp ? 'Ph: ' + biz._bp : ''].filter(Boolean).join('  ·  ');
+  if (line2) pdf.text(line2.slice(0, 95), 14, 19);
+  if (biz._bg) pdf.text('GSTIN: ' + biz._bg, 14, 24);
+  pdf.setTextColor(245, 158, 11); pdf.setFont(undefined, 'bold'); pdf.setFontSize(14); pdf.text(title, 196, 14, { align: 'right' });
+  pdf.setTextColor(0); pdf.setFont(undefined, 'normal');
 }
 function docBuilder(mount, ctx, cfg) {
-  const ctrl = el(`<div class="grid sm:grid-cols-2 gap-3">${cfg.fields.map(f => `<div class="${f.full ? 'sm:col-span-2' : ''}"><label class="kt-label">${f.label}</label>${f.type === 'textarea' ? `<textarea class="kt-input" data-k="${f.k}" rows="4">${f.val || ''}</textarea>` : `<input class="kt-input" data-k="${f.k}" value="${f.val || ''}" ${f.type === 'date' ? 'type=date' : ''}>`}</div>`).join('')}</div>
-    ${cfg.items ? `<div class="mt-4"><label class="kt-label">${T('આઇટમ (નામ,જથ્થો,ભાવ)', 'Items (name,qty,price)')}</label><textarea class="kt-input items" rows="5">${cfg.itemsDefault || ''}</textarea></div>` : ''}`);
-  mount.appendChild(ctrl); const box = resultBox(mount);
+  const biz = bizLoad();
+  const fieldHtml = f => `<div class="${f.full ? 'sm:col-span-2' : ''}"><label class="kt-label">${f.label}</label>${f.type === 'textarea'
+      ? `<textarea class="kt-input" data-k="${f.k}" rows="3">${f.val || ''}</textarea>`
+      : `<input class="kt-input" data-k="${f.k}" value="${f.val || ''}" ${f.type === 'date' ? 'type="date"' : ''}>`}</div>`;
+  const bizFields = [
+    { k: '_bn', label: 'Your business name', val: biz._bn || 'AK Computer' }, { k: '_bp', label: 'Business phone', val: biz._bp || '' },
+    { k: '_ba', label: 'Business address', val: biz._ba || 'Dwarka, Gujarat', full: true }, { k: '_bg', label: 'Your GSTIN (optional)', val: biz._bg || '' },
+  ];
+  const ctrl = el(`<div>
+    <details class="kt-card p-3 mb-4"><summary class="cursor-pointer font-semibold text-sm">Letterhead: ${biz._bn || 'AK Computer'} <span class="opacity-60 font-normal">(tap to change, saved in this browser)</span></summary>
+      <div class="grid sm:grid-cols-2 gap-3 mt-3 biz">${bizFields.map(fieldHtml).join('')}</div></details>
+    <div class="grid sm:grid-cols-2 gap-3 meta">${cfg.fields.map(fieldHtml).join('')}</div>
+    ${cfg.items ? `<div class="mt-5">
+      <div class="kt-label">Items</div>
+      <div class="hidden sm:grid grid-cols-12 gap-2 text-xs opacity-60 mb-1"><div class="col-span-6">Description</div><div class="col-span-2">Qty</div><div class="col-span-3">Rate (Rs.)</div></div>
+      <div class="rows"></div>
+      <button type="button" class="btn btn-ghost text-sm add">+ Add item</button>
+      <div class="grid sm:grid-cols-2 gap-3 mt-4">
+        <div><label class="kt-label">GST %</label><input class="kt-input gst" type="number" step="any" min="0" value="${cfg.gst ?? 18}"></div>
+        <div><label class="kt-label">Notes / terms (optional)</label><input class="kt-input notes" value="${cfg.notes || ''}"></div>
+      </div>
+      <div class="totals mt-3 text-right font-semibold"></div></div>` : ''}
+  </div>`);
+  mount.appendChild(ctrl);
+  const box = resultBox(mount);
+  let items = (cfg.itemsDefault || '').split('\n').filter(Boolean).map(l => { const [d, q, r] = l.split(','); return { d: d || '', q: +q || 1, r: +r || 0 }; });
+  if (cfg.items && !items.length) items = [{ d: '', q: 1, r: 0 }];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const calc = () => {
+    const sub = items.reduce((t, it) => t + (+it.q || 0) * (+it.r || 0), 0);
+    const g = parseFloat((ctrl.querySelector('.gst') || {}).value) || 0;
+    return { sub, gstP: g, gst: sub * g / 100, total: sub * (1 + g / 100) };
+  };
+  const showTotals = () => { if (!cfg.items) return; const c = calc(); ctrl.querySelector('.totals').innerHTML = `Subtotal ${RS(c.sub)} · GST ${c.gstP}% ${RS(c.gst)} · <span style="color:var(--peacock-teal)">Total ${RS(c.total)}</span>`; };
+  const renderRows = () => {
+    if (!cfg.items) return;
+    const rows = ctrl.querySelector('.rows');
+    rows.innerHTML = items.map((it, i) => `<div class="grid grid-cols-12 gap-2 mb-2">
+      <input class="kt-input col-span-12 sm:col-span-6" data-i="${i}" data-f="d" value="${esc(it.d)}" placeholder="Item description">
+      <input class="kt-input col-span-4 sm:col-span-2" data-i="${i}" data-f="q" type="number" step="any" min="0" value="${it.q}" placeholder="Qty">
+      <input class="kt-input col-span-6 sm:col-span-3" data-i="${i}" data-f="r" type="number" step="any" min="0" value="${it.r}" placeholder="Rate">
+      <button type="button" class="btn btn-ghost col-span-2 sm:col-span-1 !px-0" data-del="${i}" aria-label="Remove item">✕</button></div>`).join('');
+    rows.querySelectorAll('input').forEach(n => n.oninput = () => { const it = items[+n.dataset.i]; it[n.dataset.f] = n.dataset.f === 'd' ? n.value : (parseFloat(n.value) || 0); showTotals(); });
+    rows.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { items.splice(+b.dataset.del, 1); if (!items.length) items.push({ d: '', q: 1, r: 0 }); renderRows(); showTotals(); });
+  };
+  if (cfg.items) {
+    ctrl.querySelector('.add').onclick = () => { items.push({ d: '', q: 1, r: 0 }); renderRows(); showTotals(); const last = ctrl.querySelector('.rows > div:last-child input'); if (last) last.focus(); };
+    ctrl.querySelector('.gst').oninput = showTotals;
+    renderRows(); showTotals();
+  }
   const build = async () => {
-    await need('jspdf'); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
-    const v = {}; ctrl.querySelectorAll('[data-k]').forEach(n => v[n.dataset.k] = n.value);
-    shopHeader(pdf, cfg.title); let y = 38; pdf.setFontSize(10);
-    cfg.fields.forEach(f => { if (v[f.k]) { pdf.setFont(undefined, 'bold'); pdf.text(f.label + ':', 14, y); pdf.setFont(undefined, 'normal'); pdf.text(String(v[f.k]).slice(0, 70), 55, y); y += 7; } });
-    let grand = 0;
-    if (cfg.items) {
-      y += 4; pdf.setFillColor(240); pdf.rect(14, y - 5, 182, 8, 'F'); pdf.setFont(undefined, 'bold');
-      pdf.text('Item', 16, y); pdf.text('Qty', 120, y); pdf.text('Rate', 145, y); pdf.text('Amount', 178, y); pdf.setFont(undefined, 'normal'); y += 8;
-      (ctrl.querySelector('.items').value || '').split('\n').forEach(l => { const [n, q, p] = l.split(','); if (!n) return; const amt = (parseFloat(q) || 0) * (parseFloat(p) || 0); grand += amt; pdf.text(String(n).slice(0, 45), 16, y); pdf.text(String(q || ''), 122, y); pdf.text(String(p || ''), 147, y); pdf.text(amt.toFixed(0), 180, y); y += 7; });
-      const gst = grand * 0.18; y += 3; pdf.line(14, y, 196, y); y += 7;
-      pdf.text('Subtotal: ₹' + grand.toFixed(2), 140, y); y += 6; pdf.text('GST 18%: ₹' + gst.toFixed(2), 140, y); y += 6;
-      pdf.setFont(undefined, 'bold'); pdf.text('Total: ₹' + (grand + gst).toFixed(2), 140, y); pdf.setFont(undefined, 'normal');
-      grand = grand + gst;
+    try {
+      await need('jspdf');
+      const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+      const v = {}; ctrl.querySelectorAll('[data-k]').forEach(n => v[n.dataset.k] = n.value.trim());
+      const bz = { _bn: v._bn, _ba: v._ba, _bp: v._bp, _bg: v._bg }; bizSave(bz);
+      shopHeader(pdf, cfg.title, bz);
+      let y = 38; pdf.setFontSize(10);
+      const page = need => { if (y + need > 275) { pdf.addPage(); y = 20; } };
+      cfg.fields.forEach(f => {
+        if (!v[f.k]) return;
+        const val = f.type === 'date' ? new Date(v[f.k]).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : v[f.k];
+        const lines = pdf.splitTextToSize(String(val), 135);
+        page(lines.length * 5 + 2);
+        pdf.setFont(undefined, 'bold'); pdf.text(String(f.label).replace(/ ₹$/, ' (Rs.)') + ':', 14, y);
+        pdf.setFont(undefined, 'normal'); pdf.text(lines, 60, y); y += lines.length * 5 + 2;
+      });
+      if (cfg.items) {
+        const c = calc();
+        y += 4; page(16);
+        const head = () => { pdf.setFillColor(235, 239, 248); pdf.rect(14, y - 5, 182, 8, 'F'); pdf.setFont(undefined, 'bold');
+          pdf.text('#', 16, y); pdf.text('Description', 24, y); pdf.text('Qty', 128, y, { align: 'right' }); pdf.text('Rate', 158, y, { align: 'right' }); pdf.text('Amount', 194, y, { align: 'right' });
+          pdf.setFont(undefined, 'normal'); y += 8; };
+        head();
+        items.filter(it => it.d || it.r).forEach((it, i) => {
+          const d = pdf.splitTextToSize(String(it.d || '-'), 92);
+          if (y + d.length * 5 > 275) { pdf.addPage(); y = 20; head(); }
+          const amt = (+it.q || 0) * (+it.r || 0);
+          pdf.text(String(i + 1), 16, y); pdf.text(d, 24, y);
+          pdf.text(String(it.q), 128, y, { align: 'right' }); pdf.text(RS(it.r), 158, y, { align: 'right' }); pdf.text(RS(amt), 194, y, { align: 'right' });
+          y += d.length * 5 + 2;
+        });
+        page(30); pdf.line(14, y, 196, y); y += 7;
+        pdf.text('Subtotal', 150, y, { align: 'right' }); pdf.text(RS(c.sub), 194, y, { align: 'right' }); y += 6;
+        if (c.gstP) {
+          if (bz._bg) { pdf.text(`CGST ${c.gstP / 2}%`, 150, y, { align: 'right' }); pdf.text(RS(c.gst / 2), 194, y, { align: 'right' }); y += 6;
+                        pdf.text(`SGST ${c.gstP / 2}%`, 150, y, { align: 'right' }); pdf.text(RS(c.gst / 2), 194, y, { align: 'right' }); y += 6; }
+          else { pdf.text(`GST ${c.gstP}%`, 150, y, { align: 'right' }); pdf.text(RS(c.gst), 194, y, { align: 'right' }); y += 6; }
+        }
+        pdf.setFont(undefined, 'bold'); pdf.setFontSize(12); pdf.text('Total', 150, y + 1, { align: 'right' }); pdf.text(RS(c.total), 194, y + 1, { align: 'right' });
+        pdf.setFont(undefined, 'normal'); pdf.setFontSize(10); y += 10;
+        const notes = (ctrl.querySelector('.notes') || {}).value;
+        if (notes) { const nl = pdf.splitTextToSize('Notes: ' + notes, 182); page(nl.length * 5); pdf.text(nl, 14, y); y += nl.length * 5; }
+      }
+      page(20); y = Math.max(y + 16, 250); pdf.text('Authorised signature', 196, y, { align: 'right' }); pdf.line(146, y - 5, 196, y - 5);
+      const pages = pdf.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) { pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text('Generated with Krishna Tools · tools.akdwk.in', 14, 290); if (pages > 1) pdf.text(`Page ${i} of ${pages}`, 196, 290, { align: 'right' }); pdf.setTextColor(0); }
+      showPreview(box, pdf.output('blob'), cfg.file + '.pdf', ctx, cfg.title);
+    } catch (e) {
+      console.error(e);
+      toast(T('PDF બનાવી શકાઈ નહીં. ઇન્ટરનેટ ચાલુ છે કે નહીં તપાસો અને ફરી પ્રયત્ન કરો.', 'Could not create the PDF. Check your internet connection and try again.'), true);
     }
-    pdf.setFontSize(8); pdf.setTextColor(120); pdf.text('Generated by Krishna Tools · tools.akdwk.in · हरे कृष्ण', 14, 285);
-    const blob = pdf.output('blob'); showPreview(box, blob, cfg.file + '.pdf', ctx, cfg.title);
   };
   setActions([{ label: T('PDF બનાવો', 'Generate PDF'), cls: 'btn-primary', icon: 'file-text', onClick: build }]);
 }
