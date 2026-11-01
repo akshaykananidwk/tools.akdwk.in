@@ -325,17 +325,14 @@ reg('doc', function (mount, opt, ctx) {
   }
   form.addEventListener('input', render); form.addEventListener('change', render);
   function printIt() {
-    const w = window.open('', '_blank');
-    if (!w) { toast(T('Pop-up બ્લોક છે. મંજૂરી આપો.', 'Pop-up blocked. Please allow pop-ups.'), true); return; }
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(T(d.title_gu || '', d.title_en || ''))}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@400;700&display=swap" rel="stylesheet">
-      <style>body{margin:0}@page{margin:12mm}</style></head><body>${html}<script>setTimeout(function(){print()},600)<\/script></body></html>`);
-    w.document.close();
+    render(); // always print what is in the form right now
+    X.printHtml(`<style>@page{margin:12mm}</style>${html}`, T(d.title_gu || '', d.title_en || ''));
     if (ctx.toolId) logUsage(ctx.toolId);
   }
   // Real PDF file: render the preview to an image (keeps ₹ and every script intact) and place it on A4 pages.
   async function makePdf() {
     try {
+      render();
       await need('jspdf');
       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
       const host = document.createElement('div');

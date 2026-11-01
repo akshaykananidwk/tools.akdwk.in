@@ -8,10 +8,10 @@
 const X = window.KTX;
 if (!X) return;
 const { $, T, GU, KT, toast, copy, downloadBlob, downloadDataUrl, loadScript, loadCss, need, logUsage,
-        waShareText, waShareFile, setActions, el, fileInput, checkMax, fmtBytes, reg } = X;
+        waShareText, waShareFile, setActions, printHtml, el, fileInput, checkMax, fmtBytes, reg } = X;
 
 /* ---------- shared helpers ---------- */
-function resultBox(mount) { const b = el('<div class="mt-5"></div>'); mount.appendChild(b); return b; }
+function resultBox(mount) { const b = el('<div class="mt-5 kt-result"></div>'); mount.appendChild(b); return b; }
 function loadImage(file) {
   return new Promise((res, rej) => {
     const img = new Image();
@@ -32,20 +32,45 @@ function applyWatermark(ctx, w, h, ctxObj) {
   ctx.fillText('कृष्णा टूल्स · tools.akdwk.in', 0, 0);
   ctx.restore();
 }
-function showPreview(box, blob, name, ctx, caption) {
+/**
+ * Show a finished file with Download / WhatsApp / Print buttons.
+ * fresh (optional): async () => Blob — rebuilds the file from the current form, so the
+ * buttons never hand out an old copy after the user edits something.
+ */
+function showPreview(box, blob, name, ctx, caption, fresh) {
   const url = URL.createObjectURL(blob);
   box.innerHTML = `<h3 class="section-title text-lg mb-3">${T('પરિણામ', 'Result')}</h3>
     <div class="kt-card p-3 text-center">
       ${blob.type.startsWith('image') ? `<img src="${url}" class="max-h-80 mx-auto rounded-lg">` : `<div class="py-6 text-4xl">📄</div>`}
       <div class="text-xs opacity-60 mt-2">${name} · ${fmtBytes(blob.size)}</div>
     </div>`;
+  const cur = async () => (fresh ? (await fresh()) || blob : blob);
   setActions([
-    { label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => downloadBlob(blob, name) },
-    { label: 'WhatsApp', cls: 'btn-wa', icon: 'send', onClick: () => waShareFile(blob, name, caption || name) },
-    { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => { const w = window.open(); w.document.write(`<img src="${url}" onload="print()">`); } },
+    { label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: async () => downloadBlob(await cur(), name) },
+    { label: 'WhatsApp', cls: 'btn-wa', icon: 'send', onClick: async () => waShareFile(await cur(), name, caption || name) },
+    { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: async () => printBlob(await cur(), name) },
   ]);
   if (ctx.toolId) logUsage(ctx.toolId);
   if (window.lucide) lucide.createIcons();
+}
+
+/** Print an image or PDF file. PDFs are drawn page by page first, so printing works on phones too. */
+async function printBlob(blob, name) {
+  try {
+    if (blob.type.startsWith('image')) {
+      const src = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+      printHtml(`<img class="pg" src="${src}" style="max-width:100%;width:auto;margin:auto">`, name); return;
+    }
+    if (blob.type === 'application/pdf' || /\.pdf$/i.test(name || '')) {
+      toast(T('પ્રિન્ટ તૈયાર થાય છે...', 'Preparing to print...'));
+      const lib = await pdfjsReady();
+      const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+      let html = '';
+      for (let i = 1; i <= pdf.numPages; i++) { const { canvas } = await pageCanvas(pdf, i, 2); html += `<img class="pg" src="${canvas.toDataURL('image/jpeg', 0.92)}">`; }
+      printHtml(html, name); return;
+    }
+    downloadBlob(blob, name); toast(T('ફાઇલ ડાઉનલોડ થઈ — તેને ખોલીને પ્રિન્ટ કરો.', 'File downloaded — open it to print.'));
+  } catch (e) { console.error(e); toast(T('પ્રિન્ટ થઈ શક્યું નહીં. ફાઇલ ડાઉનલોડ કરીને પ્રિન્ટ કરો.', 'Could not print here. Download the file and print it.'), true); }
 }
 
 /* ================= IMAGE ENGINES ================= */
@@ -414,7 +439,7 @@ reg('img-bulk', async function (mount, opt, ctx) {
 
 reg('passport-photo', async function (mount, opt, ctx) {
   loadCss(X.CDN.cropperCss); await need('cropper', 'jspdf');
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*', rerun: false });
   const ctrl = el(`<div class="mt-3 grid sm:grid-cols-2 gap-3"><div><label class="kt-label">Size</label><select class="kt-select ps">
     <option value="35,45">India / UK / EU — 35×45 mm</option><option value="51,51">US — 2×2 inch (51×51 mm)</option><option value="30,40">Small — 30×40 mm</option></select></div>
     <div><label class="kt-label">Background</label><select class="kt-select bg"><option value="#ffffff">White</option><option value="#dbeafe">Light blue</option></select></div></div>`);
@@ -643,10 +668,10 @@ async function pageLines(pdf, n) {
 }
 const fmtKB = n => n > 1048576 ? (n / 1048576).toFixed(2) + ' MB' : Math.round(n / 1024) + ' KB';
 function progress(box, msg) { box.innerHTML = `<div class="text-center py-4"><div class="chakra-loader mx-auto"></div><p class="opacity-70 mt-3 text-sm">${msg}</p></div>`; }
-function pdfToolUI(mount, extraHtml) {
+function pdfToolUI(mount, extraHtml, uiOpt) {
   const extra = extraHtml ? el(`<div class="grid sm:grid-cols-2 gap-3 mb-3">${extraHtml}</div>`) : null;
   if (extra) mount.appendChild(extra);
-  const input = fileInput(mount, { accept: 'application/pdf', hint: 'PDF' });
+  const input = fileInput(mount, { accept: 'application/pdf', hint: 'PDF', rerun: !(uiOpt && uiOpt.rerun === false) });
   const box = resultBox(mount);
   return { input, box, q: s => mount.querySelector(s) };
 }
@@ -675,7 +700,7 @@ reg('pdf-compress', function (mount, opt, ctx) {
 
 reg('pdf-protect', function (mount, opt, ctx) {
   const ui = pdfToolUI(mount, `<div><label class="kt-label">${T('પાસવર્ડ', 'Password')}</label><input type="password" class="kt-input pw" autocomplete="new-password"></div>
-    <div><label class="kt-label">${T('પાસવર્ડ ફરી', 'Confirm password')}</label><input type="password" class="kt-input pw2" autocomplete="new-password"></div>`);
+    <div><label class="kt-label">${T('પાસવર્ડ ફરી', 'Confirm password')}</label><input type="password" class="kt-input pw2" autocomplete="new-password"></div>`, { rerun: false });
   ui.input.onchange = async () => {
     const f = ui.input.files[0]; if (!f) return;
     const pw = ui.q('.pw').value, pw2 = ui.q('.pw2').value;
@@ -692,7 +717,7 @@ reg('pdf-protect', function (mount, opt, ctx) {
 });
 
 reg('pdf-unlock', function (mount, opt, ctx) {
-  const ui = pdfToolUI(mount, `<div class="sm:col-span-2"><label class="kt-label">${T('હાલનો પાસવર્ડ', 'Current password of the PDF')}</label><input type="password" class="kt-input pw" autocomplete="off"></div>`);
+  const ui = pdfToolUI(mount, `<div class="sm:col-span-2"><label class="kt-label">${T('હાલનો પાસવર્ડ', 'Current password of the PDF')}</label><input type="password" class="kt-input pw" autocomplete="off"></div>`, { rerun: false });
   ui.input.onchange = async () => {
     const f = ui.input.files[0]; if (!f) return;
     try {
@@ -913,7 +938,7 @@ reg('json-excel', async function (mount, opt, ctx) {
   await need('xlsx'); const to = (opt && opt.to) || 'xlsx';
   if (to === 'xlsx') {
     const ta = textArea(mount, '[{"name":"Krishna","qty":2,"price":150},{"name":"Radha","qty":1,"price":90}]'); const box = resultBox(mount);
-    setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', onClick: () => { try { if (!ta.value.trim()) { toast(T('પહેલાં JSON પેસ્ટ કરો', 'Paste your JSON data first'), true); return; } let arr; try { arr = JSON.parse(ta.value); } catch (e) { toast(T('JSON ખોટું છે', 'That is not valid JSON. Check brackets, quotes and commas.'), true); return; } const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } } }]);
+    setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', keep: true, onClick: () => { try { if (!ta.value.trim()) { toast(T('પહેલાં JSON પેસ્ટ કરો', 'Paste your JSON data first'), true); return; } let arr; try { arr = JSON.parse(ta.value); } catch (e) { toast(T('JSON ખોટું છે', 'That is not valid JSON. Check brackets, quotes and commas.'), true); return; } const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } } }]);
   } else {
     const input = fileInput(mount, { accept: '.xlsx,.xls' }); const box = resultBox(mount);
     input.onchange = async () => { const f = input.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); showText(box, JSON.stringify(json, null, 2), 'data.json', 'application/json', ctx); };
@@ -967,7 +992,7 @@ async function qrEngine(mount, ctx, wifiOnly) {
   function render() {
     const data = payload(); if (!data) return; box.innerHTML = '<div class="qrc inline-block p-4 bg-white rounded-xl"></div>';
     const holder = box.querySelector('.qrc'); new QRCode(holder, { text: data, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.H });
-    setTimeout(() => { const img = holder.querySelector('img') || holder.querySelector('canvas'); setActions([{ label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => { const src = img.tagName === 'IMG' ? img.src : img.toDataURL(); downloadDataUrl(src, 'qr.png'); } }, { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => window.print() }]); if (window.lucide) lucide.createIcons(); }, 150);
+    setTimeout(() => { const img = holder.querySelector('img') || holder.querySelector('canvas'); setActions([{ label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => { const src = img.tagName === 'IMG' ? img.src : img.toDataURL(); downloadDataUrl(src, 'qr.png'); } }, { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => { const src = img.tagName === 'IMG' ? img.src : img.toDataURL(); printHtml(`<div style="text-align:center;padding:20px"><img src="${src}" style="width:70mm;height:auto"></div>`, 'QR code'); } }]); if (window.lucide) lucide.createIcons(); }, 150);
     if (ctx.toolId) logUsage(ctx.toolId);
   }
   function fillForm() { fields.innerHTML = forms[ctrl.querySelector('.ty').value]; fields.oninput = render; render(); }
@@ -988,7 +1013,7 @@ reg('barcode-gen', async function (mount, opt, ctx) {
   await need('jsbarcode');
   const ctrl = el(`<div class="grid sm:grid-cols-2 gap-3"><div><label class="kt-label">${T('ડેટા', 'Data')}</label><input class="kt-input v" value="AKC12345"></div><div><label class="kt-label">${T('ફોર્મેટ', 'Format')}</label><select class="kt-select fmt"><option>CODE128</option><option>EAN13</option><option>UPC</option><option>CODE39</option></select></div></div>`);
   mount.appendChild(ctrl); const box = resultBox(mount);
-  const render = () => { box.innerHTML = '<div class="bg-white inline-block p-4 rounded-xl"><svg class="bc"></svg></div>'; try { JsBarcode(box.querySelector('.bc'), ctrl.querySelector('.v').value, { format: ctrl.querySelector('.fmt').value }); setActions([{ label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => { const svg = box.querySelector('.bc'); const s = new XMLSerializer().serializeToString(svg); downloadBlob(new Blob([s], { type: 'image/svg+xml' }), 'barcode.svg'); } }, { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => window.print() }]); if (window.lucide) lucide.createIcons(); if (ctx.toolId) logUsage(ctx.toolId); } catch (e) { box.innerHTML = `<div class="text-red-500">${T('અમાન્ય ડેટા', 'Invalid data')}</div>`; } };
+  const render = () => { box.innerHTML = '<div class="bg-white inline-block p-4 rounded-xl"><svg class="bc"></svg></div>'; try { JsBarcode(box.querySelector('.bc'), ctrl.querySelector('.v').value, { format: ctrl.querySelector('.fmt').value }); setActions([{ label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => { const svg = box.querySelector('.bc'); const s = new XMLSerializer().serializeToString(svg); downloadBlob(new Blob([s], { type: 'image/svg+xml' }), 'barcode.svg'); } }, { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => printHtml(`<div style="text-align:center;padding:20px">${new XMLSerializer().serializeToString(box.querySelector('.bc'))}</div>`, 'Barcode') }]); if (window.lucide) lucide.createIcons(); if (ctx.toolId) logUsage(ctx.toolId); } catch (e) { box.innerHTML = `<div class="text-red-500">${T('અમાન્ય ડેટા', 'Invalid data')}</div>`; } };
   ctrl.oninput = render; render();
 });
 reg('password-gen', function (mount, opt, ctx) {
@@ -1018,11 +1043,11 @@ reg('base64-tool', function (mount, opt, ctx) {
   const ta = textArea(mount, 'Hare Krishna'); const box = resultBox(mount);
   const enc = () => { try { const r = btoa(unescape(encodeURIComponent(ta.value))); showText(box, r, 'encoded.txt', 'text/plain', ctx); } catch (e) { toast(e.message, true); } };
   const dec = () => { try { const r = decodeURIComponent(escape(atob(ta.value.trim()))); showText(box, r, 'decoded.txt', 'text/plain', ctx); } catch (e) { toast(T('અમાન્ય Base64', 'Invalid Base64'), true); } };
-  setActions([{ label: 'Encode', cls: 'btn-primary', icon: 'lock', onClick: enc }, { label: 'Decode', icon: 'unlock', onClick: dec }]); enc();
+  setActions([{ label: 'Encode', cls: 'btn-primary', icon: 'lock', keep: true, onClick: enc }, { label: 'Decode', icon: 'unlock', keep: true, onClick: dec }]); enc();
 });
 reg('url-tool', function (mount, opt, ctx) {
   const ta = textArea(mount, 'https://tools.akdwk.in/?q=hare krishna & tools'); const box = resultBox(mount);
-  setActions([{ label: 'Encode', cls: 'btn-primary', icon: 'lock', onClick: () => showText(box, encodeURIComponent(ta.value), 'encoded.txt', 'text/plain', ctx) }, { label: 'Decode', icon: 'unlock', onClick: () => { try { showText(box, decodeURIComponent(ta.value), 'decoded.txt', 'text/plain', ctx); } catch (e) { toast('Invalid', true); } } }]);
+  setActions([{ label: 'Encode', cls: 'btn-primary', icon: 'lock', keep: true, onClick: () => showText(box, encodeURIComponent(ta.value), 'encoded.txt', 'text/plain', ctx) }, { label: 'Decode', icon: 'unlock', keep: true, onClick: () => { try { showText(box, decodeURIComponent(ta.value), 'decoded.txt', 'text/plain', ctx); } catch (e) { toast('Invalid', true); } } }]);
 });
 reg('lorem-gen', function (mount, opt, ctx) {
   const ctrl = el(`<div class="grid sm:grid-cols-3 gap-3"><div><label class="kt-label">${T('ભાષા', 'Language')}</label><select class="kt-select lg"><option value="en">Latin</option><option value="gu">${T('English', 'English')}</option></select></div><div><label class="kt-label">${T('ફકરા', 'Paragraphs')}</label><input type="number" class="kt-input np" value="3"></div></div>`); mount.appendChild(ctrl);
@@ -1179,8 +1204,8 @@ function docBuilder(mount, ctx, cfg) {
     ctrl.querySelector('.gst').oninput = showTotals;
     renderRows(); showTotals();
   }
-  const build = async () => {
-    try {
+  // Build the PDF from what is in the form right now.
+  const makeBlob = async () => {
       await need('jspdf');
       const { jsPDF } = window.jspdf; const pdf = new jsPDF();
       const v = {}; ctrl.querySelectorAll('[data-k]').forEach(n => v[n.dataset.k] = n.value.trim());
@@ -1226,13 +1251,22 @@ function docBuilder(mount, ctx, cfg) {
       page(20); y = Math.max(y + 16, 250); pdf.text('Authorised signature', 196, y, { align: 'right' }); pdf.line(146, y - 5, 196, y - 5);
       const pages = pdf.getNumberOfPages();
       for (let i = 1; i <= pages; i++) { pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(120); pdf.text('Generated with Krishna Tools · tools.akdwk.in', 14, 290); if (pages > 1) pdf.text(`Page ${i} of ${pages}`, 196, 290, { align: 'right' }); pdf.setTextColor(0); }
-      showPreview(box, pdf.output('blob'), cfg.file + '.pdf', ctx, cfg.title);
-    } catch (e) {
-      console.error(e);
-      toast(T('PDF બનાવી શકાઈ નહીં. ઇન્ટરનેટ ચાલુ છે કે નહીં તપાસો અને ફરી પ્રયત્ન કરો.', 'Could not create the PDF. Check your internet connection and try again.'), true);
-    }
+      return pdf.output('blob');
   };
-  setActions([{ label: T('PDF બનાવો', 'Generate PDF'), cls: 'btn-primary', icon: 'file-text', onClick: build }]);
+  const fail = e => { console.error(e); toast(T('PDF બનાવી શકાઈ નહીં. ઇન્ટરનેટ ચાલુ છે કે નહીં તપાસો અને ફરી પ્રયત્ન કરો.', 'Could not create the PDF. Check your internet connection and try again.'), true); };
+  let built = false, timer = 0;
+  const build = async (quiet) => {
+    try {
+      const blob = await makeBlob();
+      if (quiet === true) { const info = box.querySelector('.text-xs'); if (info) info.textContent = `${cfg.file}.pdf · ${fmtBytes(blob.size)} · updated`; return; }
+      built = true;
+      showPreview(box, blob, cfg.file + '.pdf', ctx, cfg.title, () => makeBlob().catch(e => { fail(e); return null; }));
+    } catch (e) { fail(e); }
+  };
+  // After the first PDF, any edit (price, qty, name…) is picked up automatically.
+  ctrl.addEventListener('input', () => { if (!built) return; clearTimeout(timer); timer = setTimeout(() => build(true), 700); });
+  ctrl.addEventListener('click', e => { if (built && (e.target.closest('.add') || e.target.closest('[data-del]'))) { clearTimeout(timer); timer = setTimeout(() => build(true), 300); } });
+  setActions([{ label: T('PDF બનાવો', 'Generate PDF'), cls: 'btn-primary', icon: 'file-text', keep: true, onClick: () => build() }]);
 }
 reg('cctv-quote', (m, o, c) => docBuilder(m, c, { title: 'CCTV QUOTATION', file: 'cctv-quote', items: true, itemsDefault: '2MP Dome Camera,4,1200\nDVR 4CH,1,3500\nHDD 1TB,1,3200\nCable+Installation,1,2500', fields: [{ k: 'client', label: T('ક્લાયન્ટ નામ', 'Client name'), full: true }, { k: 'phone', label: T('ફોન', 'Phone') }, { k: 'date', label: T('તારીખ', 'Date'), type: 'date', val: new Date().toISOString().slice(0, 10) }, { k: 'site', label: T('સાઇટ સરનામું', 'Site address'), full: true, type: 'textarea' }] }));
 reg('cctv-amc', (m, o, c) => docBuilder(m, c, { title: 'CCTV AMC CONTRACT', file: 'cctv-amc', fields: [{ k: 'client', label: T('ક્લાયન્ટ', 'Client'), full: true }, { k: 'phone', label: T('ફોન', 'Phone') }, { k: 'amount', label: T('વાર્ષિક રકમ ₹', 'Yearly amount ₹') }, { k: 'cameras', label: T('કેમેરા સંખ્યા', 'No. of cameras') }, { k: 'start', label: T('શરૂ તારીખ', 'Start date'), type: 'date', val: new Date().toISOString().slice(0, 10) }, { k: 'terms', label: T('શરતો', 'Terms'), full: true, type: 'textarea', val: '2 free visits/year, spare parts extra, response within 48 hrs.' }] }));

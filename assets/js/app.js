@@ -158,17 +158,71 @@ async function waShareFile(blob, filename, caption) {
 window.ktWaShareText = waShareText;
 
 /* ---------- Action bar helper ---------- */
+// Buttons marked { keep: true } (e.g. "Generate PDF") stay in the bar when a result
+// later adds its own Download / Print buttons, so the user can edit and generate again.
+let stickyActions = [];
 function setActions(buttons) {
   const bar = $('#toolActions'); if (!bar) return;
+  const keep = buttons.filter(b => b && b.keep);
+  if (keep.length) stickyActions = keep;
+  const all = keep.length ? buttons : stickyActions.concat(buttons.filter(b => b && !stickyActions.some(k => k.label === b.label)));
   bar.innerHTML = '';
-  buttons.forEach(b => {
+  all.forEach(b => {
     if (!b) return;
     const btn = document.createElement('button');
     btn.className = 'btn ' + (b.cls || 'btn-ghost') + ' text-sm';
     btn.innerHTML = (b.icon ? `<i data-lucide="${b.icon}"></i>` : '') + b.label;
-    btn.onclick = b.onClick; bar.appendChild(btn);
+    btn.onclick = async (ev) => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try { await b.onClick(ev); } catch (e) { console.error(e); toast('Something went wrong. Please try again.', true); }
+      finally { btn.disabled = false; }
+    };
+    bar.appendChild(btn);
   });
   if (window.lucide) lucide.createIcons();
+}
+
+/* ---------- Printing (hidden frame: no pop-up, works on phones) ---------- */
+function printHtml(html, title) {
+  const old = document.getElementById('ktPrintFrame'); if (old) old.remove();
+  const f = document.createElement('iframe');
+  f.id = 'ktPrintFrame'; f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
+  document.body.appendChild(f);
+  const d = f.contentWindow.document;
+  d.open();
+  d.write(`<!doctype html><html><head><meta charset="utf-8"><title>${(title || 'Print').replace(/</g, '')}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@400;700&display=swap" rel="stylesheet">
+    <style>body{margin:0;background:#fff}@page{margin:10mm}img.pg{display:block;width:100%;height:auto;page-break-after:always;break-after:page}img.pg:last-child{page-break-after:auto;break-after:auto}</style>
+    </head><body>${html}</body></html>`);
+  d.close();
+  const go = () => {
+    try { f.contentWindow.focus(); f.contentWindow.print(); }
+    catch (e) { const w = window.open('', '_blank'); if (!w) { toast('Please allow pop-ups to print.', true); return; } w.document.write(d.documentElement.outerHTML); w.document.close(); setTimeout(() => w.print(), 500); }
+  };
+  const imgs = Array.from(d.images);
+  Promise.all(imgs.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })))
+    .then(() => (d.fonts && d.fonts.ready ? d.fonts.ready : 0)).then(() => setTimeout(go, 250));
+}
+window.ktPrintHtml = printHtml;
+
+/** Print a calculator: the inputs as a small table, then the result — without the site menu/footer. */
+function printResult(title, form, out) {
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const rows = [];
+  if (form) form.querySelectorAll('input, select, textarea').forEach(n => {
+    if (n.type === 'hidden' || n.type === 'file' || n.type === 'button') return;
+    const wrap = n.closest('div'); const lab = wrap && wrap.querySelector('label');
+    const val = n.tagName === 'SELECT' ? (n.options[n.selectedIndex] || {}).text : (n.type === 'checkbox' ? (n.checked ? 'Yes' : 'No') : n.value);
+    if (lab && val !== '') rows.push(`<tr><td style="padding:3px 12px 3px 0;color:#555">${esc(lab.textContent.trim())}</td><td><b>${esc(val)}</b></td></tr>`);
+  });
+  const res = out ? out.innerHTML : '';
+  printHtml(`<div style="font-family:Arial,sans-serif;color:#111;padding:8px">
+    <h2 style="margin:0 0 10px;color:#1E3A8A">${esc(title)}</h2>
+    ${rows.length ? `<table style="font-size:14px;margin-bottom:14px">${rows.join('')}</table>` : ''}
+    <div style="font-size:15px">${res}</div>
+    <div style="margin-top:18px;font-size:11px;color:#777">${esc(location.href)}</div></div>`, title);
 }
 
 /* ---------- Small DOM builders ---------- */
@@ -193,6 +247,24 @@ function fileInput(mount, opt) {
   ['dragover', 'dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('drag'); }));
   drop.addEventListener('drop', ev => { input.files = ev.dataTransfer.files; input.dispatchEvent(new Event('change')); });
+  // Show which file is selected.
+  const nameEl = wrap.querySelector('.text-xs');
+  input.addEventListener('change', () => {
+    const n = Array.from(input.files || []);
+    if (n.length) nameEl.textContent = '✔ ' + (n.length === 1 ? n[0].name : n.length + ' files selected') + ' — tap to choose another';
+    else nameEl.textContent = opt.hint || '';
+  });
+  // Changing a setting (quality, size, format, text…) after choosing a file runs the tool
+  // again with the same file, so the result never stays old.
+  if (opt.rerun !== false) {
+    let t = 0;
+    mount.addEventListener('change', ev => {
+      const c = ev.target;
+      if (c === input || !c.matches || !c.matches('select, input, textarea') || c.type === 'file') return;
+      if (c.closest('.kt-result') || !(input.files && input.files.length)) return;
+      clearTimeout(t); t = setTimeout(() => input.dispatchEvent(new Event('change')), 300);
+    });
+  }
   if (window.lucide) lucide.createIcons();
   return input;
 }
@@ -280,7 +352,7 @@ function renderCalc(mount, spec, ctx) {
     { label: T('ગણો', 'Calculate'), cls: 'btn-primary', icon: 'calculator', onClick: () => run(true) },
     { label: T('કોપી', 'Copy'), icon: 'copy', onClick: () => copy(ctx._resultText || '') },
     { label: T('WhatsApp', 'WhatsApp'), cls: 'btn-wa', icon: 'send', onClick: () => waShareText(ctx._resultText || '') },
-    { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => window.print() },
+    { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: () => { run(true); printResult(spec.title || (document.querySelector('h1') || {}).textContent || document.title, form, out); } },
   ]);
   if (spec.autorun !== false) run();
 }
@@ -949,7 +1021,7 @@ document.addEventListener('input', e => {
 });
 
 /* Export internals for the file/generator engine module (loaded below). */
-window.KTX = { $, $$, T, GU, KT, toast, copy, downloadBlob, downloadDataUrl, loadScript, loadCss, need, CDN, logUsage, waShareText, waShareFile, setActions, el, fileInput, checkMax, fmtBytes, reg, Engines, regCalc, renderCalc, fmtDuration, gcd };
+window.KTX = { $, $$, T, GU, KT, toast, copy, downloadBlob, downloadDataUrl, loadScript, loadCss, need, CDN, logUsage, waShareText, waShareFile, setActions, printHtml, el, fileInput, checkMax, fmtBytes, reg, Engines, regCalc, renderCalc, fmtDuration, gcd };
 
 /* ================================================================
    MOUNT: pick engine, or graceful fallback.
