@@ -11,7 +11,7 @@
 'use strict';
 const X = window.KTX;
 if (!X) return;
-const { $, T, GU, KT, toast, copy, downloadBlob, waShareText, waShareFile, setActions, el, reg, renderCalc, logUsage } = X;
+const { $, T, GU, KT, toast, copy, downloadBlob, waShareText, waShareFile, setActions, el, reg, renderCalc, logUsage, need, loadScript } = X;
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const L = (o, k) => (GU ? (o[k + '_gu'] ?? o.gu ?? o[k] ?? o.en) : (o[k + '_en'] ?? o.en ?? o[k] ?? o.gu)) || '';
@@ -333,8 +333,37 @@ reg('doc', function (mount, opt, ctx) {
     w.document.close();
     if (ctx.toolId) logUsage(ctx.toolId);
   }
+  // Real PDF file: render the preview to an image (keeps ₹ and every script intact) and place it on A4 pages.
+  async function makePdf() {
+    try {
+      await need('jspdf');
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#fff';
+      host.innerHTML = html; document.body.appendChild(host);
+      const canvas = await window.html2canvas(host, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      host.remove();
+      const { jsPDF } = window.jspdf; const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pw = 210, ph = 297, imgH = canvas.height * pw / canvas.width;
+      const pagePx = Math.floor(canvas.width * ph / pw);
+      for (let y = 0, i = 0; y < canvas.height; y += pagePx, i++) {
+        const part = document.createElement('canvas'); part.width = canvas.width; part.height = Math.min(pagePx, canvas.height - y);
+        part.getContext('2d').drawImage(canvas, 0, y, canvas.width, part.height, 0, 0, canvas.width, part.height);
+        if (i) pdf.addPage();
+        pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, part.height * pw / canvas.width);
+      }
+      const name = (opt.slug || 'document') + '.pdf';
+      downloadBlob(pdf.output('blob'), name);
+      if (ctx.toolId) logUsage(ctx.toolId);
+      return pdf;
+    } catch (e) {
+      console.error(e);
+      toast(T('PDF બનાવી શકાઈ નહીં.', 'Could not create the PDF. Check your internet connection and try again, or use Print.'), true);
+    }
+  }
   setActions([
-    { label: T('પ્રિન્ટ / PDF', 'Print / PDF'), cls: 'btn-cta', icon: 'printer', onClick: printIt },
+    { label: T('PDF ડાઉનલોડ', 'Download PDF'), cls: 'btn-cta', icon: 'download', onClick: makePdf },
+    { label: T('પ્રિન્ટ', 'Print'), icon: 'printer', onClick: printIt },
     { label: T('કોપી', 'Copy'), icon: 'copy', onClick: () => copy(plain) },
     { label: 'WhatsApp', cls: 'btn-wa', icon: 'send', onClick: () => waShareText(plain) },
   ]);

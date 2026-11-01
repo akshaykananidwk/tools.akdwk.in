@@ -162,7 +162,11 @@ function setActions(buttons) {
 }
 
 /* ---------- Small DOM builders ---------- */
-function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; }
+function el(html) {
+  const d = document.createElement('div'); d.innerHTML = html.trim();
+  // Several top-level elements: keep them all inside one wrapper instead of silently dropping the rest.
+  return d.children.length === 1 ? d.firstElementChild : d;
+}
 function fileInput(mount, opt) {
   opt = opt || {};
   const accept = opt.accept || 'image/*';
