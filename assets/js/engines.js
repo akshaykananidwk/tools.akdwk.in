@@ -305,8 +305,19 @@ reg('heic-convert', async function (mount, opt, ctx) {
   input.onchange = async () => {
     const f = input.files[0]; if (!f) return;
     box.innerHTML = `<div class="chakra-loader mx-auto"></div>`;
-    try { await need('heic'); const blob = await heic2any({ blob: f, toType: 'image/jpeg', quality: 0.9 }); showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '.jpg', ctx); }
-    catch (e) { box.innerHTML = `<div class="text-red-500">${T('HEIC કન્વર્ઝન નિષ્ફળ', 'HEIC conversion failed')}</div>`; }
+    const name = f.name.replace(/\.[^.]+$/, '') + '.jpg';
+    try {
+      const isHeic = /\.(heic|heif)$/i.test(f.name) || /hei[cf]/i.test(f.type);
+      if (!isHeic) { // a normal photo was picked: convert it directly
+        const img = await loadImage(f); const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0);
+        showPreview(box, await canvasToBlob(c, 'image/jpeg', 0.92), name, ctx); return;
+      }
+      await need('heic'); let blob = await heic2any({ blob: f, toType: 'image/jpeg', quality: 0.9 });
+      if (Array.isArray(blob)) blob = blob[0];
+      showPreview(box, blob, name, ctx);
+    }
+    catch (e) { console.error(e); box.innerHTML = `<div class="text-red-500">${T('HEIC કન્વર્ઝન નિષ્ફળ', 'Could not convert this file. Make sure it is a HEIC/HEIF photo from an iPhone; if it keeps failing, try another photo.')}</div>`; }
   };
 });
 
@@ -567,36 +578,243 @@ reg('pdf-to-img', async function (mount, opt, ctx) {
   });
 });
 /* PDF ops that need a server binary: try /api/convert.php, else friendly message. */
-function serverPdf(label) {
-  return function (mount, opt, ctx) {
-    mount.innerHTML = `<div class="text-center py-4">
-      <div class="text-4xl mb-2">🦚</div>
-      <p class="font-semibold">${label}</p>
-      <p class="opacity-60 text-sm mt-1">${T('આ સુવિધા સર્વર પર Ghostscript/LibreOffice હોય તો ચાલે છે. અપલોડ કરો — ન હોય તો સંદેશ મળશે.', 'This uses a server binary (Ghostscript/LibreOffice) if installed. Upload to try.')}</p></div>`;
-    const box = resultBox(mount);
-    multiPdfInput(mount, async (files) => {
-      box.innerHTML = `<div class="chakra-loader mx-auto"></div>`;
-      const fd = new FormData(); fd.append('file', files[0]); fd.append('op', opt.op || ''); fd.append('from', opt.from || ''); fd.append('to', opt.to || '');
-      try {
-        const r = await fetch(KT.url + '/api/convert.php', { method: 'POST', headers: { 'X-CSRF': KT.csrf }, body: fd });
-        if (!r.ok) throw new Error('server');
-        const ct = r.headers.get('content-type') || '';
-        if (ct.includes('json')) { const j = await r.json(); box.innerHTML = `<div class="text-amber-600">${j.error || T('સર્વર બાઈનરી ઉપલબ્ધ નથી', 'Server binary not available')}</div>`; return; }
-        const blob = await r.blob(); showPreview(box, blob, 'output.' + (opt.to || 'pdf'), ctx);
-      } catch (e) { box.innerHTML = `<div class="text-amber-600">${T('સર્વર પર બાઈનરી ઉપલબ્ધ નથી. કૃપા કરી હોસ્ટ પર Ghostscript/LibreOffice ઇન્સ્ટોલ કરો.', 'Server binary unavailable. Install Ghostscript/LibreOffice on the host.')}</div>`; }
-    });
-  };
+/* ---------- Browser-side PDF tools (no server software needed) ---------- */
+const LIB2 = {
+  h2c: 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  pptx: 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js',
+  mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+};
+async function pdfjsReady() {
+  await need('pdfjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  return pdfjsLib;
 }
-reg('pdf-compress', serverPdf(T('PDF કોમ્પ્રેસ', 'Compress PDF')));
-reg('pdf-protect', serverPdf(T('PDF પાસવર્ડ પ્રોટેક્ટ', 'Password Protect')));
-reg('pdf-unlock', serverPdf(T('PDF પાસવર્ડ દૂર', 'Password Remove')));
-reg('pdf-to-word', serverPdf(T('PDF થી Word', 'PDF to Word')));
-reg('pdf-to-excel', serverPdf(T('PDF થી Excel', 'PDF to Excel')));
-reg('pdf-to-ppt', serverPdf(T('PDF થી PPT', 'PDF to PPT')));
-reg('server-convert', serverPdf(T('ડોક્યુમેન્ટ કન્વર્ટ', 'Document Convert')));
+async function openPdf(file, password) {
+  const lib = await pdfjsReady();
+  return lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), password: password || undefined }).promise;
+}
+const pdfErr = e => /password/i.test((e && (e.name + ' ' + e.message)) || '')
+  ? T('આ PDF પાસવર્ડથી સુરક્ષિત છે. સાચો પાસવર્ડ લખો.', 'This PDF is password-protected. Enter the correct password.')
+  : T('PDF ખોલી શકાઈ નહીં.', 'Could not read this PDF. Make sure it is a valid, undamaged PDF file.');
+async function pageCanvas(pdf, n, scale) {
+  const page = await pdf.getPage(n); const vp = page.getViewport({ scale });
+  const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: g, viewport: vp }).promise;
+  const base = page.getViewport({ scale: 1 });
+  return { canvas: c, wPt: base.width, hPt: base.height };
+}
+/* Rebuild a PDF from page images (jsPDF), optionally password-protected. */
+async function rasterPdf(pdf, { scale = 1.5, quality = 0.75, encryption = null, onPage } = {}) {
+  await need('jspdf'); const { jsPDF } = window.jspdf;
+  let out = null;
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const { canvas, wPt, hPt } = await pageCanvas(pdf, i, scale);
+    const o = wPt > hPt ? 'l' : 'p';
+    if (!out) out = new jsPDF(Object.assign({ unit: 'pt', format: [wPt, hPt], orientation: o, compress: true }, encryption ? { encryption } : {}));
+    else out.addPage([wPt, hPt], o);
+    out.addImage(canvas.toDataURL('image/jpeg', quality), 'JPEG', 0, 0, wPt, hPt, undefined, 'FAST');
+    if (onPage) onPage(i, pdf.numPages);
+  }
+  return out.output('blob');
+}
+/* Text lines of a page: items grouped by baseline, sorted left → right. */
+async function pageLines(pdf, n) {
+  const page = await pdf.getPage(n); const tc = await page.getTextContent();
+  const rows = [];
+  tc.items.forEach(it => {
+    if (!it.str || !it.str.trim()) return;
+    const x = it.transform[4], y = it.transform[5], w = it.width || it.str.length * 4;
+    let r = rows.find(r => Math.abs(r.y - y) < 3);
+    if (!r) { r = { y, items: [] }; rows.push(r); }
+    r.items.push({ x, w, s: it.str });
+  });
+  rows.sort((a, b) => b.y - a.y);
+  rows.forEach(r => r.items.sort((a, b) => a.x - b.x));
+  return rows;
+}
+const fmtKB = n => n > 1048576 ? (n / 1048576).toFixed(2) + ' MB' : Math.round(n / 1024) + ' KB';
+function progress(box, msg) { box.innerHTML = `<div class="text-center py-4"><div class="chakra-loader mx-auto"></div><p class="opacity-70 mt-3 text-sm">${msg}</p></div>`; }
+function pdfToolUI(mount, extraHtml) {
+  const extra = extraHtml ? el(`<div class="grid sm:grid-cols-2 gap-3 mb-3">${extraHtml}</div>`) : null;
+  if (extra) mount.appendChild(extra);
+  const input = fileInput(mount, { accept: 'application/pdf', hint: 'PDF' });
+  const box = resultBox(mount);
+  return { input, box, q: s => mount.querySelector(s) };
+}
+
+reg('pdf-compress', function (mount, opt, ctx) {
+  const ui = pdfToolUI(mount, `<div><label class="kt-label">${T('ક્વોલિટી', 'Compression level')}</label><select class="kt-select lvl">
+      <option value="1.6,0.8">${T('ઓછું (સારી ક્વોલિટી)', 'Low — best quality')}</option>
+      <option value="1.3,0.62" selected>${T('મધ્યમ', 'Recommended')}</option>
+      <option value="1.0,0.45">${T('વધુ (નાની ફાઇલ)', 'Strong — smallest file')}</option></select></div>`);
+  ui.input.onchange = async () => {
+    const f = ui.input.files[0]; if (!f) return;
+    try {
+      progress(ui.box, T('PDF કોમ્પ્રેસ થઈ રહી છે…', 'Compressing…'));
+      const pdf = await openPdf(f);
+      const [scale, quality] = ui.q('.lvl').value.split(',').map(Number);
+      const blob = await rasterPdf(pdf, { scale, quality, onPage: (i, n) => progress(ui.box, `${T('પાનું', 'Page')} ${i} / ${n}`) });
+      if (blob.size >= f.size) {
+        ui.box.innerHTML = `<div class="kt-card p-4">${T('આ PDF પહેલેથી જ નાની છે.', 'This PDF is already well optimised')} (${fmtKB(f.size)}). ${T('વધુ કોમ્પ્રેસ કરવા "વધુ" પસંદ કરો.', 'Try "Strong" for a smaller file.')}</div>`;
+        return;
+      }
+      showPreview(ui.box, blob, f.name.replace(/\.pdf$/i, '') + '-compressed.pdf', ctx);
+      ui.box.insertAdjacentHTML('beforeend', `<p class="text-sm mt-2 text-center"><b>${fmtKB(f.size)} → ${fmtKB(blob.size)}</b> (${Math.round((1 - blob.size / f.size) * 100)}% ${T('નાની', 'smaller')}). <span class="opacity-60">${T('પાનાં ઇમેજ તરીકે સેવ થાય છે.', 'Pages are saved as images, so text is no longer selectable.')}</span></p>`);
+    } catch (e) { console.error(e); ui.box.innerHTML = `<div class="text-red-600">${pdfErr(e)}</div>`; }
+  };
+});
+
+reg('pdf-protect', function (mount, opt, ctx) {
+  const ui = pdfToolUI(mount, `<div><label class="kt-label">${T('પાસવર્ડ', 'Password')}</label><input type="password" class="kt-input pw" autocomplete="new-password"></div>
+    <div><label class="kt-label">${T('પાસવર્ડ ફરી', 'Confirm password')}</label><input type="password" class="kt-input pw2" autocomplete="new-password"></div>`);
+  ui.input.onchange = async () => {
+    const f = ui.input.files[0]; if (!f) return;
+    const pw = ui.q('.pw').value, pw2 = ui.q('.pw2').value;
+    if (pw.length < 4) { toast(T('ઓછામાં ઓછા 4 અક્ષરનો પાસવર્ડ લખો', 'Enter a password of at least 4 characters first'), true); ui.input.value = ''; return; }
+    if (pw !== pw2) { toast(T('બંને પાસવર્ડ સરખા નથી', 'The two passwords do not match'), true); ui.input.value = ''; return; }
+    try {
+      progress(ui.box, T('પાસવર્ડ લગાવી રહ્યા છીએ…', 'Adding password…'));
+      const pdf = await openPdf(f);
+      const blob = await rasterPdf(pdf, { scale: 1.6, quality: 0.85, encryption: { userPassword: pw, ownerPassword: pw + '#owner', userPermissions: ['print', 'copy'] } });
+      showPreview(ui.box, blob, f.name.replace(/\.pdf$/i, '') + '-protected.pdf', ctx);
+      ui.box.insertAdjacentHTML('beforeend', `<p class="text-sm opacity-70 mt-2 text-center">${T('ફાઇલ ખોલવા પાસવર્ડ જોઈશે.', 'Anyone opening this file will need the password.')}</p>`);
+    } catch (e) { console.error(e); ui.box.innerHTML = `<div class="text-red-600">${pdfErr(e)}</div>`; }
+  };
+});
+
+reg('pdf-unlock', function (mount, opt, ctx) {
+  const ui = pdfToolUI(mount, `<div class="sm:col-span-2"><label class="kt-label">${T('હાલનો પાસવર્ડ', 'Current password of the PDF')}</label><input type="password" class="kt-input pw" autocomplete="off"></div>`);
+  ui.input.onchange = async () => {
+    const f = ui.input.files[0]; if (!f) return;
+    try {
+      progress(ui.box, T('પાસવર્ડ દૂર કરી રહ્યા છીએ…', 'Removing password…'));
+      const pdf = await openPdf(f, ui.q('.pw').value);
+      const blob = await rasterPdf(pdf, { scale: 1.6, quality: 0.85 });
+      showPreview(ui.box, blob, f.name.replace(/\.pdf$/i, '') + '-unlocked.pdf', ctx);
+    } catch (e) { console.error(e); ui.box.innerHTML = `<div class="text-red-600">${pdfErr(e)}</div>`; ui.input.value = ''; }
+  };
+});
+
+reg('pdf-to-word', function (mount, opt, ctx) {
+  const ui = pdfToolUI(mount, '');
+  ui.input.onchange = async () => {
+    const f = ui.input.files[0]; if (!f) return;
+    try {
+      progress(ui.box, T('લખાણ કાઢી રહ્યા છીએ…', 'Extracting text…'));
+      const pdf = await openPdf(f); let body = '', chars = 0;
+      const escH = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const rows = await pageLines(pdf, i);
+        let prevY = null;
+        rows.forEach(r => {
+          const line = r.items.map(it => it.s).join(' ').replace(/\s+/g, ' ').trim(); chars += line.length;
+          const gap = prevY !== null && prevY - r.y > 18;
+          body += (gap ? '<p>&nbsp;</p>' : '') + `<p>${escH(line)}</p>`; prevY = r.y;
+        });
+        if (i < pdf.numPages) body += '<br style="page-break-before:always">';
+      }
+      if (chars < 5) { ui.box.innerHTML = `<div class="kt-card p-4">${T('આ PDF સ્કેન કરેલી છે, તેમાં લખાણ નથી.', 'This PDF has no text layer (it looks like a scan), so there is no text to convert.')}</div>`; return; }
+      const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}p{margin:0 0 4pt}</style></head><body>${body}</body></html>`;
+      showPreview(ui.box, new Blob(['﻿' + doc], { type: 'application/msword' }), f.name.replace(/\.pdf$/i, '') + '.doc', ctx);
+      ui.box.insertAdjacentHTML('beforeend', `<p class="text-sm opacity-70 mt-2 text-center">${T('લખાણ Word માં ખૂલશે; ડિઝાઇન સરખી ન પણ રહે.', 'Opens in Word, Google Docs and LibreOffice. Text is kept; the exact layout and images are not.')}</p>`);
+    } catch (e) { console.error(e); ui.box.innerHTML = `<div class="text-red-600">${pdfErr(e)}</div>`; }
+  };
+});
+
+reg('pdf-to-excel', function (mount, opt, ctx) {
+  const ui = pdfToolUI(mount, '');
+  ui.input.onchange = async () => {
+    const f = ui.input.files[0]; if (!f) return;
+    try {
+      progress(ui.box, T('ટેબલ શોધી રહ્યા છીએ…', 'Finding tables…'));
+      await need('xlsx'); const pdf = await openPdf(f); const wb = XLSX.utils.book_new(); let cells = 0;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const rows = await pageLines(pdf, i);
+        // Column boundaries: cluster item start positions across the page.
+        const starts = []; rows.forEach(r => r.items.forEach(it => { if (!starts.some(s => Math.abs(s - it.x) < 12)) starts.push(it.x); }));
+        starts.sort((a, b) => a - b);
+        const aoa = rows.map(r => {
+          const line = new Array(starts.length).fill('');
+          r.items.forEach(it => { let c = 0; starts.forEach((s, k) => { if (it.x >= s - 12) c = k; }); line[c] = line[c] ? line[c] + ' ' + it.s : it.s; cells++; });
+          return line.map(v => { const t = v.trim(); const n = t.replace(/[,₹\s]/g, ''); return /^-?\d+(\.\d+)?$/.test(n) ? +n : t; });
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa.length ? aoa : [['']]), 'Page ' + i);
+      }
+      if (!cells) { ui.box.innerHTML = `<div class="kt-card p-4">${T('આ PDF માં લખાણ નથી (સ્કેન).', 'This PDF has no text layer (it looks like a scan), so nothing can be converted.')}</div>`; return; }
+      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      showPreview(ui.box, new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), f.name.replace(/\.pdf$/i, '') + '.xlsx', ctx);
+      ui.box.insertAdjacentHTML('beforeend', `<p class="text-sm opacity-70 mt-2 text-center">${T('દરેક પાનું અલગ શીટમાં.', 'One sheet per page. Works best with PDFs made from Excel or software; check the columns after opening.')}</p>`);
+    } catch (e) { console.error(e); ui.box.innerHTML = `<div class="text-red-600">${pdfErr(e)}</div>`; }
+  };
+});
+
+reg('pdf-to-ppt', function (mount, opt, ctx) {
+  const ui = pdfToolUI(mount, '');
+  ui.input.onchange = async () => {
+    const f = ui.input.files[0]; if (!f) return;
+    try {
+      progress(ui.box, T('સ્લાઇડ બનાવી રહ્યા છીએ…', 'Creating slides…'));
+      const pdf = await openPdf(f); await loadScript(LIB2.pptx);
+      const pptx = new window.PptxGenJS();
+      const first = (await pdf.getPage(1)).getViewport({ scale: 1 });
+      pptx.defineLayout({ name: 'PDF', width: 10, height: +(10 * first.height / first.width).toFixed(3) }); pptx.layout = 'PDF';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        progress(ui.box, `${T('સ્લાઇડ', 'Slide')} ${i} / ${pdf.numPages}`);
+        const { canvas } = await pageCanvas(pdf, i, 1.8);
+        pptx.addSlide().addImage({ data: canvas.toDataURL('image/jpeg', 0.85), x: 0, y: 0, w: '100%', h: '100%' });
+      }
+      const blob = await pptx.write({ outputType: 'blob' });
+      showPreview(ui.box, blob, f.name.replace(/\.pdf$/i, '') + '.pptx', ctx);
+      ui.box.insertAdjacentHTML('beforeend', `<p class="text-sm opacity-70 mt-2 text-center">${T('દરેક પાનું એક સ્લાઇડ.', 'Each page becomes one slide (as a picture).')}</p>`);
+    } catch (e) { console.error(e); ui.box.innerHTML = `<div class="text-red-600">${pdfErr(e)}</div>`; }
+  };
+});
+
+/* Word → PDF / PPT → PDF: server (LibreOffice) when available; Word also has a browser fallback. */
+reg('server-convert', function (mount, opt, ctx) {
+  const isWord = /^docx?$/.test(opt.from || '');
+  const accept = isWord ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : '.pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  const input = fileInput(mount, { accept, hint: isWord ? 'Word (.docx)' : 'PowerPoint (.pptx)' });
+  const box = resultBox(mount);
+  async function viaServer(file) {
+    const fd = new FormData(); fd.append('file', file); fd.append('from', opt.from || ''); fd.append('to', opt.to || 'pdf');
+    const r = await fetch(KT.url + '/api/convert.php', { method: 'POST', headers: { 'X-CSRF': KT.csrf }, body: fd });
+    const ct = r.headers.get('content-type') || '';
+    if (!r.ok || ct.includes('json')) return null;
+    return r.blob();
+  }
+  async function wordInBrowser(file) {
+    await loadScript(LIB2.mammoth); await loadScript(LIB2.h2c); await need('jspdf');
+    const res = await window.mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;padding:56px;background:#fff;color:#000;font:15px/1.5 Calibri,Arial,sans-serif;box-sizing:border-box';
+    host.innerHTML = res.value + '<style>img{max-width:100%}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px}</style>';
+    document.body.appendChild(host);
+    const canvas = await window.html2canvas(host, { scale: 2, backgroundColor: '#fff' }); host.remove();
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pagePx = Math.floor(canvas.width * 297 / 210);
+    for (let y = 0, i = 0; y < canvas.height; y += pagePx, i++) {
+      const part = document.createElement('canvas'); part.width = canvas.width; part.height = Math.min(pagePx, canvas.height - y);
+      part.getContext('2d').drawImage(canvas, 0, y, canvas.width, part.height, 0, 0, canvas.width, part.height);
+      if (i) pdf.addPage(); pdf.addImage(part.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, part.height * 210 / canvas.width);
+    }
+    return pdf.output('blob');
+  }
+  input.onchange = async () => {
+    const f = input.files[0]; if (!f) return;
+    progress(box, T('PDF બનાવી રહ્યા છીએ…', 'Converting to PDF…'));
+    try {
+      let blob = await viaServer(f).catch(() => null);
+      if (!blob && isWord) blob = await wordInBrowser(f);
+      if (!blob) { box.innerHTML = `<div class="kt-card p-4">${T('આ સર્વર પર PowerPoint કન્વર્ટ ઉપલબ્ધ નથી.', 'PowerPoint conversion is not available on this server right now. Open the file in PowerPoint or Google Slides and use File → Download → PDF.')}</div>`; return; }
+      showPreview(box, blob, f.name.replace(/\.\w+$/, '') + '.pdf', ctx);
+    } catch (e) { console.error(e); box.innerHTML = `<div class="text-red-600">${T('ફાઇલ કન્વર્ટ થઈ શકી નહીં.', 'Could not convert this file. Make sure it is a valid .docx file.')}</div>`; }
+  };
+});
 
 /* ================= TEXT / DOC ENGINES ================= */
-function textArea(mount, ph) { const t = el(`<textarea class="kt-input" rows="8" placeholder="${ph || ''}"></textarea>`); mount.appendChild(t); return t; }
+function textArea(mount, ph) { const t = el(`<textarea class="kt-input" rows="8"></textarea>`); t.placeholder = ph || ''; mount.appendChild(t); return t; }
 reg('word-count', function (mount, opt, ctx) {
   const ta = textArea(mount, T('અહીં ટેક્સ્ટ પેસ્ટ કરો...', 'Paste text here...')); const box = resultBox(mount);
   const upd = () => {
@@ -686,8 +904,8 @@ reg('excel-csv', async function (mount, opt, ctx) {
 reg('json-excel', async function (mount, opt, ctx) {
   await need('xlsx'); const to = (opt && opt.to) || 'xlsx';
   if (to === 'xlsx') {
-    const ta = textArea(mount, '[{"name":"Krishna","tools":120}]'); const box = resultBox(mount);
-    setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', onClick: () => { try { const arr = JSON.parse(ta.value); const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } } }]);
+    const ta = textArea(mount, '[{"name":"Krishna","qty":2,"price":150},{"name":"Radha","qty":1,"price":90}]'); const box = resultBox(mount);
+    setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', onClick: () => { try { if (!ta.value.trim()) { toast(T('પહેલાં JSON પેસ્ટ કરો', 'Paste your JSON data first'), true); return; } let arr; try { arr = JSON.parse(ta.value); } catch (e) { toast(T('JSON ખોટું છે', 'That is not valid JSON. Check brackets, quotes and commas.'), true); return; } const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } } }]);
   } else {
     const input = fileInput(mount, { accept: '.xlsx,.xls' }); const box = resultBox(mount);
     input.onchange = async () => { const f = input.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); showText(box, JSON.stringify(json, null, 2), 'data.json', 'application/json', ctx); };
