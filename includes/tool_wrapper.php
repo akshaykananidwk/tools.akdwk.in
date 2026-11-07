@@ -11,6 +11,7 @@ require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/ratelimit.php';
 require_once __DIR__ . '/tools_i18n.php';
+require_once __DIR__ . '/seo.php';
 
 /** Look up the DB row for a tool slug (for id + admin toggles). */
 function tool_db_row(string $slug): ?array {
@@ -81,12 +82,12 @@ function render_tool_page(string $slug): void {
     $desc   = loc($tool, 'desc');
 
     $en = current_lang() === 'en';
-    $page_title = $en
-        ? $name . ' — Free Online Tool | ' . brand_name()
-        : $name . ' — ફ્રી ઓનલાઇન ટૂલ | ' . brand_name();
-    $page_desc  = $desc . ($en ? ' Fast, free and secure — works in your browser. By AK Computer, Dwarka.' : ' ઝડપી, ફ્રી અને સુરક્ષિત.');
+    $kw = kt_tool_keywords($tool);
+    $page_title = kt_seo_title($tool);
+    $page_desc  = kt_seo_desc($tool);
     $page_canonical = SITE_URL . '/tool/' . $tool['slug'];
-    $page_keywords = $tool['name_en'] . ', ' . $tool['slug'] . ', online tool, free, ' . $tool['cat'] . ' tools';
+    $page_keywords = implode(', ', $kw);
+    $about = kt_tool_about($tool, $kw);
     $breadcrumb = [
         ['label' => t('home'), 'url' => SITE_URL . '/'],
         ['label' => loc($cat ?? [], 'name'), 'url' => SITE_URL . '/category/' . $tool['cat']],
@@ -112,7 +113,8 @@ function render_tool_page(string $slug): void {
     }
     $ld = json_encode(['@context' => 'https://schema.org', '@graph' => [
         ['@type' => 'SoftwareApplication', 'name' => $name, 'applicationCategory' => 'UtilitiesApplication',
-         'operatingSystem' => 'Web, Android, iOS', 'description' => $desc,
+         'operatingSystem' => 'Web, Android, iOS', 'description' => $desc, 'keywords' => implode(', ', array_slice($kw, 0, 10)),
+         'isAccessibleForFree' => true,
          'url' => SITE_URL . '/tool/' . $tool['slug'], 'inLanguage' => current_lang() === 'en' ? 'en' : 'gu',
          'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'INR']],
         $faqLd,
@@ -191,6 +193,19 @@ function render_tool_page(string $slug): void {
             </div>
           <?php endforeach; ?>
         </div>
+
+        <!-- About + the phrases people search for (visible text helps Google match real queries) -->
+        <div class="kt-card p-5 mb-6">
+          <h2 class="section-title text-xl mb-1">About <?= e($name) ?></h2>
+          <div class="divider-gold mb-3"></div>
+          <p class="opacity-80 leading-relaxed"><?= e($about) ?></p>
+          <?php if ($kw): ?>
+          <h3 class="font-bold mt-4 mb-2 text-sm">People also search for</h3>
+          <div class="flex flex-wrap gap-2">
+            <?php foreach ($kw as $k): ?><span class="text-xs px-2 py-1 rounded-full border" style="border-color:var(--border)"><?= e($k) ?></span><?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+        </div>
       </div>
 
       <!-- Related tools sidebar -->
@@ -198,7 +213,7 @@ function render_tool_page(string $slug): void {
         <div class="kt-card p-5 sticky top-20">
           <h2 class="font-bold mb-3"><?= t('related_tools') ?></h2>
           <div class="space-y-2">
-            <?php foreach (kt_related($slug, 5) as $r): ?>
+            <?php foreach (kt_related_smart($slug, 8) as $r): ?>
               <a href="<?= SITE_URL ?>/tool/<?= e($r['slug']) ?>" class="flex items-center gap-2 p-2 rounded-lg hover:bg-[color:var(--gold)]/10">
                 <i data-lucide="<?= e($r['icon']) ?>" class="w-4 h-4 opacity-70"></i>
                 <span class="text-sm"><?= e(loc($r, 'name')) ?></span></a>

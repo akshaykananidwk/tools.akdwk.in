@@ -16,12 +16,13 @@ $urls[] = [$base . '/contact.php', null, 'monthly', '0.4'];
 
 // Categories.
 foreach (kt_categories() as $c) {
-    $urls[] = [$base . '/category/' . $c['slug'], null, 'weekly', '0.7'];
+    $urls[] = [$base . '/category/' . $c['slug'], null, 'weekly', '0.8'];
 }
 
-// Tools.
+// Tools (lastmod = when the tool definitions last changed, so Google re-crawls updates).
+$toolMod = date('Y-m-d', max(array_map('filemtime', array_merge(glob(__DIR__ . '/includes/tools_more/*.php') ?: [], [__DIR__ . '/includes/tools_registry.php', __DIR__ . '/includes/seo.php']))));
 foreach (kt_tools() as $t) {
-    $urls[] = [$base . '/tool/' . $t['slug'], null, 'weekly', '0.6'];
+    $urls[] = [$base . '/tool/' . $t['slug'], $toolMod, 'weekly', '0.7'];
 }
 
 // Published blog posts (with last-modified from created_at).
@@ -39,10 +40,6 @@ foreach ($urls as [$loc, $lastmod, $changefreq, $priority]) {
     $sep = str_contains($loc, '?') ? '&amp;' : '?';
     echo "  <url>\n";
     echo '    <loc>' . $esc . "</loc>\n";
-    // Bilingual alternates (English default + Gujarati).
-    echo '    <xhtml:link rel="alternate" hreflang="en" href="' . $esc . $sep . 'lang=en"/>' . "\n";
-    echo '    <xhtml:link rel="alternate" hreflang="gu" href="' . $esc . $sep . 'lang=gu"/>' . "\n";
-    echo '    <xhtml:link rel="alternate" hreflang="x-default" href="' . $esc . '"/>' . "\n";
     if ($lastmod) echo '    <lastmod>' . $lastmod . "</lastmod>\n";
     echo '    <changefreq>' . $changefreq . "</changefreq>\n";
     echo '    <priority>' . $priority . "</priority>\n";

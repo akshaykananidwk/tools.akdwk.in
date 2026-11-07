@@ -47,19 +47,24 @@ function kt_more_categories(): array {
 function kt_more_tools(): array {
     static $tools = null;
     if ($tools !== null) return $tools;
-    $engine = ['calc' => 'formula', 'text' => 'textgen', 'card' => 'card', 'doc' => 'doc'];
+    $engine = ['calc' => 'formula', 'text' => 'textgen', 'card' => 'card', 'doc' => 'doc', 'app' => 'daily'];
     $tools = [];
     foreach (kt_more_packs()['tools'] as $t) {
         $type = $t['type'] ?? 'calc';
-        $opt = array_intersect_key($t, array_flip(['in', 'out', 'tpl_en', 'tpl_gu', 'card', 'doc']));
+        $opt = array_intersect_key($t, array_flip(['in', 'out', 'tpl_en', 'tpl_gu', 'card', 'doc', 'kind', 'cfg']));
         $opt['slug'] = $t['slug'];
+        // The site is English-only: packs may leave out the Gujarati copy.
+        $t['gu'] = $t['gu'] ?? $t['en'];
+        $t['dg'] = $t['dg'] ?? $t['de'];
         [$gGu, $gEn] = kt_more_guide($t, $type);
+        if (!empty($t['steps'])) { $gEn = $t['steps']; $gGu = $t['steps']; }
         [$fGu, $fEn] = kt_more_faq($t, $type);
         $tools[] = [
             'slug' => $t['slug'], 'cat' => $t['cat'], 'name_gu' => $t['gu'], 'name_en' => $t['en'],
             'icon' => $t['icon'] ?? 'calculator', 'premium' => 0, 'engine' => $engine[$type] ?? 'formula',
             'opt' => $opt, 'desc_gu' => $t['dg'], 'desc_en' => $t['de'],
             'guide' => $gGu, 'faq' => $fGu, 'guide_en' => $gEn, 'faq_en' => $fEn,
+            'kw' => $t['kw'] ?? [], 'about' => $t['about'] ?? '',
         ];
     }
     return $tools;
@@ -86,6 +91,11 @@ function kt_more_guide(array $t, string $type): array {
             return [
                 ['લખાણ ભરો' . ($inGu ? " ($inGu)" : ''), 'સાઇઝ (સ્ટેટસ, પોસ્ટ, પોસ્ટર) અને રંગ પસંદ કરો', 'નીચે તૈયાર ડિઝાઇનનો પ્રિવ્યૂ જુઓ', 'PNG ડાઉનલોડ કરો અથવા WhatsApp પર મોકલો'],
                 ['Type your text' . ($inEn ? " ($inEn)" : ''), 'Choose a size (status, post, poster) and colours', 'Check the live preview below', 'Download the PNG or share it on WhatsApp'],
+            ];
+        case 'app':
+            return [
+                ['ટૂલ ખોલો', 'વિગત ભરો', 'પરિણામ જુઓ', 'કોપી કરો કે શેર કરો'],
+                ['Open the tool — it works right here in your browser', 'Type or choose what you need' . ($inEn ? " ($inEn)" : ''), 'See the result instantly on the same page', 'Copy, download or share it on WhatsApp'],
             ];
         case 'doc':
             return [

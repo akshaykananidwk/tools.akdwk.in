@@ -36,7 +36,40 @@ const H = {
   fix: (x, n = 2) => (+x).toFixed(n),
   pick: (cond, a, b) => (cond ? a : b),
   T: (gu, en) => (GU ? gu : en),
+  // Indian-system amount in words: 1,25,000 -> "One Lakh Twenty Five Thousand"
+  words: n => inWords(n),
+  // yyyy-mm-dd (or Date) -> "7 November 2026"
+  fmtDate: a => { const d = a instanceof Date ? a : new Date(a); return isNaN(d) ? '—' : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }); },
+  // "HH:MM" -> minutes after midnight
+  mins: t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : NaN; },
+  // minutes -> "h:mm AM/PM"
+  clock: m => { m = ((Math.round(m) % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return ((h % 12) || 12) + ':' + String(mm).padStart(2, '0') + (h < 12 ? ' AM' : ' PM'); },
+  // minutes -> "7 h 30 min"
+  hm: m => { m = Math.round(m); const s = m < 0 ? '−' : ''; m = Math.abs(m); return s + Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; },
+  // years/months/days between two dates
+  ymd: (a, b) => { let d1 = new Date(a), d2 = new Date(b); if (isNaN(d1) || isNaN(d2)) return '—'; if (d2 < d1) [d1, d2] = [d2, d1];
+    let y = d2.getFullYear() - d1.getFullYear(), m = d2.getMonth() - d1.getMonth(), d = d2.getDate() - d1.getDate();
+    if (d < 0) { m--; d += new Date(d2.getFullYear(), d2.getMonth(), 0).getDate(); } if (m < 0) { y--; m += 12; }
+    return y + ' years, ' + m + ' months, ' + d + ' days'; },
+  // whole years completed between two dates
+  years: (a, b) => { const d1 = new Date(a), d2 = new Date(b); if (isNaN(d1) || isNaN(d2)) return NaN; let y = d2.getFullYear() - d1.getFullYear(); if (d2.getMonth() < d1.getMonth() || (d2.getMonth() === d1.getMonth() && d2.getDate() < d1.getDate())) y--; return y; },
+  nums: t => String(t || '').split(/[^0-9.+\-eE]+/).filter(x => x !== '' && !isNaN(+x)).map(Number),
 };
+function inWords(num) {
+  num = Math.floor(Math.abs(+num || 0));
+  if (!num) return 'Zero';
+  const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const two = n => n < 20 ? a[n] : b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+  const three = n => (n >= 100 ? a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' : '') : '') + (n % 100 ? two(n % 100) : '');
+  let out = [];
+  const crore = Math.floor(num / 1e7); num %= 1e7;
+  if (crore) out.push((crore >= 1000 ? inWords(crore) : three(crore)) + ' Crore');
+  const lakh = Math.floor(num / 1e5); num %= 1e5; if (lakh) out.push(two(lakh) + ' Lakh');
+  const th = Math.floor(num / 1000); num %= 1000; if (th) out.push(two(th) + ' Thousand');
+  if (num) out.push(three(num));
+  return out.join(' ');
+}
 const _fcache = {};
 function compile(expr) {
   if (!_fcache[expr]) {

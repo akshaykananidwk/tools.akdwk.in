@@ -1060,6 +1060,7 @@ function mountTool() {
       loadScript(KT.url + '/assets/js/engines-dev.js' + v),
       loadScript(KT.url + '/assets/js/engines-more.js' + v),
       loadScript(KT.url + '/assets/js/engines-speed.js' + v),
+      loadScript(KT.url + '/assets/js/engines-daily.js' + v),
     ]).then(run).catch(run);
   }
 }
@@ -1087,7 +1088,13 @@ function wireSearchBox(inp, box) {
       const term = inp.value.trim().toLowerCase();
       if (!term) { box.classList.add('hidden'); return; }
       const idx = await ensureIndex();
-      const hits = idx.filter(t => (t.name_gu + ' ' + t.name_en + ' ' + t.slug.replace(/-/g, ' ')).toLowerCase().includes(term)).slice(0, 10);
+      // All typed words must match the name or the tool's search phrases; name matches first.
+      const words = term.split(/\s+/).filter(w => w.length > 1);
+      const hits = idx.map(t => {
+        const name = (t.name_gu + ' ' + t.name_en + ' ' + t.slug.replace(/-/g, ' ')).toLowerCase(), hay = name + ' ' + (t.k || '');
+        let s = 0; for (const w of (words.length ? words : [term])) { if (!hay.includes(w)) return null; s += name.includes(w) ? 3 : 1; }
+        return [s, t];
+      }).filter(Boolean).sort((a, b) => b[0] - a[0]).slice(0, 10).map(x => x[1]);
       box.innerHTML = hits.length ? hits.map(h => `<a href="${KT.url}/tool/${h.slug}" class="flex items-center gap-2 p-2 rounded-lg hover:bg-[color:var(--gold)]/10">
         <i data-lucide="${h.icon}" class="w-4 h-4 opacity-70"></i><span class="text-sm">${GU ? h.name_gu : h.name_en}</span></a>`).join('')
         : `<div class="p-2 text-sm opacity-60">${T('કંઈ મળ્યું નહીં', 'No results')}</div>`;

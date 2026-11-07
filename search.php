@@ -5,11 +5,22 @@ require_once __DIR__ . '/includes/bootstrap.php';
 $q = trim($_GET['q'] ?? '');
 $results = [];
 if ($q !== '') {
-    $needle = mb_strtolower($q);
+    require_once __DIR__ . '/includes/seo.php';
+    // Every word must appear somewhere (name, keywords, description); name matches rank first.
+    $words = array_filter(preg_split('/\s+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) > 1);
+    $scored = [];
     foreach (kt_tools() as $t) {
-        $hay = mb_strtolower($t['name_en'] . ' ' . $t['name_gu'] . ' ' . $t['slug'] . ' ' . $t['desc_en']);
-        if (str_contains($hay, $needle)) $results[] = $t;
+        $name = mb_strtolower($t['name_en'] . ' ' . $t['name_gu'] . ' ' . str_replace('-', ' ', $t['slug']));
+        $hay = $name . ' ' . mb_strtolower(implode(' ', kt_tool_keywords($t)) . ' ' . $t['desc_en']);
+        $score = 0;
+        foreach ($words as $w) {
+            if (!str_contains($hay, $w)) { $score = -1; break; }
+            $score += str_contains($name, $w) ? 3 : 1;
+        }
+        if ($words && $score > 0) $scored[] = [$score, $t];
     }
+    usort($scored, fn($a, $b) => $b[0] <=> $a[0]);
+    $results = array_map(fn($x) => $x[1], $scored);
 }
 
 $en = current_lang() === 'en';
