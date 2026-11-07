@@ -257,7 +257,7 @@ return [
        ['en' => 'Best value', 'f' => "(function(){var a=[['Pack A',v.p1/v.q1],['Pack B',v.p2/v.q2],['Pack C',v.q3&&v.p3?v.p3/v.q3:Infinity]].filter(function(x){return isFinite(x[1])}).sort(function(x,y){return x[1]-y[1]});return a.length?a[0][0]+' is cheapest':'—';})()", 'big' => 1],
        ['en' => 'Pack A per 1000 (kg / L)', 'f' => 'v.q1 ? v.p1/v.q1*1000 : NaN', 'fmt' => 'inr', 'd' => 2],
        ['en' => 'Pack B per 1000 (kg / L)', 'f' => 'v.q2 ? v.p2/v.q2*1000 : NaN', 'fmt' => 'inr', 'd' => 2],
-       ['en' => 'Pack C per 1000 (kg / L)', 'f' => 'v.q3 ? v.p3/v.q3*1000 : NaN', 'fmt' => 'inr', 'd' => 2],
+       ['en' => 'Pack C per 1000 (kg / L)', 'f' => "v.q3 && v.p3 ? '₹' + (v.p3/v.q3*1000).toFixed(2) : 'Not entered'", 'fmt' => 'inr', 'd' => 2],
        ['en' => 'You save with B vs A', 'f' => 'v.q1 && v.p1 ? (1 - (v.p2/v.q2)/(v.p1/v.q1))*100 : NaN', 'fmt' => 'pct'],
      ]],
 
@@ -537,7 +537,7 @@ return [
      'en' => 'GST Number (GSTIN) Validator & Format Checker',
      'de' => 'Check whether a 15-digit GSTIN is in the correct format with a valid check digit, and see the state and PAN inside it.',
      'kw' => ['gst number check', 'gstin validator', 'gst number format', 'verify gst number', 'gstin check digit', 'gst number search'],
-     'in' => [['k' => 'g', 'en' => 'GSTIN (15 characters)', 'v' => '24AAAAA0000A1Z5', 't' => 'text', 'full' => 1]],
+     'in' => [['k' => 'g', 'en' => 'GSTIN (15 characters)', 'v' => '24AAAAA0000A1Z8', 't' => 'text', 'full' => 1]],
      'out' => [
        ['en' => 'Result', 'f' => "(function(g){g=String(g||'').toUpperCase().replace(/\\s/g,'');if(!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(g))return '❌ Wrong format (should be like 24ABCDE1234F1Z5)';var C='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',s=0;for(var i=0;i<14;i++){var p=C.indexOf(g[i])*(i%2?2:1);s+=Math.floor(p/36)+p%36;}return C[(36-s%36)%36]===g[14]?'✅ Valid format and check digit':'❌ Check digit does not match – typing mistake?';})(v.g)", 'big' => 1],
        ['en' => 'State', 'f' => "({'01':'Jammu & Kashmir','02':'Himachal Pradesh','03':'Punjab','04':'Chandigarh','05':'Uttarakhand','06':'Haryana','07':'Delhi','08':'Rajasthan','09':'Uttar Pradesh','10':'Bihar','11':'Sikkim','12':'Arunachal Pradesh','13':'Nagaland','14':'Manipur','15':'Mizoram','16':'Tripura','17':'Meghalaya','18':'Assam','19':'West Bengal','20':'Jharkhand','21':'Odisha','22':'Chhattisgarh','23':'Madhya Pradesh','24':'Gujarat','26':'Dadra & Nagar Haveli and Daman & Diu','27':'Maharashtra','29':'Karnataka','30':'Goa','31':'Lakshadweep','32':'Kerala','33':'Tamil Nadu','34':'Puducherry','35':'Andaman & Nicobar','36':'Telangana','37':'Andhra Pradesh','38':'Ladakh','97':'Other territory'})[String(v.g).toUpperCase().slice(0,2)] || '—'"],
