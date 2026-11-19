@@ -8,10 +8,106 @@
 const X = window.KTX;
 if (!X) return;
 const { $, T, GU, KT, toast, copy, downloadBlob, downloadDataUrl, loadScript, loadCss, need, logUsage,
-        waShareText, waShareFile, setActions, printHtml, el, fileInput, checkMax, fmtBytes, reg } = X;
+        waShareText, waShareFile, setActions, printHtml, el, fileInput: baseFileInput, checkMax, fmtBytes, reg: baseReg } = X;
+
+/* ================================================================
+   BULK MODE — every file tool listed in BULK accepts many files at once.
+   The tool's own code still handles one file; the bulk runner feeds it the
+   files one by one, collects each result (via showPreview) and shows a list
+   with a "Download all (ZIP)" button. Tools that already combine several
+   files (merge PDF, images to PDF, CSV merge…) are not in the list.
+   ================================================================ */
+const BULK = new Set(['img-convert', 'img-compress', 'img-resize', 'img-rotate', 'img-watermark', 'signature-clean', 'dpi-changer',
+  'heic-convert', 'exif-tool', 'pdf-split', 'pdf-extract', 'pdf-delete', 'pdf-delete-pages', 'pdf-rotate', 'pdf-page-num', 'pdf-watermark',
+  'pdf-metadata', 'pdf-reorder', 'pdf-esign', 'pdf-to-text', 'pdf-to-img', 'pdf-compress', 'pdf-protect', 'pdf-unlock', 'pdf-to-word',
+  'pdf-to-excel', 'pdf-to-ppt', 'server-convert', 'sheet-to-pdf', 'excel-csv', 'json-excel']);
+let BULK_ON = false;      // the tool on this page supports bulk
+let CAPTURE = null;       // while the runner works: showPreview() results are collected here
+let LAST_BOX = null;      // the tool's result box (bulk results are shown there)
+let BULK_INDEX = -1;      // index of the file being processed in a bulk run
+const BULK_MAX = 50;
+function reg(name, fn) { baseReg(name, function (mount, opt, ctx) { BULK_ON = BULK.has(name); return fn.apply(this, arguments); }); }
+const isRerun = ev => !!(ev && ev.detail && ev.detail.rerun);
+function fileInput(mount, opt) {
+  opt = Object.assign({}, opt || {});
+  const bulk = BULK_ON && !opt.noBulk && (!(opt.accept || '').includes('json'));
+  if (bulk) { opt.multiple = true; opt.hint = (opt.hint ? opt.hint + ' · ' : '') + T('એક કે અનેક ફાઇલ', 'One file or many at once (bulk)'); }
+  const input = baseFileInput(mount, opt);
+  if (!bulk) return input;
+  // Engines assign input.onchange = handler; keep it and decide here whether to run once or in bulk.
+  let handler = null;
+  Object.defineProperty(input, 'onchange', { configurable: true, get: () => handler, set: fn => { handler = fn; } });
+  input.addEventListener('change', ev => {
+    if (!handler) return;
+    const files = Array.from(input.files || []);
+    if (files.length <= 1) return handler.call(input, ev);
+    runBulk(input, files.slice(0, BULK_MAX), handler, ev, files.length > BULK_MAX);
+  });
+  return input;
+}
+let bulkBusy = false, bulkAgain = null;
+async function runBulk(input, files, handler, ev, cut) {
+  if (bulkBusy) { bulkAgain = [input, files, handler, ev, cut]; return; }   // a setting changed mid-run: redo when done
+  bulkBusy = true;
+  const box = LAST_BOX, results = [];
+  const status = (i, f) => { if (box) box.innerHTML = `<div class="text-center py-4"><div class="chakra-loader mx-auto"></div><p class="opacity-70 mt-3 text-sm">${T('પ્રોસેસ', 'Processing')} ${i} / ${files.length}: ${esc(f.name)}</p></div>`; };
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]; BULK_INDEX = i;
+    status(i + 1, f);
+    const dt = new DataTransfer(); dt.items.add(f);
+    Object.defineProperty(input, 'files', { configurable: true, get: () => dt.files });
+    CAPTURE = [];
+    let err = '';
+    try { await handler.call(input, ev); } catch (e) { console.error(e); err = e && e.message; }
+    const got = CAPTURE; CAPTURE = null;
+    delete input.files;
+    if (got.length) got.forEach(g => results.push({ src: f, blob: g.blob, name: g.name }));
+    else results.push({ src: f, error: (box && box.innerText.trim().slice(0, 160)) || err || T('ફાઇલ પ્રોસેસ થઈ નહીં', 'Could not process this file') });
+  }
+  bulkBusy = false; BULK_INDEX = -1;
+  if (bulkAgain) { const a = bulkAgain; bulkAgain = null; return runBulk(...a); }
+  showBulk(box, results, files.length, cut);
+}
+function showBulk(box, results, total, cut) {
+  // Give every output a unique, recognisable name.
+  const used = {};
+  results.forEach(r => {
+    if (r.error) return;
+    const base = r.src.name.replace(/\.[^.]+$/, '');
+    let n = r.name;
+    if (!n.toLowerCase().includes(base.toLowerCase())) n = base + '-' + n;
+    const key = n.toLowerCase();
+    if (used[key]) { used[key]++; n = n.replace(/(\.[^.]+)?$/, m => '-' + used[key] + m); } else used[key] = 1;
+    r.name = n;
+  });
+  const ok = results.filter(r => !r.error), bad = results.filter(r => r.error);
+  const inSize = [...new Set(results.map(r => r.src))].reduce((s, f) => s + f.size, 0), outSize = ok.reduce((s, r) => s + r.blob.size, 0);
+  box.innerHTML = `<h3 class="section-title text-lg mb-2">${T('પરિણામ', 'Result')}: ${ok.length} ${T('ફાઇલ તૈયાર', 'files ready')}${bad.length ? ` · <span class="text-red-600">${bad.length} ${T('નિષ્ફળ', 'failed')}</span>` : ''}</h3>
+    <p class="text-sm opacity-70 mb-3">${total} ${T('ફાઇલ', 'files')} · ${fmtBytes(inSize)} → ${fmtBytes(outSize)}${cut ? ` · ${T('એક વારમાં', 'Only the first')} ${BULK_MAX} ${T('ફાઇલ', 'files were processed')}` : ''}</p>
+    <div class="grid gap-2">${results.map((r, i) => r.error
+      ? `<div class="kt-card p-3 flex items-center gap-3"><div class="text-2xl">⚠️</div><div class="min-w-0 flex-1"><div class="font-semibold truncate">${esc(r.src.name)}</div><div class="text-xs text-red-600">${esc(r.error)}</div></div></div>`
+      : `<div class="kt-card p-3 flex items-center gap-3">${r.blob.type.startsWith('image') ? `<img src="${URL.createObjectURL(r.blob)}" class="w-12 h-12 object-cover rounded" alt="">` : '<div class="text-2xl w-12 text-center">📄</div>'}
+          <div class="min-w-0 flex-1"><div class="font-semibold truncate">${esc(r.name)}</div><div class="text-xs opacity-60">${fmtBytes(r.src.size)} → ${fmtBytes(r.blob.size)}</div></div>
+          <button class="btn btn-ghost text-sm shrink-0" data-dl="${i}">${T('ડાઉનલોડ', 'Download')}</button></div>`).join('')}</div>`;
+  box.querySelectorAll('[data-dl]').forEach(b => b.onclick = () => { const r = results[+b.dataset.dl]; downloadBlob(r.blob, r.name); });
+  let zipBlob = null;
+  const zip = async () => {
+    if (zipBlob) return zipBlob;
+    await need('jszip'); const z = new JSZip(); ok.forEach(r => z.file(r.name, r.blob));
+    return (zipBlob = await z.generateAsync({ type: 'blob' }));
+  };
+  setActions(ok.length ? [
+    { label: T('બધી ZIP માં ડાઉનલોડ', 'Download all (ZIP)'), cls: 'btn-cta', icon: 'download', onClick: async () => downloadBlob(await zip(), 'krishna-tools-' + ok.length + '-files.zip') },
+    { label: T('એક પછી એક ડાઉનલોડ', 'Download one by one'), icon: 'files', onClick: async () => { for (const r of ok) { downloadBlob(r.blob, r.name); await new Promise(z => setTimeout(z, 400)); } } },
+    { label: 'WhatsApp', cls: 'btn-wa', icon: 'send', onClick: async () => waShareFile(await zip(), 'krishna-tools-files.zip', ok.length + ' files') },
+  ] : []);
+  const m = document.getElementById('toolMount'); if (m && m.dataset.toolid) logUsage(+m.dataset.toolid);
+  if (window.lucide) lucide.createIcons();
+}
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* ---------- shared helpers ---------- */
-function resultBox(mount) { const b = el('<div class="mt-5 kt-result"></div>'); mount.appendChild(b); return b; }
+function resultBox(mount) { const b = el('<div class="mt-5 kt-result"></div>'); mount.appendChild(b); LAST_BOX = b; return b; }
 function loadImage(file) {
   return new Promise((res, rej) => {
     const img = new Image();
@@ -38,6 +134,7 @@ function applyWatermark(ctx, w, h, ctxObj) {
  * buttons never hand out an old copy after the user edits something.
  */
 function showPreview(box, blob, name, ctx, caption, fresh) {
+  if (CAPTURE) { CAPTURE.push({ blob, name }); return; }   // bulk run: collect instead of showing
   const url = URL.createObjectURL(blob);
   box.innerHTML = `<h3 class="section-title text-lg mb-3">${T('પરિણામ', 'Result')}</h3>
     <div class="kt-card p-3 text-center">
@@ -90,7 +187,7 @@ function imageConvert(mount, opt, ctx) {
     if (to !== 'png') { cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); }
     cx.drawImage(img, 0, 0); applyWatermark(cx, c.width, c.height, ctx);
     const blob = await canvasToBlob(c, type, q.querySelector('.qs').value / 100);
-    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '.' + to, ctx);
+    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '.' + (to === 'jpeg' ? 'jpg' : to), ctx);
   };
 }
 reg('img-convert', imageConvert);
@@ -126,6 +223,8 @@ reg('img-compress', function (mount, opt, ctx) {
       c2.getContext('2d').drawImage(img, 0, 0, c2.width, c2.height);
       blob = await canvasToBlob(c2, 'image/jpeg', 0.85);
     }
+    // Already smaller than the target: keep the original JPG instead of making it bigger.
+    if (blob.size > f.size && /jpe?g/i.test(f.type)) blob = f;
     showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '_' + Math.round(blob.size / 1024) + 'kb.jpg', ctx);
   };
 });
@@ -135,33 +234,44 @@ reg('img-resize', function (mount, opt, ctx) {
   const ctrl = el(`<div class="mt-3 grid grid-cols-2 gap-3">
     <div><label class="kt-label">${T('પહોળાઈ', 'Width')} (px)</label><input type="number" class="kt-input w"></div>
     <div><label class="kt-label">${T('ઊંચાઈ', 'Height')} (px)</label><input type="number" class="kt-input h"></div>
-    <label class="col-span-2 flex items-center gap-2"><input type="checkbox" class="lock" checked> ${T('એસ્પેક્ટ રેશિયો લોક', 'Lock aspect ratio')}</label></div>`);
+    <label class="col-span-2 flex items-center gap-2"><input type="checkbox" class="lock" checked> ${T('એસ્પેક્ટ રેશિયો લોક', 'Lock aspect ratio (in bulk, every photo keeps its own shape)')}</label></div>`);
   mount.appendChild(ctrl);
   const box = resultBox(mount);
-  let ratio = 1, src = null;
+  let ratio = 0;
   const wI = ctrl.querySelector('.w'), hI = ctrl.querySelector('.h'), lk = ctrl.querySelector('.lock');
   wI.oninput = () => { if (lk.checked && ratio) hI.value = Math.round(wI.value / ratio); };
   hI.oninput = () => { if (lk.checked && ratio) wI.value = Math.round(hI.value * ratio); };
-  input.onchange = async () => {
+  input.onchange = async ev => {
     const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return;
-    src = await loadImage(f); ratio = src.naturalWidth / src.naturalHeight;
-    wI.value = src.naturalWidth; hI.value = src.naturalHeight;
-    const btn = el(`<button class="btn btn-primary mt-3">${T('રિસાઇઝ કરો', 'Resize')}</button>`); ctrl.appendChild(btn);
-    btn.onclick = async () => {
-      const c = document.createElement('canvas'); c.width = +wI.value; c.height = +hI.value;
-      const cx = c.getContext('2d'); cx.drawImage(src, 0, 0, c.width, c.height); applyWatermark(cx, c.width, c.height, ctx);
-      const blob = await canvasToBlob(c, 'image/png');
-      showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '_' + c.width + 'x' + c.height + '.png', ctx);
-    };
+    const src = await loadImage(f), r = src.naturalWidth / src.naturalHeight;
+    // A newly chosen file starts from its own size; a changed setting keeps the typed size.
+    if ((!isRerun(ev) && (!CAPTURE || BULK_INDEX === 0)) || !wI.value) { wI.value = src.naturalWidth; hI.value = src.naturalHeight; ratio = r; }
+    const W = Math.max(1, +wI.value || src.naturalWidth), H = Math.max(1, lk.checked ? Math.round(W / r) : (+hI.value || src.naturalHeight));
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high'; cx.drawImage(src, 0, 0, W, H); applyWatermark(cx, W, H, ctx);
+    const png = /png$/i.test(f.type);
+    const blob = await canvasToBlob(c, png ? 'image/png' : 'image/jpeg', 0.92);
+    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '_' + W + 'x' + H + (png ? '.png' : '.jpg'), ctx);
   };
 });
 
 reg('img-rotate', function (mount, opt, ctx) {
   const input = fileInput(mount, { accept: 'image/*' });
+  const bar = el(`<div class="flex gap-2 mt-3 flex-wrap hidden">
+      <button class="btn btn-ghost r90">↻ 90°</button><button class="btn btn-ghost rm90">↺ 90°</button>
+      <button class="btn btn-ghost fh">⇄ Flip H</button><button class="btn btn-ghost fv">⇅ Flip V</button></div>`);
+  mount.appendChild(bar);
   const box = resultBox(mount);
-  let img = null, angle = 0, flipH = false, flipV = false;
-  const render = async () => {
-    if (!img) return;
+  let angle = 0, flipH = false, flipV = false;
+  const again = () => { if (input.files && input.files.length) input.dispatchEvent(new CustomEvent('change', { detail: { rerun: true } })); };
+  bar.querySelector('.r90').onclick = () => { angle = (angle + 90) % 360; again(); };
+  bar.querySelector('.rm90').onclick = () => { angle = (angle + 270) % 360; again(); };
+  bar.querySelector('.fh').onclick = () => { flipH = !flipH; again(); };
+  bar.querySelector('.fv').onclick = () => { flipV = !flipV; again(); };
+  input.onchange = async () => {
+    const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return;
+    bar.classList.remove('hidden');
+    const img = await loadImage(f);
     const rad = angle * Math.PI / 180, swap = angle % 180 !== 0;
     const c = document.createElement('canvas');
     c.width = swap ? img.naturalHeight : img.naturalWidth;
@@ -169,21 +279,9 @@ reg('img-rotate', function (mount, opt, ctx) {
     const cx = c.getContext('2d');
     cx.translate(c.width / 2, c.height / 2); cx.rotate(rad); cx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
     cx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-    const blob = await canvasToBlob(c, 'image/png');
-    showPreview(box, blob, 'rotated.png', ctx);
-  };
-  input.onchange = async () => {
-    const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return;
-    img = await loadImage(f);
-    const bar = el(`<div class="flex gap-2 mt-3 flex-wrap">
-      <button class="btn btn-ghost r90">↻ 90°</button><button class="btn btn-ghost rm90">↺ 90°</button>
-      <button class="btn btn-ghost fh">⇄ Flip H</button><button class="btn btn-ghost fv">⇅ Flip V</button></div>`);
-    mount.insertBefore(bar, box);
-    bar.querySelector('.r90').onclick = () => { angle = (angle + 90) % 360; render(); };
-    bar.querySelector('.rm90').onclick = () => { angle = (angle + 270) % 360; render(); };
-    bar.querySelector('.fh').onclick = () => { flipH = !flipH; render(); };
-    bar.querySelector('.fv').onclick = () => { flipV = !flipV; render(); };
-    render();
+    const png = /png$/i.test(f.type);
+    const blob = await canvasToBlob(c, png ? 'image/png' : 'image/jpeg', 0.92);
+    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '-rotated' + (png ? '.png' : '.jpg'), ctx);
   };
 });
 
@@ -254,7 +352,7 @@ reg('img-watermark', function (mount, opt, ctx) {
     else if (pos === 'br') { cx.textAlign = 'right'; cx.fillText(txt, c.width - 20, c.height - 20); }
     else { cx.textAlign = 'center'; cx.fillText(txt, c.width / 2, c.height / 2); }
     const blob = await canvasToBlob(c, 'image/png');
-    showPreview(box, blob, 'watermarked.png', ctx);
+    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '-watermarked.png', ctx);
   };
 });
 
@@ -263,8 +361,8 @@ reg('signature-clean', function (mount, opt, ctx) {
   const ctrl = el(`<div class="mt-3"><label class="kt-label">${T('થ્રેશોલ્ડ', 'Threshold')}: <b class="tv">200</b></label><input type="range" min="100" max="245" value="200" class="w-full ts"></div>`);
   mount.appendChild(ctrl);
   const box = resultBox(mount);
-  ctrl.querySelector('.ts').oninput = e => { ctrl.querySelector('.tv').textContent = e.target.value; render(); };
-  let img = null;
+  ctrl.querySelector('.ts').oninput = e => { ctrl.querySelector('.tv').textContent = e.target.value; if ((input.files || []).length <= 1) render(); };
+  let img = null, nm = 'signature';
   async function render() {
     if (!img) return;
     const thr = +ctrl.querySelector('.ts').value;
@@ -274,9 +372,9 @@ reg('signature-clean', function (mount, opt, ctx) {
     for (let i = 0; i < p.length; i += 4) { if (p[i] > thr && p[i + 1] > thr && p[i + 2] > thr) p[i + 3] = 0; }
     cx.putImageData(d, 0, 0);
     let blob = await canvasToBlob(c, 'image/png');
-    showPreview(box, blob, 'signature.png', ctx);
+    showPreview(box, blob, nm + '-signature.png', ctx);
   }
-  input.onchange = async () => { const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return; img = await loadImage(f); render(); };
+  input.onchange = async () => { const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return; img = await loadImage(f); nm = f.name.replace(/\.[^.]+$/, ''); await render(); };
 });
 
 reg('img-base64', function (mount, opt, ctx) {
@@ -315,7 +413,7 @@ reg('dpi-changer', async function (mount, opt, ctx) {
     // Insert after IHDR (first 33 bytes: 8 sig + 25 IHDR).
     const out = new Uint8Array(buf.length + 21);
     out.set(buf.subarray(0, 33), 0); out.set(phys, 33); out.set(buf.subarray(33), 54);
-    showPreview(box, new Blob([out], { type: 'image/png' }), 'image_' + dpi + 'dpi.png', ctx);
+    showPreview(box, new Blob([out], { type: 'image/png' }), f.name.replace(/\.[^.]+$/, '') + '_' + dpi + 'dpi.png', ctx);
   };
 });
 function crc32(bytes) {
@@ -358,6 +456,7 @@ reg('exif-tool', async function (mount, opt, ctx) {
     // Provide a stripped (no-EXIF) copy by canvas re-encode.
     const img = await loadImage(f); const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
     const clean = await canvasToBlob(c, 'image/jpeg', 0.95);
+    if (CAPTURE) { showPreview(box, clean, 'clean_' + f.name.replace(/\.[^.]+$/, '') + '.jpg', ctx); return; }
     setActions([{ label: T('EXIF દૂર કરી ડાઉનલોડ', 'Download without EXIF'), cls: 'btn-cta', icon: 'shield', onClick: () => downloadBlob(clean, 'clean_' + f.name) }]);
     if (window.lucide) lucide.createIcons();
   };
@@ -493,7 +592,7 @@ reg('pdf-split', function (mount, opt, ctx) {
     const { PDFDocument } = await loadPdfLib(); const src = await PDFDocument.load(await files[0].arrayBuffer());
     const idx = parseRange(ctrl.querySelector('.rg').value, src.getPageCount());
     const out = await PDFDocument.create(); const pages = await out.copyPages(src, idx); pages.forEach(p => out.addPage(p));
-    showPreview(box, new Blob([await out.save()], { type: 'application/pdf' }), 'split.pdf', ctx);
+    showPreview(box, new Blob([await out.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'split.pdf', ctx);
   });
 });
 reg('pdf-extract', Engines_pdf_pages('extract'));
@@ -508,7 +607,7 @@ function Engines_pdf_pages(mode) {
       const total = src.getPageCount(); let idx = parseRange(ctrl.querySelector('.rg').value, total);
       if (mode === 'delete') { const del = new Set(idx); idx = []; for (let i = 0; i < total; i++) if (!del.has(i)) idx.push(i); }
       const out = await PDFDocument.create(); const pages = await out.copyPages(src, idx); pages.forEach(p => out.addPage(p));
-      showPreview(box, new Blob([await out.save()], { type: 'application/pdf' }), mode + '.pdf', ctx);
+      showPreview(box, new Blob([await out.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + mode + '.pdf', ctx);
     });
   };
 }
@@ -518,7 +617,7 @@ reg('pdf-rotate', function (mount, opt, ctx) {
   multiPdfInput(mount, async (files) => {
     const { PDFDocument, degrees } = await loadPdfLib(); const doc = await PDFDocument.load(await files[0].arrayBuffer());
     const a = +ctrl.querySelector('.ang').value; doc.getPages().forEach(p => p.setRotation(degrees((p.getRotation().angle + a) % 360)));
-    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), 'rotated.pdf', ctx);
+    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'rotated.pdf', ctx);
   });
 });
 reg('pdf-page-num', function (mount, opt, ctx) {
@@ -527,7 +626,7 @@ reg('pdf-page-num', function (mount, opt, ctx) {
     const { PDFDocument, rgb, StandardFonts } = await loadPdfLib(); const doc = await PDFDocument.load(await files[0].arrayBuffer());
     const font = await doc.embedFont(StandardFonts.Helvetica); const pages = doc.getPages();
     pages.forEach((p, i) => { const { width } = p.getSize(); p.drawText(`${i + 1} / ${pages.length}`, { x: width / 2 - 15, y: 20, size: 10, font, color: rgb(0.3, 0.3, 0.3) }); });
-    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), 'numbered.pdf', ctx);
+    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'numbered.pdf', ctx);
   });
 });
 reg('pdf-watermark', function (mount, opt, ctx) {
@@ -537,7 +636,7 @@ reg('pdf-watermark', function (mount, opt, ctx) {
     const { PDFDocument, rgb, StandardFonts, degrees } = await loadPdfLib(); const doc = await PDFDocument.load(await files[0].arrayBuffer());
     const font = await doc.embedFont(StandardFonts.HelveticaBold); const t = ctrl.querySelector('.wt').value;
     doc.getPages().forEach(p => { const { width, height } = p.getSize(); p.drawText(t, { x: width / 5, y: height / 2, size: 50, font, color: rgb(0.95, 0.62, 0.04), opacity: 0.3, rotate: degrees(35) }); });
-    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), 'watermarked.pdf', ctx);
+    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'watermarked.pdf', ctx);
   });
 });
 reg('pdf-metadata', function (mount, opt, ctx) {
@@ -547,7 +646,7 @@ reg('pdf-metadata', function (mount, opt, ctx) {
     const { PDFDocument } = await loadPdfLib(); const doc = await PDFDocument.load(await files[0].arrayBuffer());
     if (ctrl.querySelector('.tt').value) doc.setTitle(ctrl.querySelector('.tt').value);
     if (ctrl.querySelector('.au').value) doc.setAuthor(ctrl.querySelector('.au').value);
-    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), 'metadata.pdf', ctx);
+    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'metadata.pdf', ctx);
   });
 });
 reg('pdf-reorder', function (mount, opt, ctx) {
@@ -557,7 +656,7 @@ reg('pdf-reorder', function (mount, opt, ctx) {
     const { PDFDocument } = await loadPdfLib(); const src = await PDFDocument.load(await files[0].arrayBuffer());
     const order = ctrl.querySelector('.od').value.split(',').map(x => parseInt(x) - 1).filter(x => x >= 0);
     const out = await PDFDocument.create(); const pages = await out.copyPages(src, order.length ? order : src.getPageIndices()); pages.forEach(p => out.addPage(p));
-    showPreview(box, new Blob([await out.save()], { type: 'application/pdf' }), 'reordered.pdf', ctx);
+    showPreview(box, new Blob([await out.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'reordered.pdf', ctx);
   });
 });
 reg('pdf-esign', async function (mount, opt, ctx) {
@@ -576,7 +675,7 @@ reg('pdf-esign', async function (mount, opt, ctx) {
     const { PDFDocument } = await loadPdfLib(); const doc = await PDFDocument.load(await files[0].arrayBuffer());
     const png = await doc.embedPng(cv.toDataURL('image/png')); const p = doc.getPages()[doc.getPageCount() - 1];
     p.drawImage(png, { x: p.getSize().width - 160, y: 40, width: 140, height: 52 });
-    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), 'signed.pdf', ctx);
+    showPreview(box, new Blob([await doc.save()], { type: 'application/pdf' }), files[0].name.replace(/\.pdf$/i, '') + '-' + 'signed.pdf', ctx);
   });
 });
 reg('pdf-to-text', async function (mount, opt, ctx) {
@@ -586,6 +685,7 @@ reg('pdf-to-text', async function (mount, opt, ctx) {
     await need('pdfjs'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf = await pdfjsLib.getDocument({ data: await files[0].arrayBuffer() }).promise; let text = '';
     for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); const c = await pg.getTextContent(); text += c.items.map(it => it.str).join(' ') + '\n\n'; }
+    if (CAPTURE) { showPreview(box, new Blob([text], { type: 'text/plain' }), files[0].name.replace(/\.pdf$/i, '') + '.txt', ctx); return; }
     box.innerHTML = `<textarea class="kt-input" rows="12" readonly>${text.replace(/</g, '&lt;')}</textarea>`;
     setActions([{ label: T('કોપી', 'Copy'), cls: 'btn-primary', icon: 'copy', onClick: () => copy(text) }, { label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => downloadBlob(new Blob([text], { type: 'text/plain' }), 'text.txt') }]);
     if (ctx.toolId) logUsage(ctx.toolId); if (window.lucide) lucide.createIcons();
@@ -602,7 +702,9 @@ reg('pdf-to-img', async function (mount, opt, ctx) {
       const pg = await pdf.getPage(i); const vp = pg.getViewport({ scale: 2 });
       const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
       const b = await canvasToBlob(c, 'image/jpeg', 0.92); zip.file(`page-${i}.jpg`, b); if (i === 1) first = b;
+      if (CAPTURE) showPreview(box, b, files[0].name.replace(/\.pdf$/i, '') + `-page-${i}.jpg`, ctx);
     }
+    if (CAPTURE) return;
     if (pdf.numPages === 1) { showPreview(box, first, 'page-1.jpg', ctx); return; }
     const blob = await zip.generateAsync({ type: 'blob' });
     box.innerHTML = `<div class="kt-card p-4">${pdf.numPages} ${T('પાના કન્વર્ટ થયા', 'pages converted')}</div>`;
@@ -689,6 +791,7 @@ reg('pdf-compress', function (mount, opt, ctx) {
       const [scale, quality] = ui.q('.lvl').value.split(',').map(Number);
       const blob = await rasterPdf(pdf, { scale, quality, onPage: (i, n) => progress(ui.box, `${T('પાનું', 'Page')} ${i} / ${n}`) });
       if (blob.size >= f.size) {
+        if (CAPTURE) { showPreview(ui.box, f, f.name, ctx); return; }   // bulk: keep the original, it is already the smallest
         ui.box.innerHTML = `<div class="kt-card p-4">${T('આ PDF પહેલેથી જ નાની છે.', 'This PDF is already well optimised')} (${fmtKB(f.size)}). ${T('વધુ કોમ્પ્રેસ કરવા "વધુ" પસંદ કરો.', 'Try "Strong" for a smaller file.')}</div>`;
         return;
       }
@@ -941,7 +1044,7 @@ reg('json-excel', async function (mount, opt, ctx) {
     setActions([{ label: T('કન્વર્ટ', 'Convert'), cls: 'btn-primary', icon: 'table', keep: true, onClick: () => { try { if (!ta.value.trim()) { toast(T('પહેલાં JSON પેસ્ટ કરો', 'Paste your JSON data first'), true); return; } let arr; try { arr = JSON.parse(ta.value); } catch (e) { toast(T('JSON ખોટું છે', 'That is not valid JSON. Check brackets, quotes and commas.'), true); return; } const ws = XLSX.utils.json_to_sheet(Array.isArray(arr) ? arr : [arr]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1'); const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); showPreview(box, new Blob([out]), 'data.xlsx', ctx); } catch (e) { toast(e.message, true); } } }]);
   } else {
     const input = fileInput(mount, { accept: '.xlsx,.xls' }); const box = resultBox(mount);
-    input.onchange = async () => { const f = input.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); showText(box, JSON.stringify(json, null, 2), 'data.json', 'application/json', ctx); };
+    input.onchange = async () => { const f = input.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); showText(box, JSON.stringify(json, null, 2), f.name.replace(/\.[^.]+$/, '') + '.json', 'application/json', ctx); };
   }
 });
 reg('csv-merge', function (mount, opt, ctx) {
@@ -962,6 +1065,7 @@ reg('sheet-to-pdf', async function (mount, opt, ctx) {
   };
 });
 function showText(box, text, name, mime, ctx) {
+  if (CAPTURE) { showPreview(box, new Blob([text], { type: mime }), name, ctx); return; }
   box.innerHTML = `<textarea class="kt-input" rows="10" readonly>${text.replace(/</g, '&lt;')}</textarea>`;
   setActions([{ label: T('કોપી', 'Copy'), cls: 'btn-primary', icon: 'copy', onClick: () => copy(text) }, { label: T('ડાઉનલોડ', 'Download'), cls: 'btn-cta', icon: 'download', onClick: () => downloadBlob(new Blob([text], { type: mime }), name) }, { label: 'WhatsApp', cls: 'btn-wa', icon: 'send', onClick: () => waShareText(text.slice(0, 3000)) }]);
   if (ctx.toolId) logUsage(ctx.toolId); if (window.lucide) lucide.createIcons();

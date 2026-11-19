@@ -180,6 +180,7 @@ function kt_tool_keywords(array $t, int $max = 14): array {
     if ($engine === 'card') { $kw[] = $base . ' card maker'; $kw[] = $base . ' poster online'; }
     $cat = kt_cat_terms()[$t['cat'] ?? ''] ?? '';
     if ($cat === 'india' && $base !== '' && !str_contains($base, 'india')) $kw[] = $base . ' india';
+    if (kt_is_bulk($t) && $c !== '') { $kw[] = 'bulk ' . $c; $kw[] = $c . ' multiple files at once'; }
     $kw[] = 'free ' . ($c ?: $base);
 
     $out = []; $seen = [];
@@ -208,11 +209,15 @@ function kt_seo_title(array $t): string {
 function kt_seo_desc(array $t): string {
     $d = trim($t['desc_en'] ?? '');
     // Very short descriptions (older core tools) get the top search phrases added.
+    $bulk = kt_is_bulk($t);
     if (mb_strlen($d) < 80) {
-        $kw = array_slice(kt_tool_keywords($t), 1, 3);
-        if ($kw) $d = rtrim($d, '.') . '. Popular uses: ' . implode(', ', $kw) . '.';
+        $d = rtrim($d, '.') . ($bulk ? ' – one file or many at once, download all as ZIP.' : '.');
+        $kw = array_slice(kt_tool_keywords($t), 1, 2);
+        if ($kw) $d .= ' Also works as ' . implode(' and ', $kw) . '.';
+    } elseif ($bulk) {
+        $d = rtrim($d, '.') . '. Works in bulk too.';
     }
-    $tail = ' Free, instant, no login – works on mobile.';
+    $tail = ' Free, no login, works on mobile.';
     $s = $d;
     if (mb_strlen($s . $tail) <= 158) $s .= $tail;
     elseif (mb_strlen($s) > 158) {
@@ -237,6 +242,7 @@ function kt_tool_about(array $t, array $kw): string {
         'doc' => 'Fill in the form and print it or download a PDF in seconds.',
         default => 'Everything works right in your browser – on mobile or computer.',
     };
+    if (kt_is_bulk($t)) $kind .= ' You can select one file or many files together (bulk) and download them all in one ZIP.';
     return "{$name} by Krishna Tools is a free online tool. {$kind}{$also} There is no sign-up, no app to install and your data stays in your browser.";
 }
 
@@ -276,4 +282,14 @@ function kt_related_smart(string $slug, int $n = 8): array {
         }
     }
     return $out;
+}
+
+/** File tools that accept many files at once (must match BULK in assets/js/engines.js, plus OCR). */
+function kt_is_bulk(array $t): bool {
+    static $bulk = ['img-convert', 'img-compress', 'img-resize', 'img-rotate', 'img-watermark', 'signature-clean', 'dpi-changer',
+        'heic-convert', 'exif-tool', 'pdf-split', 'pdf-extract', 'pdf-delete', 'pdf-delete-pages', 'pdf-rotate', 'pdf-page-num', 'pdf-watermark',
+        'pdf-metadata', 'pdf-reorder', 'pdf-esign', 'pdf-to-text', 'pdf-to-img', 'pdf-compress', 'pdf-protect', 'pdf-unlock', 'pdf-to-word',
+        'pdf-to-excel', 'pdf-to-ppt', 'server-convert', 'sheet-to-pdf', 'excel-csv', 'img-bulk', 'img-to-pdf', 'pdf-merge', 'csv-merge'];
+    return in_array($t['engine'] ?? '', $bulk, true) || (($t['opt']['kind'] ?? '') === 'ocr')
+        || (($t['engine'] ?? '') === 'json-excel' && ($t['opt']['to'] ?? '') === 'json');
 }

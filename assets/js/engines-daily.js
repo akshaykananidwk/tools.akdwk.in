@@ -273,26 +273,31 @@ K.ocr = function (mount, opt, ctx) {
     <select class="kt-select" id="oLang"><option value="eng">English</option><option value="guj">Gujarati</option><option value="hin">Hindi</option><option value="eng+guj">English + Gujarati</option><option value="eng+hin">English + Hindi</option><option value="mar">Marathi</option></select></div>
     <div class="text-xs opacity-70 self-end">Tip: crop to the text, keep the photo straight and well lit. Handwriting is not read reliably.</div></div>`);
   mount.appendChild(top);
-  const input = fileInput(mount, { accept: 'image/*', hint: 'JPG, PNG, WEBP or a screenshot' });
+  const input = fileInput(mount, { accept: 'image/*', multiple: true, rerun: false, hint: 'JPG, PNG, WEBP or a screenshot · one or many images (bulk)' });
   const box = el(`<div class="kt-result mt-4"><div id="oStat" class="text-sm opacity-70"></div>
     <img id="oPrev" class="max-h-56 rounded-lg mt-2 hidden" alt="Selected image">
     <label class="kt-label mt-3" for="oOut">Extracted text</label><textarea class="kt-input" id="oOut" rows="10" placeholder="The text from your image will appear here"></textarea></div>`);
   mount.appendChild(box);
   let busy = false;
   input.addEventListener('change', async () => {
-    const f = input.files && input.files[0]; if (!f || busy) return;
+    const files = Array.from(input.files || []).slice(0, 50); if (!files.length || busy) return;
     busy = true;
-    const prev = $('#oPrev', box); prev.src = URL.createObjectURL(f); prev.classList.remove('hidden');
-    const stat = $('#oStat', box);
+    const prev = $('#oPrev', box); prev.src = URL.createObjectURL(files[0]); prev.classList.toggle('hidden', files.length > 1);
+    const stat = $('#oStat', box), out = $('#oOut', box);
     try {
       stat.textContent = 'Loading the OCR engine (first time takes a little longer)…';
       await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-      const res = await window.Tesseract.recognize(f, $('#oLang', mount).value, {
-        logger: m => { if (m.status) stat.textContent = m.status.replace(/^\w/, c => c.toUpperCase()) + (m.progress ? ' ' + Math.round(m.progress * 100) + '%' : '') + '…'; },
-      });
-      const text = (res.data.text || '').trim();
-      $('#oOut', box).value = text;
-      stat.textContent = text ? `✔ Done — ${text.split(/\s+/).length} words found (confidence ${Math.round(res.data.confidence)}%)` : 'No text found. Try a clearer or larger image, or choose the right language.';
+      const lang = $('#oLang', mount).value, parts = []; let words = 0;
+      for (let i = 0; i < files.length; i++) {
+        const tag = files.length > 1 ? `Image ${i + 1} of ${files.length}: ` : '';
+        const res = await window.Tesseract.recognize(files[i], lang, {
+          logger: m => { if (m.status) stat.textContent = tag + m.status.replace(/^\w/, c => c.toUpperCase()) + (m.progress ? ' ' + Math.round(m.progress * 100) + '%' : '') + '…'; },
+        });
+        const text = (res.data.text || '').trim(); words += text ? text.split(/\s+/).length : 0;
+        parts.push(files.length > 1 ? `===== ${files[i].name} =====\n${text || '(no text found)'}` : text);
+        out.value = parts.join('\n\n');
+      }
+      stat.textContent = words ? `✔ Done — ${words} words found in ${files.length} image${files.length > 1 ? 's' : ''}` : 'No text found. Try a clearer or larger image, or choose the right language.';
       use(ctx);
     } catch (e) { console.error(e); stat.textContent = 'Could not read the image. Check your internet connection (the engine downloads once) and try again.'; }
     busy = false;

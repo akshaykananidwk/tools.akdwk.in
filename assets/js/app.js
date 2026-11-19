@@ -262,7 +262,7 @@ function fileInput(mount, opt) {
       const c = ev.target;
       if (c === input || !c.matches || !c.matches('select, input, textarea') || c.type === 'file') return;
       if (c.closest('.kt-result') || !(input.files && input.files.length)) return;
-      clearTimeout(t); t = setTimeout(() => input.dispatchEvent(new Event('change')), 300);
+      clearTimeout(t); t = setTimeout(() => input.dispatchEvent(new CustomEvent('change', { detail: { rerun: true } })), 300);
     });
   }
   if (window.lucide) lucide.createIcons();
