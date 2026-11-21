@@ -41,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     wa()->send($shopWa, $body);
                 }
             } catch (Throwable $e) { /* ignore */ }
+            // AK Earn: enquiry submitted (only with a mobile number, sent after the response).
+            try { if (ak_mobile10($phone) !== '') ak_later('ak_track_lead', $name, ak_mobile10($phone), null, mb_substr($message, 0, 300)); } catch (Throwable $e) {}
             $msg = $en
                 ? 'Thank you! Your message has been received. We will reply soon. Hare Krishna 🦚'
                 : 'આભાર! તમારો સંદેશ મળ્યો છે. અમે જલદી જવાબ આપીશું. હરે કૃષ્ણ 🦚';
@@ -73,7 +75,7 @@ require __DIR__ . '/includes/header.php';
       <?php if ($err): ?>
         <div class="p-3 rounded-lg mb-4 text-sm" style="background:rgba(220,38,38,.1);color:#DC2626"><?= e($err) ?></div>
       <?php endif; ?>
-      <form method="post" class="space-y-4">
+      <form method="post" class="space-y-4" data-ak-form>
         <?= csrf_field() ?>
         <div><label class="kt-label"><?= t('full_name') ?></label><input name="name" class="kt-input" required></div>
         <div><label class="kt-label"><?= t('email') ?> <span class="opacity-50">(optional)</span></label><input type="email" name="email" class="kt-input"></div>

@@ -21,6 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = ['raw_response' => mb_substr($raw, 0, 60000)];
             if (($_POST['mark_refunded'] ?? '') === '1') $data['status'] = 'refunded';
             update('payments', $data, ['id' => $pid]);
+            // AK Earn: a paid order marked refunded by the admin (same order id as the payment event).
+            if (($data['status'] ?? '') === 'refunded' && $pay['status'] === 'paid' && !empty($pay['razorpay_order_id'])) {
+                try { ak_later('ak_track_refund', (string) $pay['razorpay_order_id'], mb_substr($note, 0, 200)); } catch (Throwable $e) {}
+            }
             activity_log((int) current_user()['id'], 'admin_payment_note', 'payment #' . $pid);
             $flash = 'Note added.';
         } else {

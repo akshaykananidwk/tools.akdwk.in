@@ -104,6 +104,13 @@ function kt_cron_jobs(): array {
         'handler' => 'kt_job_analytics_prune',
     ],
 
+    // ── AK Earn: resend tracking events that failed (network / server down) ─
+    [
+        'key' => 'ak_earn_queue', 'name' => 'AK Earn: Retry Queued Events',
+        'group' => 'delivery', 'schedule' => 'interval:600', 'default_enabled' => true,
+        'handler' => 'kt_job_ak_earn_queue',
+    ],
+
     // ── Daily admin report (off by default) ────────────────────────────
     [
         'key' => 'auto_report', 'name' => 'Daily Admin Report',
@@ -227,6 +234,11 @@ function kt_job_amc_reminder(CronContext $ctx): string {
 }
 
 /** Cleanup temp/share uploads, expired saved files, guest limits, webhook bins. */
+function kt_job_ak_earn_queue(CronContext $ctx): string {
+    if (!function_exists('ak_enabled') || !ak_enabled()) return 'AK Earn not configured';
+    return ak_flush_queue(100) . ' queued event(s) sent';
+}
+
 function kt_job_cleanup(CronContext $ctx): string {
     $now = time();
     $maxAge = 2 * 3600;

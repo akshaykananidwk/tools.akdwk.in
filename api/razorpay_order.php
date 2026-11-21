@@ -49,6 +49,9 @@ insert('payments', ['user_id' => (int) $user['id'], 'razorpay_order_id' => $orde
 insert('subscriptions', ['user_id' => (int) $user['id'], 'plan_id' => $planId, 'order_id' => $order['id'],
     'amount' => $plan['price'], 'status' => 'pending', 'created_at' => date('Y-m-d H:i:s')]);
 
+// AK Earn: order created, not paid yet (commission is only created by the payment event).
+try { ak_later('ak_track_order', (string) $order['id'], (float) $plan['price'], ak_plan_code($planId), (string) $user['name'], ak_mobile10($user['phone'] ?? ''), 'created'); } catch (Throwable $e) {}
+
 json_out(['ok' => true, 'order_id' => $order['id'], 'amount' => $amountPaise,
     'key' => RAZORPAY_KEY_ID, 'name' => brand_name(),
     'prefill' => ['name' => $user['name'], 'email' => $user['email'], 'contact' => $user['phone']]]);

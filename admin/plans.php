@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'is_active'     => isset($_POST['is_active']) ? 1 : 0,
             ], ['id' => $pid]);
             activity_log((int) current_user()['id'], 'admin_plan_update', 'plan #' . $pid);
+            try { ak_sync_site_products(); } catch (Throwable $e) {}   // AK Earn product list (after the response)
             $flash = 'Plan saved.';
         } else {
             $flash = 'Plan not found.';

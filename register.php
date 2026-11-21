@@ -42,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Welcome WhatsApp (best-effort).
             if ($phone) { try { wa()->sendTemplate($phone, 'welcome', ['name' => $name], $uid); } catch (Throwable $e) {} }
             activity_log($uid, 'register', $email);
+            // AK Earn: customer account created (sent after the response; never blocks signup).
+            try { ak_later('ak_track_signup', $name, ak_mobile10($phone), $email); } catch (Throwable $e) {}
             login_user(one("SELECT * FROM " . tbl('users') . " WHERE id = :id", [':id' => $uid]));
             redirect(SITE_URL . '/dashboard.php');
         }
@@ -55,7 +57,7 @@ require __DIR__ . '/includes/header.php';
     <div class="text-center mb-5"><div class="text-4xl">🦚</div>
       <h1 class="brand-title text-2xl mt-2"><?= t('register') ?></h1></div>
     <?php if ($err): ?><div class="p-3 rounded-lg mb-4 text-sm" style="background:rgba(220,38,38,.1);color:#DC2626"><?= e($err) ?></div><?php endif; ?>
-    <form method="post" class="space-y-4">
+    <form method="post" class="space-y-4" data-ak-form>
       <?= csrf_field() ?>
       <div><label class="kt-label"><?= t('full_name') ?></label><input name="name" class="kt-input" required></div>
       <div><label class="kt-label"><?= t('email') ?></label><input type="email" name="email" class="kt-input" required></div>

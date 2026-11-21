@@ -37,6 +37,12 @@ define('APP_SECRET', 'change-me-random-secret');
 define('RAZORPAY_KEY_ID', '');
 define('RAZORPAY_KEY_SECRET', '');
 
+// AK Earn partner/commission system (https://earn.akdwk.in). Keys from AK Earn admin → Sites.
+// The secret is server-side only — never put it in JS or commit it. Leave empty to switch tracking off.
+define('AK_MASTER_URL', 'https://earn.akdwk.in');
+define('AK_SITE_KEY', '');
+define('AK_SITE_SECRET', '');
+
 define('SMTP_HOST', '');
 define('SMTP_PORT', '587');
 define('SMTP_USER', '');

@@ -51,7 +51,27 @@ if (in_array($event, ['payment.captured', 'order.paid'], true)) {
             }
             activity_log((int) $sub['user_id'], 'payment', "Plan {$sub['plan_id']} activated via $paymentId");
         }
+        // AK Earn: payment confirmed → order (first purchase) or renewal. Amount = what Razorpay captured.
+        try {
+            $akUser = one("SELECT * FROM " . tbl('users') . " WHERE id = :id", [':id' => (int) $pay['user_id']]);
+            ak_track_paid_payment($pay, $sub ?: null, $akUser ?: null, $amount > 0 ? (float) $amount : (float) $pay['amount']);
+        } catch (Throwable $e) {}
     }
+}
+
+// AK Earn: refunds made in the Razorpay dashboard (tracking only — nothing else changes here).
+if (in_array($event, ['refund.processed', 'payment.refunded'], true)) {
+    try {
+        $rf = $data['payload']['refund']['entity'] ?? [];
+        $pm = $data['payload']['payment']['entity'] ?? [];
+        $paymentId = $rf['payment_id'] ?? ($pm['id'] ?? '');
+        $orderId = $pm['order_id'] ?? '';
+        if ($orderId === '' && $paymentId !== '') {
+            $orderId = (string) scalar("SELECT razorpay_order_id FROM " . tbl('payments') . " WHERE razorpay_payment_id = :p", [':p' => $paymentId]);
+        }
+        $refAmt = isset($rf['amount']) ? $rf['amount'] / 100 : (isset($pm['amount_refunded']) ? $pm['amount_refunded'] / 100 : null);
+        if ($orderId !== '') ak_later('ak_track_refund', $orderId, 'Refunded in Razorpay', $refAmt ? (float) $refAmt : null);
+    } catch (Throwable $e) {}
 }
 http_response_code(200);
 echo 'ok';

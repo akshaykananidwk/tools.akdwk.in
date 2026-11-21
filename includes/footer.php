@@ -62,5 +62,6 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
 <div id="ktToast" class="kt-toast"></div>
 <script src="<?= SITE_URL ?>/assets/js/app.js?v=<?= asset_ver() ?>" defer></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{if(window.lucide)lucide.createIcons();});</script>
+<?php if (function_exists('ak_public_key') && ak_public_key() !== ''): ?><script src="<?= e(rtrim(AK_MASTER_URL, '/')) ?>/connector/ak-connect.js" data-site-key="<?= e(ak_public_key()) ?>" defer></script><?php endif; ?>
 </body>
 </html>

@@ -6,6 +6,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/tools_registry.php';
 require_once __DIR__ . '/seed_data.php'; // shloks (daily_shlok), plans/templates/blog seeds
+require_once __DIR__ . '/ak_earn.php';   // AK Earn partner tracking (no-op until configured)
 
 if (defined('APP_TIMEZONE')) {
     date_default_timezone_set(APP_TIMEZONE);
