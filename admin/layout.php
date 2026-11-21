@@ -23,6 +23,7 @@ function admin_nav_links(): array {
         ['update.php',     'git-branch',       'GitHub Update'],
         ['cron.php',       'clock',            'Cron / Scheduler'],
         ['logs.php',       'scroll-text',      'Logs'],
+        ['ak_earn.php',    'handshake',        'AK Earn'],
         ['settings.php',   'settings',         'Settings'],
         ['backup.php',     'database-backup',  'Backup'],
     ];

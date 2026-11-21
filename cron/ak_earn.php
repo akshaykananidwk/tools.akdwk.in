@@ -15,6 +15,7 @@ if (!is_file($config)) { fwrite(STDERR, "config missing — not installed\n"); e
 require_once $config;
 require_once __DIR__ . '/../includes/functions.php';
 
+ak_boot();
 $cmd = $argv[1] ?? 'ping';
 $print = fn($r) => print(json_encode($r, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
 if ($cmd !== 'products' && !ak_enabled()) { fwrite(STDERR, "AK_SITE_KEY / AK_SITE_SECRET are not set in config/config.php\n"); exit(1); }

@@ -2,7 +2,8 @@
 /**
  * KRISHNA TOOLS — glue for the central AK Earn partner/commission system (https://earn.akdwk.in).
  *
- * Credentials are server-side only. Put them in /config/config.php (not in git, blocked by .htaccess):
+ * Credentials are server-side only. Enter them in Admin → AK Earn, or put them in /config/config.php
+ * (not in git, blocked by .htaccess; config values override the admin panel):
  *   define('AK_MASTER_URL', 'https://earn.akdwk.in');
  *   define('AK_SITE_KEY', 'sk_...');
  *   define('AK_SITE_SECRET', '...');        // never in JS, logs or git
@@ -14,21 +15,39 @@
  * The SDK itself retries failed sends from a local queue file.
  */
 
-foreach (['AK_MASTER_URL', 'AK_SITE_KEY', 'AK_SITE_SECRET'] as $__k) {
-    if (!defined($__k)) {
-        $__v = getenv($__k);
-        if (is_string($__v) && $__v !== '') define($__k, $__v);
-    }
+/** Where each credential comes from: 'config' (config.php / env, always wins) or 'admin' (Admin → AK Earn). */
+function ak_source(string $const): string {
+    return defined($const) && !in_array($const, $GLOBALS['ak_from_admin'] ?? [], true) ? 'config' : 'admin';
 }
-unset($__k, $__v);
-if (!defined('AK_MASTER_URL')) define('AK_MASTER_URL', 'https://earn.akdwk.in');
-// Retry queue holds customer names/mobiles: keep it in /logs (web access denied), not the shared /tmp.
-if (!defined('AK_QUEUE_DIR') && defined('KT_LOGS') && is_dir(KT_LOGS) && is_writable(KT_LOGS)) define('AK_QUEUE_DIR', KT_LOGS);
+
+/**
+ * Load the credentials once per request: config.php constants → environment variables → the values
+ * saved in Admin → AK Earn (settings table, never sent to the browser). Must run before any SDK call.
+ */
+function ak_boot(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    $GLOBALS['ak_from_admin'] = [];
+    $map = ['AK_MASTER_URL' => 'ak_master_url', 'AK_SITE_KEY' => 'ak_site_key', 'AK_SITE_SECRET' => 'ak_site_secret'];
+    $adminOn = function_exists('setting') && setting('ak_on', '1') === '1';
+    foreach ($map as $const => $skey) {
+        if (defined($const)) continue;
+        $v = getenv($const);
+        if (is_string($v) && $v !== '') { define($const, $v); continue; }
+        $v = function_exists('setting') ? trim((string) setting($skey, '')) : '';
+        if ($v !== '' && ($adminOn || $const === 'AK_MASTER_URL')) { define($const, $v); $GLOBALS['ak_from_admin'][] = $const; }
+    }
+    if (!defined('AK_MASTER_URL')) define('AK_MASTER_URL', 'https://earn.akdwk.in');
+    // Retry queue holds customer names/mobiles: keep it in /logs (web access denied), not the shared /tmp.
+    if (!defined('AK_QUEUE_DIR') && defined('KT_LOGS') && is_dir(KT_LOGS) && is_writable(KT_LOGS)) define('AK_QUEUE_DIR', KT_LOGS);
+}
 
 require_once __DIR__ . '/vendor/ak-connect.php';
 
 /** True once a real site key and secret are configured. */
 function ak_enabled(): bool {
+    ak_boot();
     $key = defined('AK_SITE_KEY') ? (string) AK_SITE_KEY : '';
     $sec = defined('AK_SITE_SECRET') ? (string) AK_SITE_SECRET : '';
     return $key !== '' && $sec !== '' && $key !== 'SITE_KEY_HERE' && $sec !== 'SITE_SECRET_HERE' && function_exists('curl_init');

@@ -235,7 +235,7 @@ function kt_job_amc_reminder(CronContext $ctx): string {
 
 /** Cleanup temp/share uploads, expired saved files, guest limits, webhook bins. */
 function kt_job_ak_earn_queue(CronContext $ctx): string {
-    if (!function_exists('ak_enabled') || !ak_enabled()) return 'AK Earn not configured';
+    if (!function_exists('ak_enabled') || !ak_enabled()) return 'AK Earn not configured';   // ak_enabled() loads the keys
     return ak_flush_queue(100) . ' queued event(s) sent';
 }
 
