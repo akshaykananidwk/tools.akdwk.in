@@ -27,6 +27,84 @@ return [
       ['Are my images kept private?', 'Yes. Processing happens locally in your browser and nothing is stored on our servers.'],
     ],
   ],
+  'jfif-to-jpg' => [
+    'guide' => [
+      'Choose your JFIF image — or select many at once for bulk conversion',
+      'Set the quality if needed',
+      'The JPG file is created instantly in your browser',
+      'Download it, or download all files together as a ZIP',
+    ],
+    'faq' => [
+      ['What is a JFIF file?', 'JFIF (JPEG File Interchange Format) is a JPEG image with a .jfif extension. Windows and some websites save photos this way, but many apps and government forms only accept .jpg — converting fixes that.'],
+      ['Can I convert many files at once?', 'Yes. Select several files together and download all the converted files in one ZIP.'],
+      ['Are my photos uploaded?', 'No. The conversion runs inside your browser, so your images never leave your device.'],
+    ],
+  ],
+  'jfif-to-png' => [
+    'guide' => [
+      'Choose your JFIF image — or select many at once for bulk conversion',
+      'Set the quality if needed',
+      'The PNG file is created instantly in your browser',
+      'Download it, or download all files together as a ZIP',
+    ],
+    'faq' => [
+      ['Will the quality drop?', 'No. PNG is lossless, so the picture stays exactly as it is in the JFIF file.'],
+      ['Can I convert many files at once?', 'Yes. Select several files together and download all the converted files in one ZIP.'],
+      ['Are my photos uploaded?', 'No. The conversion runs inside your browser, so your images never leave your device.'],
+    ],
+  ],
+  'jfif-to-webp' => [
+    'guide' => [
+      'Choose your JFIF image — or select many at once for bulk conversion',
+      'Set the quality if needed',
+      'The WEBP file is created instantly in your browser',
+      'Download it, or download all files together as a ZIP',
+    ],
+    'faq' => [
+      ['Why WEBP?', 'WEBP files are usually 25–35% smaller than JPEG at the same quality, which makes websites load faster.'],
+      ['Can I convert many files at once?', 'Yes. Select several files together and download all the converted files in one ZIP.'],
+      ['Are my photos uploaded?', 'No. The conversion runs inside your browser, so your images never leave your device.'],
+    ],
+  ],
+  'jfif-to-pdf' => [
+    'guide' => [
+      'Choose your JFIF image — or select many at once for bulk conversion',
+      'Set the quality if needed',
+      'The PDF file is created instantly in your browser',
+      'Download it, or download all files together as a ZIP',
+    ],
+    'faq' => [
+      ['Can I put many JFIF photos in one PDF?', 'Yes. Select all the photos together and each one becomes a page of the same PDF.'],
+      ['Can I convert many files at once?', 'Yes. Select several files together and download all the converted files in one ZIP.'],
+      ['Are my photos uploaded?', 'No. The conversion runs inside your browser, so your images never leave your device.'],
+    ],
+  ],
+  'jpg-to-jfif' => [
+    'guide' => [
+      'Choose your JPG / PNG / WEBP image — or select many at once for bulk conversion',
+      'Set the quality if needed',
+      'The JFIF file is created instantly in your browser',
+      'Download it, or download all files together as a ZIP',
+    ],
+    'faq' => [
+      ['Why would I need JFIF?', 'Some older software and websites ask for a .jfif file. JFIF is the same JPEG image data with a .jfif name.'],
+      ['Can I convert many files at once?', 'Yes. Select several files together and download all the converted files in one ZIP.'],
+      ['Are my photos uploaded?', 'No. The conversion runs inside your browser, so your images never leave your device.'],
+    ],
+  ],
+  'png-to-jfif' => [
+    'guide' => [
+      'Choose your PNG image — or select many at once for bulk conversion',
+      'Set the quality if needed',
+      'The JFIF file is created instantly in your browser',
+      'Download it, or download all files together as a ZIP',
+    ],
+    'faq' => [
+      ['What happens to transparent areas?', 'JFIF does not support transparency, so transparent parts become white.'],
+      ['Can I convert many files at once?', 'Yes. Select several files together and download all the converted files in one ZIP.'],
+      ['Are my photos uploaded?', 'No. The conversion runs inside your browser, so your images never leave your device.'],
+    ],
+  ],
   'webp-to-jpg' => [
     'guide' => [
       'Upload your WEBP image',

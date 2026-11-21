@@ -174,7 +174,8 @@ async function printBlob(blob, name) {
 function imageConvert(mount, opt, ctx) {
   const to = (opt && opt.to) || 'png';
   const type = 'image/' + (to === 'jpg' ? 'jpeg' : to);
-  const input = fileInput(mount, { accept: 'image/*', hint: T('મહત્તમ', 'Max') + ' ' + ctx.maxMb + 'MB' });
+  const ext = (opt && opt.ext) || (to === 'jpeg' ? 'jpg' : to);
+  const input = fileInput(mount, { accept: (opt && opt.accept) || 'image/*,.jfif', hint: T('મહત્તમ', 'Max') + ' ' + ctx.maxMb + 'MB' });
   const q = el(`<div class="mt-3 ${to === 'png' ? 'hidden' : ''}"><label class="kt-label">${T('ક્વોલિટી', 'Quality')}: <b class="qv">92</b>%</label><input type="range" min="10" max="100" value="92" class="w-full qs"></div>`);
   mount.appendChild(q);
   const box = resultBox(mount);
@@ -187,14 +188,14 @@ function imageConvert(mount, opt, ctx) {
     if (to !== 'png') { cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); }
     cx.drawImage(img, 0, 0); applyWatermark(cx, c.width, c.height, ctx);
     const blob = await canvasToBlob(c, type, q.querySelector('.qs').value / 100);
-    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '.' + (to === 'jpeg' ? 'jpg' : to), ctx);
+    showPreview(box, blob, f.name.replace(/\.[^.]+$/, '') + '.' + ext, ctx);
   };
 }
 reg('img-convert', imageConvert);
 
 reg('img-compress', function (mount, opt, ctx) {
   const presets = (opt && opt.presetKb) || null;
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const ctrl = el(`<div class="mt-3">
     <label class="kt-label">${T('ટાર્ગેટ સાઇઝ', 'Target size')} (KB)</label>
     ${presets ? `<div class="flex gap-2 mb-2">${presets.map(p => `<button class="cat-chip pk" data-k="${p}">${p}KB</button>`).join('')}</div>` : ''}
@@ -230,7 +231,7 @@ reg('img-compress', function (mount, opt, ctx) {
 });
 
 reg('img-resize', function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const ctrl = el(`<div class="mt-3 grid grid-cols-2 gap-3">
     <div><label class="kt-label">${T('પહોળાઈ', 'Width')} (px)</label><input type="number" class="kt-input w"></div>
     <div><label class="kt-label">${T('ઊંચાઈ', 'Height')} (px)</label><input type="number" class="kt-input h"></div>
@@ -256,7 +257,7 @@ reg('img-resize', function (mount, opt, ctx) {
 });
 
 reg('img-rotate', function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const bar = el(`<div class="flex gap-2 mt-3 flex-wrap hidden">
       <button class="btn btn-ghost r90">↻ 90°</button><button class="btn btn-ghost rm90">↺ 90°</button>
       <button class="btn btn-ghost fh">⇄ Flip H</button><button class="btn btn-ghost fv">⇅ Flip V</button></div>`);
@@ -287,7 +288,7 @@ reg('img-rotate', function (mount, opt, ctx) {
 
 reg('img-crop', async function (mount, opt, ctx) {
   loadCss(X.CDN.cropperCss); await need('cropper');
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const stage = el('<div class="mt-3"></div>'); mount.appendChild(stage);
   const box = resultBox(mount);
   let cropper = null;
@@ -309,7 +310,7 @@ reg('img-crop', async function (mount, opt, ctx) {
 
 reg('img-to-pdf', async function (mount, opt, ctx) {
   await need('jspdf');
-  const input = fileInput(mount, { accept: 'image/*', multiple: true, hint: T('એક કે અનેક ફોટા', 'One or more images') });
+  const input = fileInput(mount, { accept: (opt && opt.accept) || 'image/*,.jfif', multiple: true, hint: T('એક કે અનેક ફોટા', 'One or more images') });
   const box = resultBox(mount);
   input.onchange = async () => {
     const files = Array.from(input.files); if (!files.length) return;
@@ -333,7 +334,7 @@ reg('img-to-pdf', async function (mount, opt, ctx) {
 });
 
 reg('img-watermark', function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const ctrl = el(`<div class="mt-3 grid sm:grid-cols-2 gap-3">
     <div><label class="kt-label">${T('વોટરમાર્ક ટેક્સ્ટ', 'Watermark text')}</label><input class="kt-input wt" value="AK Computer"></div>
     <div><label class="kt-label">${T('ઓપેસિટી', 'Opacity')} %</label><input type="number" class="kt-input wo" value="35"></div>
@@ -357,7 +358,7 @@ reg('img-watermark', function (mount, opt, ctx) {
 });
 
 reg('signature-clean', function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*', hint: T('સફેદ બેકગ્રાઉન્ડ પર સહી', 'Signature on white bg') });
+  const input = fileInput(mount, { accept: 'image/*,.jfif', hint: T('સફેદ બેકગ્રાઉન્ડ પર સહી', 'Signature on white bg') });
   const ctrl = el(`<div class="mt-3"><label class="kt-label">${T('થ્રેશોલ્ડ', 'Threshold')}: <b class="tv">200</b></label><input type="range" min="100" max="245" value="200" class="w-full ts"></div>`);
   mount.appendChild(ctrl);
   const box = resultBox(mount);
@@ -378,7 +379,7 @@ reg('signature-clean', function (mount, opt, ctx) {
 });
 
 reg('img-base64', function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const box = resultBox(mount);
   input.onchange = () => {
     const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return;
@@ -393,7 +394,7 @@ reg('img-base64', function (mount, opt, ctx) {
 });
 
 reg('dpi-changer', async function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const ctrl = el(`<div class="mt-3"><label class="kt-label">DPI</label><select class="kt-select dpi"><option>72</option><option selected>300</option><option>600</option></select></div>`);
   mount.appendChild(ctrl); const box = resultBox(mount);
   input.onchange = async () => {
@@ -445,7 +446,7 @@ reg('heic-convert', async function (mount, opt, ctx) {
 });
 
 reg('exif-tool', async function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const box = resultBox(mount);
   input.onchange = async () => {
     const f = input.files[0]; if (!f || !checkMax(f, ctx.maxMb)) return;
@@ -465,7 +466,7 @@ reg('exif-tool', async function (mount, opt, ctx) {
 reg('meme-generator', function (mount, opt, ctx) { memeEngine(mount, opt, ctx); });
 reg('meme-gen', function (mount, opt, ctx) { memeEngine(mount, opt, ctx); });
 function memeEngine(mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const ctrl = el(`<div class="mt-3 grid grid-cols-2 gap-3">
     <input class="kt-input top" placeholder="${T('ઉપરનું ટેક્સ્ટ', 'Top text')}">
     <input class="kt-input bot" placeholder="${T('નીચેનું ટેક્સ્ટ', 'Bottom text')}"></div>`);
@@ -484,7 +485,7 @@ function memeEngine(mount, opt, ctx) {
 }
 
 reg('color-picker', function (mount, opt, ctx) {
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const box = resultBox(mount);
   input.onchange = async () => {
     const f = input.files[0]; if (!f) return; const img = await loadImage(f);
@@ -506,7 +507,7 @@ reg('favicon-gen', faviconEngine);
 reg('favicon-generator', faviconEngine);
 async function faviconEngine(mount, opt, ctx) {
   await need('jszip');
-  const input = fileInput(mount, { accept: 'image/*' });
+  const input = fileInput(mount, { accept: 'image/*,.jfif' });
   const box = resultBox(mount);
   input.onchange = async () => {
     const f = input.files[0]; if (!f) return; const img = await loadImage(f);
@@ -521,7 +522,7 @@ async function faviconEngine(mount, opt, ctx) {
 
 reg('img-bulk', async function (mount, opt, ctx) {
   await need('jszip');
-  const input = fileInput(mount, { accept: 'image/*', multiple: true });
+  const input = fileInput(mount, { accept: 'image/*,.jfif', multiple: true });
   const ctrl = el(`<div class="mt-3"><label class="kt-label">${T('આઉટપુટ ફોર્મેટ', 'Output format')}</label><select class="kt-select fmt"><option value="jpeg">JPG</option><option value="png">PNG</option><option value="webp">WEBP</option></select></div>`);
   mount.appendChild(ctrl); const box = resultBox(mount);
   input.onchange = async () => {
@@ -538,7 +539,7 @@ reg('img-bulk', async function (mount, opt, ctx) {
 
 reg('passport-photo', async function (mount, opt, ctx) {
   loadCss(X.CDN.cropperCss); await need('cropper', 'jspdf');
-  const input = fileInput(mount, { accept: 'image/*', rerun: false });
+  const input = fileInput(mount, { accept: 'image/*,.jfif', rerun: false });
   const ctrl = el(`<div class="mt-3 grid sm:grid-cols-2 gap-3"><div><label class="kt-label">Size</label><select class="kt-select ps">
     <option value="35,45">India / UK / EU — 35×45 mm</option><option value="51,51">US — 2×2 inch (51×51 mm)</option><option value="30,40">Small — 30×40 mm</option></select></div>
     <div><label class="kt-label">Background</label><select class="kt-select bg"><option value="#ffffff">White</option><option value="#dbeafe">Light blue</option></select></div></div>`);

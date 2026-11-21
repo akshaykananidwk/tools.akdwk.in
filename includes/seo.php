@@ -18,6 +18,12 @@ function kt_core_keywords(): array {
         'png-to-jpg' => ['png to jpg', 'png to jpeg', 'convert png to jpg', 'png to jpg converter online'],
         'webp-to-jpg' => ['webp to jpg', 'webp to png', 'convert webp image', 'webp converter'],
         'jpg-to-webp' => ['jpg to webp', 'png to webp', 'convert image to webp', 'webp converter for website'],
+        'jfif-to-jpg' => ['jfif to jpg', 'convert jfif to jpg', 'jfif to jpeg', 'jfif file to jpg', 'change jfif to jpg', 'jfif to jpg converter online', 'how to open jfif file', 'bulk jfif to jpg'],
+        'jfif-to-png' => ['jfif to png', 'convert jfif to png', 'jfif to png converter', 'jfif file to png'],
+        'jfif-to-webp' => ['jfif to webp', 'convert jfif to webp', 'jfif converter'],
+        'jfif-to-pdf' => ['jfif to pdf', 'convert jfif to pdf', 'jfif images to pdf', 'multiple jfif to pdf'],
+        'jpg-to-jfif' => ['jpg to jfif', 'jpeg to jfif', 'convert image to jfif', 'jfif converter online'],
+        'png-to-jfif' => ['png to jfif', 'convert png to jfif', 'png to jfif converter'],
         'heic-to-jpg' => ['heic to jpg', 'iphone photo to jpg', 'heic converter', 'heif to jpg'],
         'image-to-pdf' => ['jpg to pdf', 'image to pdf', 'photo to pdf', 'png to pdf', 'convert images to pdf', 'multiple images to pdf'],
         'pdf-to-jpg' => ['pdf to jpg', 'pdf to image', 'pdf to png', 'convert pdf to jpg high quality'],
@@ -211,7 +217,8 @@ function kt_seo_desc(array $t): string {
     // Very short descriptions (older core tools) get the top search phrases added.
     $bulk = kt_is_bulk($t);
     if (mb_strlen($d) < 80) {
-        $d = rtrim($d, '.') . ($bulk ? ' – one file or many at once, download all as ZIP.' : '.');
+        $merge = in_array($t['engine'] ?? '', ['img-to-pdf', 'pdf-merge', 'csv-merge'], true);
+        $d = rtrim($d, '.') . ($bulk ? ($merge ? '.' : ' – one file or many at once, download all as ZIP.') : '.');
         $kw = array_slice(kt_tool_keywords($t), 1, 2);
         if ($kw) $d .= ' Also works as ' . implode(' and ', $kw) . '.';
     } elseif ($bulk) {
