@@ -8,7 +8,8 @@ require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/generated_tools.php';
 require_once __DIR__ . '/includes/convert_content.php';
 
-$slug = preg_replace('/[^a-z0-9.\-]/', '', strtolower($_GET['slug'] ?? ''));
+$rawSlug = (string) ($_GET['slug'] ?? '');
+$slug = preg_replace('/[^a-z0-9.\-]/', '', strtolower(str_replace(',', '', rawurldecode($rawSlug))));
 $parsed = gen_parse_slug($slug);
 if (!$parsed) {
     http_response_code(404);
@@ -22,7 +23,7 @@ if (!$parsed) {
 }
 
 // Consolidate aliases/format variants to one canonical URL (301) for SEO.
-if (empty($parsed['is_canonical'])) {
+if (empty($parsed['is_canonical']) || $rawSlug !== $parsed['canonical_slug']) {
     header('Location: ' . SITE_URL . '/convert/' . $parsed['canonical_slug'], true, 301);
     exit;
 }
@@ -74,7 +75,11 @@ foreach ($breadcrumb as $i => $bc) {
     $crumbLd['itemListElement'][] = $it;
 }
 $extra_head = '<script type="application/ld+json">' . json_encode(['@context' => 'https://schema.org',
-    '@graph' => [$faqLd, $crumbLd]], JSON_UNESCAPED_SLASHES) . '</script>';
+    '@graph' => [
+        ['@type' => 'WebApplication', 'name' => $h1, 'url' => SITE_URL . '/convert/' . $parsed['canonical_slug'], 'description' => $page_desc,
+         'applicationCategory' => 'UtilitiesApplication', 'operatingSystem' => 'Web, Android, iOS', 'browserRequirements' => 'Requires JavaScript for the live converter; the answer works without it.',
+         'isAccessibleForFree' => true, 'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'INR']],
+        $faqLd, $crumbLd]], JSON_UNESCAPED_SLASHES) . '</script>';
 
 // Units JSON for the live client-side engine (this category only).
 $unitsJson = [];

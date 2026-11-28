@@ -1055,13 +1055,12 @@ function mountTool() {
   if (window.KTX.Engines[name]) run();
   else {
     const v = KT.ver ? ('?v=' + KT.ver) : '';
-    Promise.all([
-      loadScript(KT.url + '/assets/js/engines.js' + v),
-      loadScript(KT.url + '/assets/js/engines-dev.js' + v),
-      loadScript(KT.url + '/assets/js/engines-more.js' + v),
-      loadScript(KT.url + '/assets/js/engines-speed.js' + v),
-      loadScript(KT.url + '/assets/js/engines-daily.js' + v),
-    ]).then(run).catch(run);
+    // The page tells us which file holds this engine (data-src); load only that one. Fall back to all files.
+    const src = /^engines[a-z-]*\.js$/.test(mount.dataset.src || '') ? mount.dataset.src : '';
+    const files = src ? [src] : ['engines.js', 'engines-dev.js', 'engines-more.js', 'engines-speed.js', 'engines-daily.js'];
+    Promise.all(files.map(f => loadScript(KT.url + '/assets/js/' + f + v)))
+      .then(() => { if (!window.KTX.Engines[name] && src) return Promise.all(['engines.js', 'engines-dev.js', 'engines-more.js', 'engines-speed.js', 'engines-daily.js'].filter(f => f !== src).map(f => loadScript(KT.url + '/assets/js/' + f + v))); })
+      .then(run).catch(run);
   }
 }
 

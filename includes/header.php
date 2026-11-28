@@ -7,6 +7,7 @@ require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/csrf.php';
 kt_session_start();
+if (!defined('KT_ROOT_PUBLIC')) define('KT_ROOT_PUBLIC', dirname(__DIR__));
 
 $lang     = current_lang();
 $title    = $page_title ?? (brand_name() . ' — ' . t('tagline'));
@@ -25,9 +26,13 @@ $gaId     = setting('ga_id', defined('GA_ID') ? GA_ID : '');
 <?php
 // Canonical + hreflang alternates: strip any ?lang= so both languages point at
 // one canonical URL, and advertise the en/gu variants for international SEO.
+// Self-canonical: the path only, so ?ref= (AK Earn partner links), ?utm_… and other tracking
+// parameters never create duplicate URLs. Only real pagination (?page=N) is kept. /index.php → /.
 $reqUri = $_SERVER['REQUEST_URI'] ?? '/';
-$cleanUri = preg_replace('/([?&])lang=(en|gu)(&|$)/', '$1', $reqUri);
-$cleanUri = rtrim(preg_replace('/[?&]$/', '', $cleanUri), '');
+$cleanPath = preg_replace('#/index\.php$#', '/', (string) parse_url($reqUri, PHP_URL_PATH)) ?: '/';
+parse_str((string) parse_url($reqUri, PHP_URL_QUERY), $__qs);
+$cleanUri = $cleanPath . (isset($__qs['page']) && ctype_digit((string) $__qs['page']) && (int) $__qs['page'] > 1 ? '?page=' . (int) $__qs['page'] : '');
+unset($__qs);
 // Pages may force a clean canonical URL (e.g. generated converter pages).
 $canonical = $page_canonical ?? (SITE_URL . $cleanUri);
 $sep = str_contains($cleanUri, '?') ? '&' : '?';
@@ -52,11 +57,24 @@ $siteName = brand_name();
 <meta name="twitter:image" content="<?= e($og) ?>">
 <meta name="theme-color" content="#1E3A8A">
 <link rel="icon" href="<?= SITE_URL ?>/assets/img/logo/favicon.svg" type="image/svg+xml">
-<script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<?php $__fonts = 'https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap'; ?>
+<!-- Fonts load without blocking the first paint (text shows in a system font, then swaps). -->
+<link rel="preload" as="style" href="<?= $__fonts ?>" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="<?= $__fonts ?>"></noscript>
+<?php
+// The site CSS is small (≈27 KB, ≈7 KB gzipped), so it is inlined: no render-blocking CSS request.
+// Order matters: krishna.css first, then Tailwind utilities (the same order the old CDN script used).
+$__css = '';
+foreach (['krishna.css', 'tailwind.css'] as $__f) { $__p = KT_ROOT_PUBLIC . '/assets/css/' . $__f; if (is_file($__p)) $__css .= file_get_contents($__p) . "\n"; }
+if ($__css !== ''): ?>
+<style><?= $__css ?></style>
+<?php else: ?>
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css?v=<?= asset_ver() ?>">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+<link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/tailwind.css?v=<?= asset_ver() ?>">
+<?php endif; unset($__css, $__f, $__p, $__fonts); ?>
+<script src="<?= SITE_URL ?>/assets/js/icons.js?v=<?= asset_ver() ?>" defer></script>
 <script>window.KT = { url: <?= json_encode(SITE_URL) ?>, lang: <?= json_encode($lang) ?>, csrf: <?= json_encode(csrf_token()) ?>, loggedIn: <?= is_logged_in() ? 'true' : 'false' ?>, ver: <?= json_encode(asset_ver()) ?> };</script>
 <?php
 // Site-wide structured data: Organization + WebSite (Sitelinks Search box).
@@ -64,17 +82,19 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
     ['@type' => 'Organization', '@id' => SITE_URL . '/#org', 'name' => 'AK Computer',
      'url' => SITE_URL, 'logo' => SITE_URL . '/assets/img/logo/logo.svg',
      'description' => 'Computer & CCTV shop in Dwarka, Gujarat — makers of Krishna Tools.',
-     'address' => ['@type' => 'PostalAddress', 'addressLocality' => 'Dwarka', 'addressRegion' => 'Gujarat', 'addressCountry' => 'IN'],
+     'address' => array_filter(['@type' => 'PostalAddress', 'streetAddress' => setting('shop_address', ''), 'addressLocality' => 'Dwarka', 'addressRegion' => 'Gujarat', 'postalCode' => '361335', 'addressCountry' => 'IN']),
      'contactPoint' => ['@type' => 'ContactPoint', 'telephone' => setting('shop_phone', ''), 'contactType' => 'customer service']],
     ['@type' => 'WebSite', '@id' => SITE_URL . '/#website', 'url' => SITE_URL,
      'name' => $siteName, 'publisher' => ['@id' => SITE_URL . '/#org'],
-     'inLanguage' => ['en', 'gu'],
+     'inLanguage' => 'en',
      'potentialAction' => ['@type' => 'SearchAction',
          'target' => ['@type' => 'EntryPoint', 'urlTemplate' => SITE_URL . '/search.php?q={search_term_string}'],
          'query-input' => 'required name=search_term_string']],
 ]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>
+<?php if (($cleanPath ?? '/') === '/'): // Organization + WebSite belong on the home page only ?>
 <script type="application/ld+json"><?= $orgLd ?></script>
+<?php endif; ?>
 <?php if ($gaId): ?>
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($gaId) ?>"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<?= e($gaId) ?>');</script>
@@ -82,6 +102,19 @@ $orgLd = json_encode(['@context' => 'https://schema.org', '@graph' => [
 <!-- Notification.AKDWK.in: analytics -->
 <script src="https://notification.akdwk.in/sdk/v1.js" data-site-id="01m502jvh51tdcjbd8ndhn2fsa" defer></script>
 <?= $extra_head ?? '' ?>
+<?php
+// BreadcrumbList for every page that shows a breadcrumb, unless the page already outputs one.
+if (!empty($breadcrumb) && !str_contains((string) ($extra_head ?? ''), 'BreadcrumbList')) {
+    $__bc = ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => []];
+    foreach (array_values($breadcrumb) as $__i => $__b) {
+        $__it = ['@type' => 'ListItem', 'position' => $__i + 1, 'name' => (string) $__b['label']];
+        $__it['item'] = !empty($__b['url']) ? $__b['url'] : $canonical;
+        $__bc['itemListElement'][] = $__it;
+    }
+    echo '<script type="application/ld+json">' . json_encode($__bc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
+    unset($__bc, $__i, $__b, $__it);
+}
+?>
 </head>
 <body class="morpankh-bg">
 <script>

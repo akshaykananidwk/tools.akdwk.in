@@ -13,6 +13,23 @@ require_once __DIR__ . '/ratelimit.php';
 require_once __DIR__ . '/tools_i18n.php';
 require_once __DIR__ . '/seo.php';
 
+/**
+ * Which engines file registers an engine name (so a tool page loads one JS file, not all five).
+ * Built by scanning reg('name' / regCalc('name' in assets/js/engines*.js; cached per request.
+ */
+function kt_engine_file(string $engine): string {
+    static $map = null;
+    if ($map === null) {
+        $map = [];
+        foreach (glob(dirname(__DIR__) . '/assets/js/engines*.js') ?: [] as $f) {
+            if (preg_match_all("/(?:^|[^A-Za-z_])(?:reg|regCalc)\('([a-z0-9-]+)'/m", (string) @file_get_contents($f), $m)) {
+                foreach ($m[1] as $name) $map[$name] = $map[$name] ?? basename($f);
+            }
+        }
+    }
+    return $map[$engine] ?? '';
+}
+
 /** Look up the DB row for a tool slug (for id + admin toggles). */
 function tool_db_row(string $slug): ?array {
     try {
@@ -50,6 +67,22 @@ function kt_ensure_tool_row(array $tool): ?array {
  * Render a complete tool page for $slug. Handles access, chrome, JSON-LD and
  * usage logging. Dies with a 404 view if the slug is unknown.
  */
+/**
+ * Space to reserve for the tool UI before its JavaScript draws it, so the guide/FAQ below don't jump
+ * (CLS). Estimated from the number of fields/results (fitted on real mobile + desktop heights) and
+ * kept at ~90% so a page never shows extra empty space. Returns [mobilePx, desktopPx].
+ */
+function kt_tool_reserve(array $tool): array {
+    $in = count($tool['opt']['in'] ?? []); $out = count($tool['opt']['out'] ?? []);
+    switch ($tool['engine']) {
+        case 'formula': return [(int) (0.9 * (22 + 89 * $in + 95 * $out)), (int) (0.9 * (121 + 40 * $in + 52 * $out))];
+        case 'textgen': return [(int) (0.85 * (899 + 132 * $in)), (int) (0.85 * (725 + 64 * $in))];
+        case 'card':    return [850, 550];
+        case 'doc':     return [1500, 900];
+        default:        return [140, 140];
+    }
+}
+
 function render_tool_page(string $slug): void {
     $tool = kt_tool($slug);
     if (!$tool) { render_tool_404(); return; }
@@ -112,7 +145,7 @@ function render_tool_page(string $slug): void {
         $crumbLd['itemListElement'][] = $item;
     }
     $ld = json_encode(['@context' => 'https://schema.org', '@graph' => [
-        ['@type' => 'SoftwareApplication', 'name' => $name, 'applicationCategory' => 'UtilitiesApplication',
+        ['@type' => 'WebApplication', 'name' => $name, 'applicationCategory' => 'UtilitiesApplication', 'browserRequirements' => 'Requires JavaScript. Works in any modern browser.',
          'operatingSystem' => 'Web, Android, iOS', 'description' => $desc, 'keywords' => implode(', ', array_slice($kw, 0, 10)),
          'isAccessibleForFree' => true,
          'url' => SITE_URL . '/tool/' . $tool['slug'], 'inLanguage' => current_lang() === 'en' ? 'en' : 'gu',
@@ -151,8 +184,10 @@ function render_tool_page(string $slug): void {
 
         <!-- Tool mount: the JS engine renders the interactive UI here -->
         <div class="kt-card p-5 mb-6">
-          <div id="toolMount"
+          <?php [$__mh, $__md] = kt_tool_reserve($tool); ?>
+          <div id="toolMount" style="--mh:<?= $__mh ?>px;--md:<?= $__md ?>px"
                data-engine="<?= e($tool['engine']) ?>"
+               data-src="<?= e(kt_engine_file($tool['engine'])) ?>"
                data-slug="<?= e($tool['slug']) ?>"
                data-toolid="<?= (int) ($tool['db_id'] ?? 0) ?>"
                data-premium="<?= (int) !empty($tool['is_premium']) ?>"

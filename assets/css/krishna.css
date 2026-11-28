@@ -175,3 +175,7 @@ body {
 [data-theme="dark"] .section-title { color:var(--gold-soft); }
 .divider-gold { height:3px; width:64px; border-radius:3px;
   background:linear-gradient(90deg,var(--gold),var(--saffron)); }
+
+/* Reserve the tool's space before its JavaScript draws it (no layout shift). Values come from the page. */
+#toolMount { min-height: var(--mh, 0); }
+@media (min-width: 640px) { #toolMount { min-height: var(--md, 0); } }

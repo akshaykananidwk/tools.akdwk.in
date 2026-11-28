@@ -6,9 +6,23 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+
+  # One version of every URL for Google:
+  # 1) http → https (also behind a proxy that sets X-Forwarded-Proto)
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+  # 2) /index.php → / (only when a visitor asks for it, so the internal DirectoryIndex rewrite never loops)
+  RewriteCond %{THE_REQUEST} ^[A-Z]+\s/index\.php[\s?]
+  RewriteRule ^index\.php$ / [R=301,L]
+  # 3) trailing slash on clean URLs → without (/tool/pdf-merge/ → /tool/pdf-merge)
+  RewriteRule ^(tool|category|convert|blog)/(.+)/$ /$1/$2 [R=301,L]
+
   RewriteRule ^tool/([a-z0-9-]+)/?$ tool.php?slug=$1 [L,QSA]
   RewriteRule ^category/([a-z0-9-]+)/?$ category.php?slug=$1 [L,QSA]
-  RewriteRule ^convert/([a-z0-9.\-]+)/?$ convert.php?slug=$1 [L,QSA]
+  # Commas / capitals (e.g. old /convert/1,000-… links) reach convert.php, which 301s them to the clean URL.
+  RewriteRule ^convert/([A-Za-z0-9.,%\-]+)/?$ convert.php?slug=$1 [L,QSA]
   RewriteRule ^blog/([a-z0-9-]+)/?$ blog/post.php?slug=$1 [L,QSA]
   # Sitemap index + children
   RewriteRule ^sitemap\.xml$ sitemap.php [L]
@@ -28,11 +42,18 @@ Options -Indexes
 </FilesMatch>
 
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript text/javascript application/json image/svg+xml application/manifest+json font/ttf font/otf
 </IfModule>
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType text/css "access plus 7 days"
-  ExpiresByType application/javascript "access plus 7 days"
+  # CSS/JS are loaded with ?v=<version>, so a new deploy always gets fresh files.
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType text/javascript "access plus 30 days"
   ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/x-icon "access plus 30 days"
+  ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>

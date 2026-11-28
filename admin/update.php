@@ -49,7 +49,7 @@ admin_head('GitHub Update');
 ?>
 <div class="max-w-3xl">
   <div class="flex items-center gap-2 mb-1">
-    <i data-lucide="github" class="w-6 h-6"></i>
+    <i data-lucide="git-branch" class="w-6 h-6"></i>
     <h1 class="text-2xl font-bold">GitHub Update</h1>
     <?php if ($current): ?><span class="px-2 py-0.5 rounded-full text-xs font-mono" style="background:rgba(30,58,138,.1);color:var(--krishna-blue)">v<?= e(substr($current, 0, 7)) ?></span><?php endif; ?>
   </div>

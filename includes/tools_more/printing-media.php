@@ -752,7 +752,7 @@ return [
      'how_en' => 'Voice time = target length − time without narration. Words = voice seconds ÷ 60 × words per minute.',
      'how_gu' => 'અવાજનો સમય = લક્ષ્ય લંબાઈ − બોલ્યા વગરનો સમય. શબ્દ = અવાજ સેકન્ડ ÷ 60 × મિનિટ દીઠ શબ્દ.'],
 
-    ['slug' => 'youtube-earnings-calculator-rpm', 'cat' => 'media', 'type' => 'calc', 'icon' => 'youtube',
+    ['slug' => 'youtube-earnings-calculator-rpm', 'cat' => 'media', 'type' => 'calc', 'icon' => 'circle-play',
      'en' => 'YouTube Earnings Calculator (RPM based, in ₹)', 'gu' => 'YouTube કમાણી કેલ્ક્યુલેટર (RPM આધારિત, ₹)',
      'de' => 'Estimate YouTube income per day, month and year in rupees from your views and your own RPM shown in YouTube Studio.',
      'dg' => 'વ્યૂઝ અને YouTube Studioમાં દેખાતા આપના RPM પરથી દૈનિક, માસિક અને વાર્ષિક YouTube કમાણી રૂપિયામાં અંદાજો.',
@@ -788,7 +788,7 @@ return [
      'how_en' => 'Views needed = target income ÷ RPM × 1000. Divide by 30 for daily views and by videos per month for views per video.',
      'how_gu' => 'જોઈતા વ્યૂઝ = લક્ષ્ય આવક ÷ RPM × 1000. રોજના માટે 30થી અને વિડિયો દીઠ માટે મહિનાના વિડિયોથી ભાગો.'],
 
-    ['slug' => 'instagram-engagement-rate-calculator', 'cat' => 'media', 'type' => 'calc', 'icon' => 'instagram',
+    ['slug' => 'instagram-engagement-rate-calculator', 'cat' => 'media', 'type' => 'calc', 'icon' => 'camera',
      'en' => 'Instagram Engagement Rate Calculator', 'gu' => 'Instagram એન્ગેજમેન્ટ રેટ કેલ્ક્યુલેટર',
      'de' => 'Calculate the engagement rate of an Instagram post or reel by followers and by reach, with likes, comments, saves and shares.',
      'dg' => 'લાઇક, કમેન્ટ, સેવ અને શેર પરથી Instagram પોસ્ટ કે રીલનો ફોલોઅર્સ અને રીચ આધારિત એન્ગેજમેન્ટ રેટ ગણો.',
@@ -1320,7 +1320,7 @@ return [
        ['en' => 'Watch on {where} – {channel}', 'gu' => '{where} પર જુઓ – {channel}', 's' => 0.6, 'b' => false],
      ]]],
 
-    ['slug' => 'youtube-thumbnail-text-maker', 'cat' => 'media', 'type' => 'card', 'icon' => 'youtube',
+    ['slug' => 'youtube-thumbnail-text-maker', 'cat' => 'media', 'type' => 'card', 'icon' => 'circle-play',
      'en' => 'YouTube Thumbnail Text Maker', 'gu' => 'YouTube થંબનેલ ટેક્સ્ટ મેકર',
      'de' => 'Create a bold, readable 16:9 YouTube thumbnail with big title text, a sub line and a tag, ready to download.',
      'dg' => 'મોટા ટાઇટલ, નાની લાઇન અને ટેગ સાથે ચોખ્ખું વંચાય તેવું 16:9 YouTube થંબનેલ બનાવો અને ડાઉનલોડ કરો.',

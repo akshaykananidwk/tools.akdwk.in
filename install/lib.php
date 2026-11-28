@@ -162,10 +162,23 @@ Options -Indexes
   RewriteCond %{DOCUMENT_ROOT}/config/install.lock -f
   RewriteRule ^install/ /?installed=1 [L,R=302]
 
+  # One version of every URL: http → https, /index.php → /, no trailing slash on clean URLs
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+  RewriteCond %{THE_REQUEST} ^[A-Z]+\s/index\.php[\s?]
+  RewriteRule ^index\.php$ / [R=301,L]
+  RewriteRule ^(tool|category|convert|blog)/(.+)/$ /$1/$2 [R=301,L]
+
   # Clean URLs: /tool/<slug>  /category/<slug>  /blog/<slug>
   RewriteRule ^tool/([a-z0-9-]+)/?$ tool.php?slug=$1 [L,QSA]
   RewriteRule ^category/([a-z0-9-]+)/?$ category.php?slug=$1 [L,QSA]
   RewriteRule ^blog/([a-z0-9-]+)/?$ blog/post.php?slug=$1 [L,QSA]
+  RewriteRule ^convert/([A-Za-z0-9.,%\-]+)/?$ convert.php?slug=$1 [L,QSA]
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+  RewriteRule ^sitemap-main\.xml$ sitemap-main.php [L]
+  RewriteRule ^sitemap-convert\.xml$ sitemap-convert.php [L,QSA]
 </IfModule>
 
 # Security headers

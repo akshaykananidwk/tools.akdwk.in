@@ -365,7 +365,7 @@ return [
        "{salon} પસંદ કરવા બદલ આભાર 💇‍♀️ સમય મળે તો અહીં રિવ્યૂ આપજો: {link}. ફરી મળીશું!",
      ]],
 
-    ['slug' => 'salon-instagram-caption-generator', 'cat' => 'salon', 'type' => 'text', 'icon' => 'instagram',
+    ['slug' => 'salon-instagram-caption-generator', 'cat' => 'salon', 'type' => 'text', 'icon' => 'camera',
      'en' => 'Salon Instagram Caption Generator', 'gu' => 'સલૂન ઇન્સ્ટાગ્રામ કેપ્શન જનરેટર',
      'de' => 'Catchy Instagram and Facebook captions with hashtags for salon makeovers, haircuts, bridal looks and nail art.',
      'dg' => 'સલૂન મેકઓવર, હેરકટ, બ્રાઇડલ લુક અને નેઇલ આર્ટ માટે હેશટેગ સાથે આકર્ષક ઇન્સ્ટાગ્રામ અને ફેસબુક કેપ્શન.',

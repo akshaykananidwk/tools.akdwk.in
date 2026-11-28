@@ -755,7 +755,7 @@ return [
        'આભાર {name}, પરિવાર સાથે {shop} માં પધારવા બદલ. {dish} વિશેનો તમારો પ્રતિભાવ અમને રોજ વધુ સારું કરવામાં મદદ કરે છે. 🙏 — {owner}',
      ]],
 
-    ['slug' => 'food-instagram-caption-generator', 'cat' => 'restaurant', 'type' => 'text', 'icon' => 'instagram',
+    ['slug' => 'food-instagram-caption-generator', 'cat' => 'restaurant', 'type' => 'text', 'icon' => 'camera',
      'en' => 'Food & Cafe Instagram Caption Generator', 'gu' => 'ફૂડ અને કેફે ઇન્સ્ટાગ્રામ કેપ્શન જનરેટર',
      'de' => 'Catchy Instagram and Facebook captions with hashtags for food photos, reels and cafe posts.',
      'dg' => 'ફૂડ ફોટા, રીલ્સ અને કેફે પોસ્ટ માટે હેશટેગ સાથે આકર્ષક ઇન્સ્ટાગ્રામ અને ફેસબુક કેપ્શન.',

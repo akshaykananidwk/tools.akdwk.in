@@ -5,7 +5,17 @@ require_once __DIR__ . '/includes/bootstrap.php';
 $slug = preg_replace('/[^a-z0-9-]/', '', $_GET['slug'] ?? '');
 $cat = null;
 foreach (kt_categories() as $c) if ($c['slug'] === $slug) $cat = $c;
-if (!$cat) { header('Location: ' . SITE_URL . '/'); exit; }
+if (!$cat) {
+    // Unknown category: a real 404 (a redirect to the home page looks like a soft 404 to Google).
+    http_response_code(404);
+    $page_title = 'Category not found — ' . brand_name();
+    $page_robots = 'noindex, follow';
+    require __DIR__ . '/includes/header.php';
+    echo '<div class="kt-card p-10 text-center mt-10 max-w-lg mx-auto"><div class="text-6xl mb-3">🦚</div><h1 class="text-2xl font-bold mb-2">Category not found</h1>'
+       . '<a href="' . SITE_URL . '/" class="btn btn-primary mt-3">All tools</a></div>';
+    require __DIR__ . '/includes/footer.php';
+    exit;
+}
 
 $tools = kt_tools_by_cat($slug);
 $dbTools = [];

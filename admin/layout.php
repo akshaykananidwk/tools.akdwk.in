@@ -44,12 +44,13 @@ function admin_head(string $title): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> — <?= e($siteName) ?> Admin</title>
 <meta name="robots" content="noindex,nofollow">
-<script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css">
+<!-- Tailwind utilities after krishna.css, the same order the old CDN script used -->
+<link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/tailwind.css?v=<?= asset_ver() ?>">
 <link rel="icon" href="<?= SITE_URL ?>/assets/img/logo/favicon.svg" type="image/svg+xml">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+<script src="<?= SITE_URL ?>/assets/js/icons.js?v=<?= asset_ver() ?>" defer></script>
 <style>
   :root { --admin-w: 250px; }
   .admin-shell { display:flex; min-height:100vh; }
