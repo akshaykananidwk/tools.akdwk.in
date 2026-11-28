@@ -9,6 +9,7 @@ require_once __DIR__ . '/includes/generated_tools.php';
 require_once __DIR__ . '/includes/convert_content.php';
 require_once __DIR__ . '/includes/local_units.php';
 require_once __DIR__ . '/includes/convert_widget.php';
+require_once __DIR__ . '/includes/convert_india_en.php';
 
 $rawSlug = (string) ($_GET['slug'] ?? '');
 $slug = preg_replace('/[^a-z0-9.\-]/', '', strtolower(str_replace(',', '', rawurldecode($rawSlug))));
@@ -72,6 +73,12 @@ $table = [];
 foreach ($C['table'] as $v) $table[(string) $v] = gen_fmt(gen_convert($cat, (float) $v, $from, $to));
 $linkable = array_flip(array_map('strval', gen_value_pages_for($from, $to)));
 $faq = $C['faq'];
+// Indian units: practical questions, Hinglish search forms and the size-by-region table.
+$have = array_flip(array_map(fn($qa) => $qa[0], $faq));
+foreach (gen_en_india_faq($from, $to) as $qa) if (!isset($have[$qa[0]])) $faq[] = $qa;
+$hinglish = gen_en_hinglish($from, $to, $value);
+$regionRows = [];
+foreach (array_unique([$from, $to]) as $u) if ($rr = gen_en_region_rows($u)) $regionRows[$u] = $rr;
 
 // FAQ + Breadcrumb + WebPage JSON-LD.
 $faqLd = ['@type' => 'FAQPage', 'mainEntity' => array_map(fn($qa) => [
@@ -201,12 +208,27 @@ require __DIR__ . '/includes/header.php';
         </div>
       </section>
       <section>
+        <?php if ($hinglish): ?><p class="mb-2 text-sm opacity-80">Also searched as “<?= e($hinglish[0]) ?>”, “<?= e($hinglish[1]) ?>” or “<?= e($hinglish[2]) ?>” — the answer is the same: <b><?= e($C['answer']) ?></b>.</p><?php endif; ?>
         <h2 class="section-title text-xl mb-2">Good to know</h2>
         <?php if ($C['compare']): ?><p><?= e($C['compare']) ?></p><?php endif; ?>
         <p class="<?= $C['compare'] ? 'mt-2' : '' ?>"><?= e($C['tip']) ?></p>
         <p class="mt-2"><?= e($C['quick']) ?></p>
       </section>
     </article>
+
+    <?php foreach ($regionRows as $ru => $rows): ?>
+    <!-- Size by region (maund, bigha), with sources -->
+    <div class="kt-card p-5 mb-6">
+      <h2 class="section-title text-xl mb-1"><?= e(gen_unit_label($cat, $ru)['name']) ?> size by state and region</h2>
+      <div class="divider-gold mb-3"></div>
+      <p class="text-sm mb-3">The <?= e(strtolower(gen_unit_label($cat, $ru)['name'])) ?> is not the same everywhere in India. This page uses the first value below; choose another region in the converter above to recalculate.</p>
+      <div class="overflow-x-auto"><table class="w-full text-sm">
+        <thead><tr class="opacity-60 text-left"><th class="py-2">Region</th><th>1 <?= e(strtolower(gen_unit_label($cat, $ru)['name'])) ?> =</th><th class="hidden sm:table-cell">Source</th></tr></thead>
+        <tbody><?php foreach ($rows as [$rn, $rv, $rs]): ?><tr class="border-t align-top" style="border-color:var(--border)"><td class="py-2 pr-2"><?= e($rn) ?></td><td class="pr-2"><?= e($rv) ?></td><td class="hidden sm:table-cell text-xs opacity-70"><?= e($rs) ?></td></tr><?php endforeach; ?></tbody>
+      </table></div>
+      <p class="text-xs opacity-70 mt-2">Traditional units vary even between districts. Before a land deal or a trade, confirm the local size with the land record (7/12, khatauni) or the market yard.</p>
+    </div>
+    <?php endforeach; ?>
 
     <!-- Conversion table (30–40 rows) -->
     <div class="kt-card p-5 mb-6">
