@@ -125,7 +125,7 @@ function applyWatermark(ctx, w, h, ctxObj) {
   ctx.font = `bold ${Math.max(14, w / 22)}px Inter, sans-serif`;
   ctx.textAlign = 'center';
   ctx.translate(w / 2, h / 2); ctx.rotate(-Math.PI / 9);
-  ctx.fillText('कृष्णा टूल्स · tools.akdwk.in', 0, 0);
+  ctx.fillText('Krishna Tools · tools.akdwk.in', 0, 0);
   ctx.restore();
 }
 /**
@@ -955,7 +955,7 @@ function textArea(mount, ph) { const t = el(`<textarea class="kt-input" rows="8"
 reg('word-count', function (mount, opt, ctx) {
   const ta = textArea(mount, T('અહીં ટેક્સ્ટ પેસ્ટ કરો...', 'Paste text here...')); const box = resultBox(mount);
   const upd = () => {
-    const t = ta.value; const words = (t.match(/\S+/g) || []).length; const chars = t.length; const sent = (t.match(/[.!?।]+/g) || []).length; const para = (t.split(/\n\s*\n/).filter(x => x.trim()).length);
+    const t = ta.value; const words = (t.match(/\S+/g) || []).length; const chars = t.length; const sent = (t.match(/[.!?\u0964]+/g) || []).length; const para = (t.split(/\n\s*\n/).filter(x => x.trim()).length);
     box.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${[[words, T('શબ્દ', 'Words')], [chars, T('અક્ષર', 'Chars')], [sent, T('વાક્ય', 'Sentences')], [para, T('ફકરા', 'Paragraphs')], [Math.ceil(words / 200), T('વાંચન મિનિટ', 'Read min')]].map(r => `<div class="kt-card p-3 text-center"><div class="text-xl font-bold" style="color:var(--peacock-teal)">${r[0]}</div><div class="text-xs opacity-60">${r[1]}</div></div>`).join('')}</div>`;
   };
   ta.oninput = upd; upd();

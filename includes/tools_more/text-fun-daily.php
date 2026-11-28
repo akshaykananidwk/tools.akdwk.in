@@ -16,7 +16,8 @@ $cc_t = 'String(v.t||"")';
 
 $morse = "{a:'.-',b:'-...',c:'-.-.',d:'-..',e:'.',f:'..-.',g:'--.',h:'....',i:'..',j:'.---',k:'-.-',l:'.-..',m:'--',n:'-.',o:'---',p:'.--.',q:'--.-',r:'.-.',s:'...',t:'-',u:'..-',v:'...-',w:'.--',x:'-..-',y:'-.--',z:'--..',0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.','.':'.-.-.-',',':'--..--','?':'..--..','/':'-..-.','@':'.--.-.','!':'-.-.--'}";
 $morseOut = '(function(t){var M=' . $morse . ';t=String(t||"").trim();if(!t)return "";if(/^[.\\-\\s\\/]+$/.test(t)){var R={};for(var k in M)R[M[k]]=k;return t.split(/\\s*\\/\\s*|\\s{3,}/).map(function(w){return w.split(/\\s+/).map(function(c){return R[c]||"";}).join("");}).join(" ").toUpperCase();}return t.toLowerCase().split(" ").map(function(w){return w.split("").map(function(c){return M[c]||"";}).filter(Boolean).join(" ");}).join(" / ");})(v.t)';
-$digits = '(function(t,to){t=String(t||"");var G="૦૧૨૩૪૫૬૭૮૯",D="०१२३४५६७८९";return t.replace(/[0-9૦-૯०-९]/g,function(c){var n=G.indexOf(c);if(n<0)n=D.indexOf(c);if(n<0)n=+c;return to==1?G[n]:(to==2?D[n]:String(n));});})(v.t,v.to)';
+// Gujarati digits are U+0AE6–U+0AEF, Devanagari U+0966–U+096F (written as code points so the page source stays English-only).
+$digits = '(function(t,to){t=String(t||"");return t.replace(/[0-9\\u0AE6-\\u0AEF\\u0966-\\u096F]/g,function(c){var k=c.charCodeAt(0),n=k>=0xAE6&&k<=0xAEF?k-0xAE6:(k>=0x966&&k<=0x96F?k-0x966:+c);return to==1?String.fromCharCode(0xAE6+n):(to==2?String.fromCharCode(0x966+n):String(n));});})(v.t,v.to)';
 
 $fun = 'fun';
 $txt = 'text';
@@ -164,11 +165,11 @@ return [
      'out' => [['en' => 'Translation', 'f' => $morseOut, 'big' => 1]]],
 
     ['slug' => 'gujarati-hindi-number-converter', 'cat' => $txt, 'type' => 'calc', 'icon' => 'languages',
-     'en' => 'Gujarati & Hindi Numbers Converter (૧૨૩ ↔ 123 ↔ १२३)',
+     'en' => 'Gujarati & Hindi Numerals Converter (English Digits to Gujarati / Devanagari)',
      'de' => 'Convert English digits to Gujarati or Hindi (Devanagari) numerals and back — for invitations, bills and documents.',
      'kw' => ['gujarati numbers', 'gujarati number converter', 'english to gujarati numbers', 'hindi numbers converter', 'gujarati ank', '1 to 100 in gujarati'],
      'in' => [['k' => 't', 'en' => 'Text with numbers', 'v' => 'Mobile 9876543210, Date 15-08-2026', 't' => 'textarea', 'full' => 1],
-              ['k' => 'to', 'en' => 'Convert digits to', 'v' => 1, 'opts' => [[1, 'Gujarati (૦૧૨૩)'], [2, 'Hindi / Devanagari (०१२३)'], [3, 'English (0123)']]]],
+              ['k' => 'to', 'en' => 'Convert digits to', 'v' => 3, 'opts' => [[1, 'Gujarati numerals'], [2, 'Hindi / Devanagari numerals'], [3, 'English digits (0123)']]]],
      'out' => [['en' => 'Converted text', 'f' => $digits, 'big' => 1]]],
 
     ['slug' => 'emoji-copy-paste', 'cat' => $txt, 'type' => 'app', 'kind' => 'emoji', 'icon' => 'smile',

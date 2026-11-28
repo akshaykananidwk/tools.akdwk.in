@@ -57,7 +57,7 @@ async function buyPlan(planId, btn) {
       key: d.key, amount: d.amount, currency: 'INR', name: d.name,
       description: 'Krishna Tools Subscription', order_id: d.order_id, prefill: d.prefill,
       theme: { color: '#1E3A8A' },
-      handler: function () { ktToast('🦚 ' + (window.KT.lang === 'en' ? 'Payment received! Activating...' : 'પેમેન્ટ મળ્યું! સક્રિય થઈ રહ્યું છે...')); setTimeout(() => location.href = window.KT.url + '/dashboard.php', 2500); },
+      handler: function () { ktToast('🦚 ' + 'Payment received! Activating...'); setTimeout(() => location.href = window.KT.url + '/dashboard.php', 2500); },
     });
     rzp.on('payment.failed', () => ktToast('Payment failed', true));
     rzp.open();

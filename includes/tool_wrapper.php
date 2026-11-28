@@ -198,7 +198,7 @@ function render_tool_page(string $slug): void {
                data-allowed="<?= $access['allowed'] ? 1 : 0 ?>"
                data-watermark="<?= $access['watermark'] ? 1 : 0 ?>"
                data-maxmb="<?= (int) $access['max_mb'] ?>"
-               data-opt='<?= e(json_encode($tool['opt'] ?? new stdClass, JSON_UNESCAPED_UNICODE)) ?>'>
+               data-opt='<?= e(json_encode(kt_strip_gu($tool['opt'] ?? []) ?: new stdClass, JSON_UNESCAPED_UNICODE)) ?>'>
             <div class="text-center py-8"><div class="chakra-loader mx-auto"></div>
               <p class="opacity-60 mt-3"><?= t('processing') ?></p></div>
           </div>
@@ -265,6 +265,29 @@ function render_tool_page(string $slug): void {
     </div>
     <?php
     require __DIR__ . '/footer.php';
+}
+
+/**
+ * The site is English-only: drop the old Gujarati copy (keys "gu", "*_gu", and the third
+ * Gujarati label of select options) from a tool's settings before they go into the page.
+ */
+function kt_strip_gu($v) {
+    if (!is_array($v)) return $v;
+    $out = [];
+    foreach ($v as $k => $x) {
+        if (is_string($k) && ($k === 'gu' || str_ends_with($k, '_gu'))) continue;
+        if ($k === 'opts' && is_array($x)) { $out[$k] = array_map(fn($o) => is_array($o) && array_is_list($o) ? array_slice($o, 0, 2) : kt_strip_gu($o), $x); continue; }
+        $out[$k] = is_string($x) ? kt_strip_gu_str($x) : kt_strip_gu($x);
+    }
+    return $out;
+}
+
+/** In formula strings T("ગુજરાતી", "English") picks the English text, so the Gujarati half is emptied; any other Gujarati/Hindi string is emptied too. */
+function kt_strip_gu_str(string $s): string {
+    if (!preg_match('/[\x{0900}-\x{097F}\x{0A80}-\x{0AFF}]/u', $s)) return $s;
+    $s = preg_replace('/\bT\(\s*"[^"]*"\s*,/u', 'T("",', $s);
+    $s = preg_replace("/\\bT\\(\\s*'[^']*'\\s*,/u", "T('',", $s);
+    return preg_match('/[\x{0900}-\x{097F}\x{0A80}-\x{0AFF}]/u', $s) ? '' : $s;
 }
 
 function render_tool_404(): void {

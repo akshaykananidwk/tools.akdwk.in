@@ -36,8 +36,8 @@ function gen_unit_categories(): array {
             'quintal' => [100, 'Quintal', 'q'], 'carat' => [0.0002, 'Carat', 'ct'],
             'tola' => [0.0116638, 'Tola', 'tola'], 'us-ton' => [907.18474, 'US Ton', 'ton'],
             'grain' => [6.479891e-5, 'Grain', 'gr'],
-            // Region-dependent: Gujarat market maund (20 kg) and the Indian standard seer; other regions in includes/regional_units.php.
-            'maund' => [20, 'Maund', 'maund'], 'ser' => [0.9331, 'Seer', 'seer'],
+            // Region-dependent, Gujarat values by default: maund 20 kg, seer 500 g (colloquial); other regions in includes/regional_units.php.
+            'maund' => [20, 'Maund', 'maund'], 'ser' => [0.5, 'Seer', 'seer'],
         ]],
         'temperature' => ['name' => 'Temperature', 'icon' => 'thermometer', 'base' => 'celsius', 'special' => 'temp', 'units' => [
             'celsius' => [1, 'Celsius', '°C'], 'fahrenheit' => [1, 'Fahrenheit', '°F'],

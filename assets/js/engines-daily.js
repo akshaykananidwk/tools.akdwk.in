@@ -310,7 +310,7 @@ K.stt = function (mount, opt, ctx) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   mount.appendChild(el(`<div class="space-y-3">
     <div class="grid sm:grid-cols-2 gap-3"><div><label class="kt-label" for="sLang">Language</label><select class="kt-select" id="sLang">
-      <option value="gu-IN">Gujarati (ગુજરાતી)</option><option value="hi-IN">Hindi (हिंदी)</option><option value="en-IN" selected>English (India)</option><option value="en-US">English (US)</option><option value="mr-IN">Marathi</option><option value="bn-IN">Bengali</option><option value="ta-IN">Tamil</option><option value="te-IN">Telugu</option><option value="kn-IN">Kannada</option><option value="ml-IN">Malayalam</option><option value="pa-IN">Punjabi</option><option value="ur-IN">Urdu</option></select></div>
+      <option value="gu-IN">Gujarati</option><option value="hi-IN">Hindi</option><option value="en-IN" selected>English (India)</option><option value="en-US">English (US)</option><option value="mr-IN">Marathi</option><option value="bn-IN">Bengali</option><option value="ta-IN">Tamil</option><option value="te-IN">Telugu</option><option value="kn-IN">Kannada</option><option value="ml-IN">Malayalam</option><option value="pa-IN">Punjabi</option><option value="ur-IN">Urdu</option></select></div>
       <div class="flex items-end gap-2"><button class="btn btn-cta flex-1" id="sGo"><i data-lucide="mic"></i> Start speaking</button></div></div>
     <div id="sStat" class="text-sm opacity-70">${SR ? 'Tap Start and allow the microphone.' : '⚠️ Your browser does not support voice typing. Please open this page in Google Chrome or Microsoft Edge.'}</div>
     <div class="kt-result"><textarea class="kt-input text-lg" id="sOut" rows="10" placeholder="Your words will appear here…"></textarea>
@@ -362,7 +362,7 @@ K.tts = function (mount, opt, ctx) {
     speechSynthesis.cancel();
     const text = $('#vIn', mount).value.trim(); if (!text) { toast('Type some text first', true); return; }
     // Long text is split into sentences (some browsers stop after ~15 seconds of one utterance).
-    const parts = text.match(/[^.!?।\n]+[.!?।]?/g) || [text];
+    const parts = text.match(/[^.!?\u0964\n]+[.!?\u0964]?/g) || [text];
     parts.forEach(p => { const u = new SpeechSynthesisUtterance(p.trim()); const v = voices[+sel.value]; if (v) { u.voice = v; u.lang = v.lang; } u.rate = +$('#vRate', mount).value; u.pitch = +$('#vPitch', mount).value; speechSynthesis.speak(u); });
     use(ctx);
   }

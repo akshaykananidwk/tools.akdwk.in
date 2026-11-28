@@ -38,7 +38,7 @@ function admin_head(string $title): void {
     $current = basename($_SERVER['SCRIPT_NAME'] ?? 'index.php');
     $siteName = brand_name();
     ?><!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en-IN" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

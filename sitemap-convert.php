@@ -4,7 +4,6 @@
  * Lists only pages meant for Google: every unit pair page, number pages of popular pairs
  * (1–100, 150, 200, 250, 500, 1000) and pages listed in Admin → SEO. Other number pages
  * still work for visitors but carry noindex, so they are left out here.
- * ?ln=gu / ?ln=hi → the Gujarati / Hindi converter pages (/gu/convert/…, /hi/convert/…).
  */
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/convert_content.php';
@@ -18,13 +17,7 @@ $all = gen_sitemap_convert_urls();
 if ($onlyCat !== '') $all = array_values(array_filter($all, fn($u) => (gen_parse_slug($u[0])['cat'] ?? '') === $onlyCat));
 $urls = array_slice($all, ($page - 1) * $perFile, $perFile);
 $lastmod = gen_convert_lastmod();
-$ln = in_array($_GET['ln'] ?? '', ['gu', 'hi'], true) ? $_GET['ln'] : '';
-if ($ln !== '') {
-    require_once __DIR__ . '/includes/local_units.php';
-    $lastmod = date('Y-m-d', max((int) strtotime($lastmod), (int) @filemtime(__DIR__ . '/includes/convert_local_content.php'), (int) @filemtime(__DIR__ . '/includes/local_units_info.php')));
-    $urls = array_map(fn($s) => [$s, gen_parse_slug($s)['value'] === null ? '0.8' : '0.6'], gen_local_slugs());
-}
-$prefix = $ln !== '' ? "/$ln/convert/" : '/convert/';
+$prefix = '/convert/';
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";

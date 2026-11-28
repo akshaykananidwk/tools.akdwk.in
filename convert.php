@@ -7,7 +7,6 @@
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/generated_tools.php';
 require_once __DIR__ . '/includes/convert_content.php';
-require_once __DIR__ . '/includes/local_units.php';
 require_once __DIR__ . '/includes/convert_widget.php';
 require_once __DIR__ . '/includes/convert_india_en.php';
 
@@ -76,7 +75,8 @@ $faq = $C['faq'];
 // Indian units: practical questions, Hinglish search forms and the size-by-region table.
 $have = array_flip(array_map(fn($qa) => $qa[0], $faq));
 foreach (gen_en_india_faq($from, $to) as $qa) if (!isset($have[$qa[0]])) $faq[] = $qa;
-$hinglish = gen_en_hinglish($from, $to, $value);
+// One Hinglish question in Latin script, the way people type it ("30 quintal kitna kg hota hai?").
+if ($hq = gen_en_hinglish_faq($cat, $from, $to, $value)) $faq[] = $hq;
 $regionRows = [];
 foreach (array_unique([$from, $to]) as $u) if ($rr = gen_en_region_rows($u)) $regionRows[$u] = $rr;
 
@@ -101,15 +101,12 @@ $unitsJson = [];
 foreach ($catMeta['units'] as $k => $u) $unitsJson[$k] = ['f' => $u[0], 'n' => $u[1], 's' => $u[2]];
 
 $page_canonical = SITE_URL . '/convert/' . $parsed['canonical_slug'];
-// Gujarati / Hindi versions (only for indexable pages that have one).
-if ($indexable) $page_alternates = gen_alternates($parsed['canonical_slug']);
 // Region-dependent units: say which value the page uses.
 $regionNotes = [];
 foreach (array_unique([$from, $to]) as $u) {
     $d = gen_region_default($u);
-    if ($d && count(gen_regions()[$u]['list']) > 1) $regionNotes[] = kt_region_note($u, $cat, 'en', fn($k) => $k === $u ? gen_unit_label($cat, $u)['name'] : gen_unit_label($cat, $k)['symbol']) . ' The size of this unit changes by region — pick yours in the converter below.';
-    elseif ($d) $regionNotes[] = 'This page uses the ' . gen_regions()[$u]['list'][gen_regions()[$u]['default']]['en'] . ' value: 1 ' . gen_unit_label($cat, $u)['name'] . ' = ' . gen_fmt($d['f']) . ' kg.';
-    elseif (isset(gen_fixed_regional_notes()[$u])) $regionNotes[] = gen_fixed_regional_notes()[$u]['en'];
+    if ($d) $regionNotes[] = kt_region_note($u, $cat) . ' ' . (gen_region_extra($u) !== '' ? gen_region_extra($u) . ' ' : '') . 'The size of this unit changes by region — pick yours in the converter below.';
+    elseif (isset(gen_fixed_regional_notes()[$u])) $regionNotes[] = gen_fixed_regional_notes()[$u];
 }
 require __DIR__ . '/includes/header.php';
 ?>
@@ -130,7 +127,6 @@ require __DIR__ . '/includes/header.php';
       </div>
       <?php foreach ($regionNotes as $rn): ?><p class="mt-3 text-sm p-2 rounded-lg" style="background:rgba(245,158,11,.10)">📍 <?= e($rn) ?></p><?php endforeach; ?>
     </div>
-    <?= kt_lang_switch($parsed['canonical_slug'], 'en') ?>
 
     <?php
     // Nearby numbers (29, 31, 35, 40 for 30) and the same amount in this unit's other usual partners — only pages Google indexes.
@@ -162,8 +158,7 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <!-- Live converter -->
-    <?php $__names = []; $__sym = []; foreach ($catMeta['units'] as $k => $u) { $__names[$k] = $u[1]; $__sym[$k] = $u[2]; }
-    kt_convert_widget(['cat' => $cat, 'from' => $from, 'to' => $to, 'val' => $defaultVal, 'lang' => 'en', 'names' => $__names, 'sym' => $__sym]); ?>
+    <?php kt_convert_widget(['cat' => $cat, 'from' => $from, 'to' => $to, 'val' => $defaultVal]); ?>
 
     <!-- Guide: formula, examples, units, usage, reverse -->
     <article class="kt-card p-5 mb-6 leading-relaxed space-y-4 conv-guide">
@@ -208,7 +203,6 @@ require __DIR__ . '/includes/header.php';
         </div>
       </section>
       <section>
-        <?php if ($hinglish): ?><p class="mb-2 text-sm opacity-80">Also searched as “<?= e($hinglish[0]) ?>”, “<?= e($hinglish[1]) ?>” or “<?= e($hinglish[2]) ?>” — the answer is the same: <b><?= e($C['answer']) ?></b>.</p><?php endif; ?>
         <h2 class="section-title text-xl mb-2">Good to know</h2>
         <?php if ($C['compare']): ?><p><?= e($C['compare']) ?></p><?php endif; ?>
         <p class="<?= $C['compare'] ? 'mt-2' : '' ?>"><?= e($C['tip']) ?></p>

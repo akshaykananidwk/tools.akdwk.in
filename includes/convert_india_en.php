@@ -6,7 +6,6 @@
  * the Hinglish ways people type the question, and practical market / land questions.
  */
 require_once __DIR__ . '/regional_units.php';
-require_once __DIR__ . '/local_units.php';
 
 /** Units searched in Hinglish ("1 quintal kitna kg hota hai"). */
 function gen_india_units(): array {
@@ -17,13 +16,20 @@ function gen_is_india_pair(string $from, string $to): bool {
     return in_array($from, gen_india_units(), true) || in_array($to, gen_india_units(), true);
 }
 
-/** Hinglish search forms for an Indian pair: ["30 quintal kitna kg hota hai", "30 quintal me kitne kilo"]. */
-function gen_en_hinglish(string $from, string $to, ?float $value): array {
-    if (!gen_is_india_pair($from, $to)) return [];
-    $n = $value !== null ? gen_plain($value) : '1';
-    $f = gen_lname($from, 'en'); $t = gen_lname($to, 'en');
-    $tShort = ['kilo' => 'kg', 'sq ft' => 'square feet', 'gaj' => 'gaj'][$t] ?? $t;
-    return ["$n $f kitna $tShort hota hai", "$n $f me kitne $t", "$n $f = kitne $t"];
+/** One FAQ entry in Hinglish (Latin script), e.g. ["30 quintal kitna kg hota hai?", "30 quintal = 3,000 kg."]. */
+function gen_en_hinglish_faq(string $cat, string $from, string $to, ?float $value): ?array {
+    if (!gen_is_india_pair($from, $to)) return null;
+    $w = ['quintal' => 'quintal', 'tola' => 'tola', 'maund' => 'man', 'ser' => 'ser', 'bigha' => 'bigha', 'guntha' => 'guntha', 'square-yard' => 'gaj',
+          'lakh' => 'lakh', 'crore' => 'crore', 'acre' => 'acre', 'hectare' => 'hectare', 'kilogram' => 'kg', 'gram' => 'gram', 'milligram' => 'mg',
+          'metric-ton' => 'ton', 'square-foot' => 'square feet', 'square-meter' => 'square meter', 'thousand' => 'hazar', 'million' => 'million', 'billion' => 'billion'];
+    if (!isset($w[$from], $w[$to])) return null;
+    $v = $value ?? 1.0;
+    $r = gen_convert($cat, $v, $from, $to);
+    $q = gen_plain($v) . " {$w[$from]} kitna {$w[$to]} hota hai?";
+    $a = gen_fmt($v) . ' ' . gen_title_unit($from, $cat, $v) . ' = ' . gen_fmt($r) . ' ' . gen_title_unit($to, $cat, $r) . '.';
+    $d = gen_region_default($from) ?? gen_region_default($to);
+    if ($d && count(gen_regions()[gen_region_default($from) ? $from : $to]['list']) > 1) $a .= " This uses the {$d['en']} value; choose another region in the converter for other sizes.";
+    return [$q, $a];
 }
 
 /** Size-by-region rows for a regional unit: [[region, value text, source]], or []. */
@@ -48,7 +54,7 @@ function gen_en_india_faq(string $from, string $to): array {
     $q = [
         'quintal' => ['If the mandi rate is per quintal, what is the price per kg?', 'Divide the quintal rate by 100. For example, cotton at ₹7,500 per quintal is ₹75 per kg, and wheat at ₹2,500 per quintal is ₹25 per kg. In Gujarat market yards, where prices are also said per maund of 20 kg, ₹7,500 per quintal is ₹1,500 per maund.'],
         'maund' => ['Why is the Gujarat maund 20 kg when the Indian maund is 37.32 kg?', 'The maund was never one fixed size across India. Gujarat market yards settled on 20 kg (1 man = 20 kilo) for groundnut, cotton, cumin and castor prices, while the 1956 Weights and Measures Act defined the standard Indian maund as 40 seer = 37.3242 kg, often rounded to 40 kg in the north. Always ask which maund a price refers to.'],
-        'ser' => ['Is 1 seer equal to 1 kg?', 'Not exactly. The standard Indian seer is 80 tola = 933.1 grams. After India moved to the metric system the kilogram replaced it, so many people now loosely use "seer" for 1 kg.'],
+        'ser' => ['Is 1 seer equal to 1 kg?', 'No. In Gujarat a seer is spoken of as 500 g, and the official Indian standard seer is 80 tola = 933.1 g. After India moved to the metric system the kilogram replaced it, so some people now loosely use "seer" for 1 kg.'],
         'bigha' => ['How many bigha make 1 acre?', 'In Gujarat, 1 acre = 2.5 vigha (bigha), because 1 vigha = 16 guntha and 1 acre = 40 guntha. In Rajasthan (pucca bigha), eastern UP and Bihar, 1 acre ≈ 1.6 bigha; in West Bengal and Assam 1 acre ≈ 3.03 bigha; in Himachal 1 acre = 5 bigha.'],
         'guntha' => ['How many guntha are in 1 acre and 1 vigha?', '1 acre = 40 guntha everywhere the guntha is used. In Gujarat 1 vigha = 16 guntha, so 1 acre = 2.5 vigha. One guntha is 1,089 sq ft (121 sq yd).'],
         'square-yard' => ['How many sq ft is a 100 gaj plot?', '1 gaj (square yard, called var in Gujarat) = 9 sq ft, so a 100 gaj plot is 900 sq ft, a 200 gaj plot is 1,800 sq ft and a 50 gaj plot is 450 sq ft.'],

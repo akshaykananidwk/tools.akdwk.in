@@ -39,7 +39,7 @@ $invoiceNo = 'AKC-' . str_pad((string) $pay['id'], 5, '0', STR_PAD_LEFT);
 $date = $pay['created_at'] ? date('d-m-Y', strtotime($pay['created_at'])) : date('d-m-Y');
 $desc = $plan ? loc($plan, 'name') . ' ' . ($en ? 'Plan' : 'પ્લાન') : ($en ? 'Subscription' : 'સબસ્ક્રિપ્શન');
 ?><!DOCTYPE html>
-<html lang="<?= e(current_lang()) ?>">
+<html lang="en-IN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

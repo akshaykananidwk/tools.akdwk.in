@@ -100,7 +100,7 @@ $popular = [
         if ($db && (int) $db['is_active'] === 0) continue;
         $prem = !kt_all_free() && ($t['premium'] || ($db && (int) $db['is_premium'] === 1)); ?>
         <a href="<?= SITE_URL ?>/tool/<?= e($t['slug']) ?>" class="kt-card tool-card p-4 block tool-item"
-           data-name="<?= e(strtolower($t['name_gu'] . ' ' . $t['name_en'] . ' ' . $t['slug'])) ?>">
+           data-name="<?= e(strtolower($t['name_en'] . ' ' . $t['slug'])) ?>">
           <div class="flex items-start justify-between">
             <div class="icon-wrap w-10 h-10 rounded-xl flex items-center justify-center">
               <i data-lucide="<?= e($t['icon']) ?>" class="w-5 h-5"></i></div>

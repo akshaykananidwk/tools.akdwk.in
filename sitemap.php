@@ -20,8 +20,6 @@ foreach (kt_categories() as $c) if (isset($toolCats[$c['slug']])) $maps[] = ["$b
 $convCats = [];
 foreach (gen_sitemap_convert_urls() as [$slug]) { $p = gen_parse_slug($slug); if ($p) $convCats[$p['cat']] = true; }
 foreach (array_keys(gen_unit_categories()) as $uc) if (isset($convCats[$uc])) $maps[] = ["$base/sitemap-convert.xml?cat=$uc", $convMod];
-// Gujarati and Hindi converter pages.
-foreach (['gu', 'hi'] as $ln) $maps[] = ["$base/sitemap-convert.xml?ln=$ln", $convMod];
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
