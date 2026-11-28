@@ -111,6 +111,28 @@ require __DIR__ . '/includes/header.php';
       </div>
     </div>
 
+    <?php
+    // Nearby numbers (29, 31, 35, 40 for 30) and the same amount in this unit's other usual partners — only pages Google indexes.
+    $near = []; $same = [];
+    if ($value !== null) {
+        foreach ([-1, 1, 5, 10, -5, 20] as $d) { $nv = $value + $d; if ($nv > 0 && gen_value_indexable($from, $to, $nv)) $near[] = $nv; }
+        $near = array_slice(array_values(array_unique($near)), 0, 5);
+        foreach (array_keys(gen_unit_categories()[$cat]['units']) as $u2) {
+            if ($u2 !== $from && $u2 !== $to && gen_value_indexable($from, $u2, (float) $value)) $same[] = $u2;
+        }
+        $same = array_slice($same, 0, 4);
+    }
+    if ($near || $same): ?>
+    <div class="flex flex-wrap items-center gap-1.5 text-xs mb-5 -mt-2">
+      <?php if ($near): ?><span class="opacity-60">Nearby:</span>
+        <?php foreach ($near as $nv): ?><a class="px-2 py-1 rounded-md border hover:border-[color:var(--gold)]" style="border-color:var(--border)" href="<?= SITE_URL ?>/convert/<?= e(gen_canonical_slug($nv, $from, $to)) ?>"><?= gen_plain($nv) ?> <?= e($C['fs']) ?> to <?= e($C['ts']) ?></a><?php endforeach; ?>
+      <?php endif; ?>
+      <?php if ($same): ?><span class="opacity-60 <?= $near ? 'ml-2' : '' ?>"><?= gen_plain($value) ?> <?= e($C['fs']) ?> in:</span>
+        <?php foreach ($same as $u2): ?><a class="px-2 py-1 rounded-md border hover:border-[color:var(--gold)]" style="border-color:var(--border)" href="<?= SITE_URL ?>/convert/<?= e(gen_canonical_slug((float) $value, $from, $u2)) ?>"><?= e(gen_short($u2, $cat)) ?></a><?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <!-- Live converter -->
     <div class="kt-card p-5 mb-6" id="genConvert"
          data-cat="<?= e($cat) ?>" data-special="<?= e($catMeta['special'] ?? '') ?>"

@@ -13,9 +13,7 @@ try { foreach (all("SELECT slug, is_active, is_premium, views FROM " . tbl('tool
 
 $en = current_lang() === 'en';
 $nTools = (int) (floor(count($tools) / 50) * 50); // "700+" style rounded count
-$page_title = $en
-    ? brand_name() . " — {$nTools}+ Free Online Tools in Gujarati & English"
-    : brand_name() . " — {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ ગુજરાતીમાં";
+$page_title = brand_name() . " — {$nTools}+ Free Online Tools & Unit Converters";
 $page_desc  = $en
     ? "Krishna Tools by AK Computer, Dwarka — {$nTools}+ free online tools for everyone: PDF & image, restaurant, hotel, salon, doctor, contractor, electrician, printing, student, farmer, finance, birthday wishes and more. No login, works in your browser."
     : "AK Computer, દ્વારકા દ્વારા {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ — PDF, ઇમેજ, રેસ્ટોરન્ટ, હોટલ, સલૂન, ડૉક્ટર, કોન્ટ્રાક્ટર, ઇલેક્ટ્રિશિયન, વિદ્યાર્થી, ખેડૂત, શુભેચ્છા અને ઘણું બધું. લોગિન વગર, સંપૂર્ણ ફ્રી.";
@@ -37,6 +35,38 @@ require __DIR__ . '/includes/header.php';
     <span>✅ <?= count($tools) ?>+ <?= t('all_tools') ?></span>
     <span>🔒 <?= T_bilingual('બ્રાઉઝરમાં સુરક્ષિત', 'Secure in browser') ?></span>
     <span>🆓 <?= T_bilingual('100% ફ્રી, લોગિન વગર', '100% free, no login') ?></span>
+  </div>
+</section>
+
+<!-- This device's favourites + recently used tools (filled by app.js, hidden when empty) -->
+<section id="ktMine" class="hidden mt-8"></section>
+
+<!-- Most popular: what people search for most (converters + tools), linked from the home page so Google sees them as important -->
+<?php
+$popular = [
+    ['/convert/quintal-to-kilogram', 'arrow-right-left', 'Quintal to Kg', '1 qtl = 100 kg'],
+    ['/convert/kilogram-to-quintal', 'arrow-right-left', 'Kg to Quintal', '100 kg = 1 qtl'],
+    ['/convert/tola-to-gram', 'gem', 'Tola to Gram', '1 tola = 11.66 g'],
+    ['/convert/megabit-per-second-to-megabyte-per-second', 'wifi', 'Mbps to MB/s', 'Internet speed'],
+    ['/tool/cctv-quotation', 'cctv', 'CCTV Quotation', 'PDF in 1 minute'],
+    ['/tool/pdf-merge', 'combine', 'Merge PDF', 'Join PDF files'],
+    ['/tool/bmi-calculator', 'scale', 'BMI Calculator', 'Asian Indian cut-offs'],
+    ['/tool/age-calculator', 'cake', 'Age Calculator', 'Exact years, months, days'],
+    ['/tool/govt-job-age-limit-calculator', 'user-check', 'Age for Govt Jobs', 'UPSC, GPSC, SSC'],
+    ['/tool/internet-speed-test', 'gauge', 'Speed Test', 'Check your net speed'],
+    ['/tool/income-tax-calculator', 'landmark', 'Income Tax 2026-27', 'New vs old regime'],
+    ['/tool/image-to-text-converter', 'scan-text', 'Image to Text', 'Gujarati, Hindi, English'],
+];
+?>
+<section class="mt-8" aria-labelledby="popularTitle">
+  <h2 id="popularTitle" class="section-title text-xl mb-3">🔥 Most Popular</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+    <?php foreach ($popular as [$href, $icon, $label, $sub]): ?>
+      <a href="<?= SITE_URL . $href ?>" class="kt-card p-3 flex items-center gap-2 hover:border-[color:var(--gold)]">
+        <i data-lucide="<?= e($icon) ?>" class="w-5 h-5 shrink-0" style="color:var(--peacock-teal)"></i>
+        <span class="min-w-0"><span class="block text-sm font-bold leading-tight"><?= e($label) ?></span><span class="block text-[11px] opacity-60 truncate"><?= e($sub) ?></span></span>
+      </a>
+    <?php endforeach; ?>
   </div>
 </section>
 

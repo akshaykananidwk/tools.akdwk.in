@@ -34,7 +34,7 @@ function gen_unit_categories(): array {
             'metric-ton' => [1000, 'Metric Ton', 't'], 'pound' => [0.45359237, 'Pound', 'lb'],
             'ounce' => [0.0283495231, 'Ounce', 'oz'], 'stone' => [6.35029318, 'Stone', 'st'],
             'quintal' => [100, 'Quintal', 'q'], 'carat' => [0.0002, 'Carat', 'ct'],
-            'tola' => [0.01166, 'Tola', 'tola'], 'us-ton' => [907.18474, 'US Ton', 'ton'],
+            'tola' => [0.0116638, 'Tola', 'tola'], 'us-ton' => [907.18474, 'US Ton', 'ton'],
             'grain' => [6.479891e-5, 'Grain', 'gr'],
         ]],
         'temperature' => ['name' => 'Temperature', 'icon' => 'thermometer', 'base' => 'celsius', 'special' => 'temp', 'units' => [

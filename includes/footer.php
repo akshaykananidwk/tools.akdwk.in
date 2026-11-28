@@ -59,6 +59,7 @@ $waShop = normalize_phone(setting('shop_whatsapp', setting('wa_sender', '9199781
   <a href="<?= SITE_URL ?>/<?= is_logged_in() ? 'dashboard.php' : 'login.php' ?>"><i data-lucide="user" class="w-5 h-5"></i><?= is_logged_in() ? t('dashboard') : t('login') ?></a>
 </nav>
 
+<button type="button" data-install class="hidden fixed bottom-20 md:bottom-6 left-4 z-40 btn btn-primary text-sm shadow-lg">📲 Add to Home Screen</button>
 <div id="ktToast" class="kt-toast"></div>
 <script src="<?= SITE_URL ?>/assets/js/app.js?v=<?= asset_ver() ?>" defer></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{if(window.lucide)lucide.createIcons();});</script>

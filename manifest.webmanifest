@@ -1,0 +1,24 @@
+{
+  "name": "Krishna Tools — Free Online Tools & Converters",
+  "short_name": "Krishna Tools",
+  "description": "850+ free online tools and unit converters: PDF, image, GST, income tax, CCTV, quintal to kg and more. Works on any phone.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFBEB",
+  "theme_color": "#1E3A8A",
+  "lang": "en-IN",
+  "categories": ["utilities", "productivity", "business", "education"],
+  "icons": [
+    { "src": "/assets/img/logo/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/logo/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/logo/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Quintal to Kg", "url": "/convert/quintal-to-kilogram?source=pwa" },
+    { "name": "Merge PDF", "url": "/tool/pdf-merge?source=pwa" },
+    { "name": "GST Calculator", "url": "/tool/gst-calculator?source=pwa" },
+    { "name": "CCTV Quotation", "url": "/tool/cctv-quotation?source=pwa" }
+  ]
+}

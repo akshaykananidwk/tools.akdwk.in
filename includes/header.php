@@ -57,6 +57,11 @@ $siteName = brand_name();
 <meta name="twitter:image" content="<?= e($og) ?>">
 <meta name="theme-color" content="#1E3A8A">
 <link rel="icon" href="<?= SITE_URL ?>/assets/img/logo/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="<?= SITE_URL ?>/manifest.webmanifest">
+<link rel="apple-touch-icon" href="<?= SITE_URL ?>/assets/img/logo/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Krishna Tools">
 <!-- Self-hosted fonts (no third-party request). Loaded after the first paint: text shows at once in a
      system font and swaps to Inter / Baloo Bhai 2 when the files arrive (font-display: swap). -->
 <link rel="preload" as="style" href="<?= SITE_URL ?>/assets/fonts/fonts.css?v=<?= asset_ver() ?>" onload="this.onload=null;this.rel='stylesheet'">
@@ -140,6 +145,7 @@ if (!empty($breadcrumb) && !str_contains((string) ($extra_head ?? ''), 'Breadcru
     </div>
 
     <nav class="flex items-center gap-1 md:gap-2">
+      <button id="mobileSearchBtn" class="btn btn-ghost !px-2 md:hidden" title="Search tools and converters" aria-label="Search"><i data-lucide="search" class="w-4 h-4"></i></button>
       <a href="<?= SITE_URL ?>/converters.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= current_lang() === 'en' ? 'Converters' : 'કન્વર્ટર' ?></a>
       <?php if (!kt_all_free()): ?><a href="<?= SITE_URL ?>/pricing.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= t('pricing') ?></a><?php endif; ?>
       <button onclick="ktToggleTheme()" class="btn btn-ghost !px-2" title="Theme" aria-label="Theme">
@@ -155,6 +161,12 @@ if (!empty($breadcrumb) && !str_contains((string) ($extra_head ?? ''), 'Breadcru
     </nav>
   </div>
 </header>
+<!-- Mobile search (header icon toggles it): tools + converters, suggestions while typing -->
+<div id="mobileSearchBar" class="hidden md:hidden max-w-7xl mx-auto px-4 pt-3 relative">
+  <input id="mobileSearch" type="search" placeholder="Search tools or type “30 qtl to kg”" class="kt-input pl-10" autocomplete="off" enterkeyhint="go">
+  <i data-lucide="search" class="w-4 h-4 absolute left-7 top-[1.6rem] opacity-60"></i>
+  <div id="mobileResults" class="absolute left-4 right-4 top-16 kt-card p-2 hidden max-h-96 overflow-auto z-50"></div>
+</div>
 
 <?php if (!empty($breadcrumb)): ?>
 <nav class="max-w-7xl mx-auto px-4 py-2 text-xs opacity-70 flex items-center gap-2 flex-wrap">

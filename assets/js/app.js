@@ -1074,29 +1074,63 @@ async function ensureIndex() {
   catch (e) { toolIndex = []; }
   return toolIndex;
 }
+let convIndex = null;
+async function ensureConvIndex() {
+  if (convIndex) return convIndex;
+  try { convIndex = await (await fetch(KT.url + '/api/convert_index.php')).json(); }
+  catch (e) { convIndex = { p: [], u: {} }; }
+  return convIndex;
+}
 function wireSearch() {
   wireSearchBox($('#globalSearch'), $('#searchResults'));
   wireSearchBox($('#heroSearch'), $('#heroResults'));
+  wireSearchBox($('#mobileSearch'), $('#mobileResults'));
+  const btn = $('#mobileSearchBtn'), bar = $('#mobileSearchBar');
+  if (btn && bar) btn.addEventListener('click', () => { bar.classList.toggle('hidden'); if (!bar.classList.contains('hidden')) $('#mobileSearch').focus(); });
+}
+/* "30 qtl to kg", "500 hours in days", "quintal to kg" → the converter page (unit words come from the server). */
+function parseConversion(term, ci) {
+  const m = /^\s*(\d+(?:[.,]\d+)?)?\s*([a-z°/²³µ .\-]+?)\s+(?:to|in|into|=|>|→)\s+([a-z°/²³µ .\-]+?)\s*\??\s*$/i.exec(term);
+  if (!m) return null;
+  const unit = w => { w = w.trim().toLowerCase().replace(/\s+/g, ' '); return ci.u[w] || ci.u[w.replace(/s$/, '')] || ci.u[w.replace(/es$/, '')] || null; };
+  const f = unit(m[2]), t = unit(m[3]);
+  if (!f || !t || f === t) return null;
+  const pair = ci.p.find(x => x[0] === f + '-to-' + t);
+  if (!pair) return null;
+  const num = m[1] ? m[1].replace(',', '.') : '';
+  return { slug: (num ? num + '-' : '') + pair[0], label: (num ? num + ' ' : '') + pair[2], name: pair[1] };
 }
 function wireSearchBox(inp, box) {
   if (!inp || !box) return;
   let tmr;
+  const go = () => { const a = box.querySelector('a'); if (a) location.href = a.href; };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
   inp.addEventListener('input', () => {
     clearTimeout(tmr);
     tmr = setTimeout(async () => {
       const term = inp.value.trim().toLowerCase();
       if (!term) { box.classList.add('hidden'); return; }
-      const idx = await ensureIndex();
+      const [idx, ci] = await Promise.all([ensureIndex(), ensureConvIndex()]);
       // All typed words must match the name or the tool's search phrases; name matches first.
       const words = term.split(/\s+/).filter(w => w.length > 1);
-      const hits = idx.map(t => {
-        const name = (t.name_gu + ' ' + t.name_en + ' ' + t.slug.replace(/-/g, ' ')).toLowerCase(), hay = name + ' ' + (t.k || '');
-        let s = 0; for (const w of (words.length ? words : [term])) { if (!hay.includes(w)) return null; s += name.includes(w) ? 3 : 1; }
-        return [s, t];
-      }).filter(Boolean).sort((a, b) => b[0] - a[0]).slice(0, 10).map(x => x[1]);
-      box.innerHTML = hits.length ? hits.map(h => `<a href="${KT.url}/tool/${h.slug}" class="flex items-center gap-2 p-2 rounded-lg hover:bg-[color:var(--gold)]/10">
-        <i data-lucide="${h.icon}" class="w-4 h-4 opacity-70"></i><span class="text-sm">${GU ? h.name_gu : h.name_en}</span></a>`).join('')
-        : `<div class="p-2 text-sm opacity-60">${T('કંઈ મળ્યું નહીં', 'No results')}</div>`;
+      const score = (name, hay) => { let s = 0; for (const w of (words.length ? words : [term])) { if (!hay.includes(w)) return -1; s += name.includes(w) ? 3 : 1; } return s; };
+      const tools = idx.map(t => {
+        const name = (t.name_gu + ' ' + t.name_en + ' ' + t.slug.replace(/-/g, ' ')).toLowerCase();
+        const s = score(name, name + ' ' + (t.k || '')); return s > 0 ? [s, t] : null;
+      }).filter(Boolean).sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
+      const direct = parseConversion(term, ci);
+      const convs = ci.p.map(c => { const name = (c[1] + ' ' + c[2]).toLowerCase(); let s = score(name, name + ' ' + c[0].replace(/-/g, ' '));
+          if (s > 0 && (name.startsWith(term) || c[2].toLowerCase().startsWith(term))) s += 5;   // "tola" → Tola to Gram before Gram to Tola
+          if (s > 0 && /kilogram|gram|meter|foot|inch|mile|hour|day|liter|megabyte|celsius|fahrenheit|acre|square-foot/.test(c[0])) s += 1;   // everyday partners first
+          return s > 0 ? [s, c] : null; })
+        .filter(Boolean).sort((a, b) => b[0] - a[0]).map(x => x[1]).filter(c => !direct || c[0] !== direct.slug).slice(0, tools.length ? 3 : 6);
+      const row = (href, icon, text, sub) => `<a href="${href}" class="flex items-center gap-2 p-2 rounded-lg hover:bg-[color:var(--gold)]/10"><i data-lucide="${icon}" class="w-4 h-4 opacity-70 shrink-0"></i><span class="text-sm">${text}${sub ? ` <span class="opacity-50 text-xs">${sub}</span>` : ''}</span></a>`;
+      const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      let html = '';
+      if (direct) html += row(`${KT.url}/convert/${direct.slug}`, 'arrow-right-left', `<b>${esc(direct.label)}</b>`, esc(direct.name) + ' →');
+      html += tools.map(h => row(`${KT.url}/tool/${h.slug}`, h.icon, esc(GU ? h.name_gu : h.name_en))).join('');
+      if (convs.length) html += `<div class="text-[11px] uppercase tracking-wide opacity-50 px-2 pt-2">Converters</div>` + convs.map(c => row(`${KT.url}/convert/${c[0]}`, 'arrow-right-left', esc(c[1]), esc(c[2]))).join('');
+      box.innerHTML = html || `<div class="p-2 text-sm opacity-60">${T('કંઈ મળ્યું નહીં', 'No results')} — <a class="underline" href="${KT.url}/search.php?q=${encodeURIComponent(term)}">search all</a></div>`;
       box.classList.remove('hidden'); if (window.lucide) lucide.createIcons();
     }, 150);
   });
@@ -1118,10 +1152,68 @@ function festivalParticles() {
 }
 
 /* ---------- Boot ---------- */
+/* ================================================================
+   Recent + favourite tools (this device only) and "Add to Home Screen"
+   ================================================================ */
+const MINE = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch (e) { return []; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v.slice(0, 12))); } catch (e) {} },
+};
+function pageItem() {
+  const h1 = document.querySelector('h1'); const m = document.getElementById('toolMount');
+  const conv = location.pathname.startsWith(KT.url.replace(/^https?:\/\/[^/]+/, '') + '/convert/') || /\/convert\//.test(location.pathname);
+  if (!h1 || (!m && !conv)) return null;
+  return { u: location.pathname, n: h1.textContent.trim().replace(/\s+/g, ' ').slice(0, 70), i: m ? (document.querySelector('.tool-card .icon-wrap i, .tool-card .icon-wrap svg')?.getAttribute('data-lucide') || 'wrench') : 'arrow-right-left' };
+}
+function trackRecent() {
+  const it = pageItem(); if (!it) return;
+  MINE.set('kt-recent', [it].concat(MINE.get('kt-recent').filter(x => x.u !== it.u)));
+  // Favourite star next to the page title.
+  const h1 = document.querySelector('h1');
+  const star = document.createElement('button');
+  star.type = 'button'; star.className = 'ml-2 align-middle text-2xl leading-none'; star.setAttribute('aria-label', 'Add to favourites');
+  const paint = () => { const on = MINE.get('kt-fav').some(x => x.u === it.u); star.textContent = on ? '★' : '☆'; star.title = on ? 'Remove from favourites' : 'Add to favourites'; star.style.color = on ? '#F59E0B' : 'currentColor'; };
+  star.onclick = () => { const f = MINE.get('kt-fav'); const on = f.some(x => x.u === it.u); MINE.set('kt-fav', on ? f.filter(x => x.u !== it.u) : [it].concat(f)); paint(); toast(on ? 'Removed from favourites' : '⭐ Saved to favourites — find it on the home page'); };
+  // Next to the title, not inside the <h1>, so the heading text Google reads stays clean.
+  star.className = 'mr-1 align-middle text-xl leading-none';
+  paint(); const sub = h1.nextElementSibling; if (sub && sub.tagName === 'P') sub.prepend(star); else h1.insertAdjacentElement('afterend', star);
+}
+function showMine() {
+  const box = document.getElementById('ktMine'); if (!box) return;
+  const fav = MINE.get('kt-fav'), rec = MINE.get('kt-recent').filter(x => !fav.some(f => f.u === x.u)).slice(0, 8);
+  if (!fav.length && !rec.length) return;
+  const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const chips = (list, icon) => list.map(x => `<a href="${esc(x.u)}" class="kt-card px-3 py-2 text-sm flex items-center gap-2 hover:border-[color:var(--gold)]"><span>${icon}</span><span class="truncate max-w-[14rem]">${esc(x.n)}</span></a>`).join('');
+  box.innerHTML = (fav.length ? `<h2 class="section-title text-lg mb-2">⭐ Your favourites</h2><div class="flex flex-wrap gap-2 mb-4">${chips(fav, '★')}</div>` : '')
+    + (rec.length ? `<h2 class="section-title text-lg mb-2">🕘 Recently used</h2><div class="flex flex-wrap gap-2">${chips(rec, '↺')}</div>` : '');
+  box.classList.remove('hidden');
+}
+let installEvt = null;
+function wireInstall() {
+  const btns = document.querySelectorAll('[data-install]');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) return;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; btns.forEach(b => b.classList.remove('hidden')); });
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios/i.test(navigator.userAgent);
+  if (ios) btns.forEach(b => b.classList.remove('hidden'));
+  btns.forEach(b => b.addEventListener('click', async () => {
+    if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; if (r.outcome === 'accepted') btns.forEach(x => x.classList.add('hidden')); }
+    else if (ios) toast('On iPhone: tap the Share button, then “Add to Home Screen”.');
+  }));
+}
+function registerSW() {
+  if (!('serviceWorker' in navigator) || !/^https:|^http:\/\/localhost/.test(location.href)) return;
+  window.addEventListener('load', () => navigator.serviceWorker.register((KT.url.replace(/^https?:\/\/[^/]+/, '') || '') + '/akdwk-sw.js').catch(() => {}));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   mountTool();
   wireSearch();
   startTracking();
   festivalParticles();
+  trackRecent();
+  showMine();
+  wireInstall();
 });
+registerSW();
 })();

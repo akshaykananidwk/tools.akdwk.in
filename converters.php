@@ -15,6 +15,17 @@ require __DIR__ . '/includes/header.php';
   <p class="opacity-70 mt-2"><?= number_format($counts['total']) ?>+ free instant conversions across <?= count(gen_unit_categories()) ?> categories</p>
 </div>
 
+<!-- Hub guide (300+ words): what is here, Indian units, how the pages work -->
+<article class="kt-card p-5 md:p-6 mb-8 leading-relaxed space-y-3">
+  <h2 class="section-title text-xl">Free unit converters for every day</h2>
+  <p>Every converter on Krishna Tools gives the answer first, in large type, and then shows how it is worked out: the formula, three solved examples, a table of 30–40 common values and short answers to the questions people ask most. You can type any number into the live converter, swap the units, copy the result or share it on WhatsApp. Everything runs in your browser, so it is instant and works even on slow mobile data. Each page also links to the reverse conversion and to nearby amounts, so checking a second value takes one tap.</p>
+  <h3 class="font-bold">Indian units, done properly</h3>
+  <p>Besides metric and imperial units, the converters cover the units used in Indian markets and land records: <a class="underline" href="<?= SITE_URL ?>/convert/quintal-to-kilogram">quintal to kg</a> for APMC mandi and MSP rates, <a class="underline" href="<?= SITE_URL ?>/convert/tola-to-gram">tola to gram</a> for gold, <a class="underline" href="<?= SITE_URL ?>/convert/bigha-to-guntha">vigha (bigha) to guntha</a>, <a class="underline" href="<?= SITE_URL ?>/convert/acre-to-guntha">acre to guntha</a> and <a class="underline" href="<?= SITE_URL ?>/convert/square-yard-to-square-foot">gaj (square yard) to sq ft</a> for land, and <a class="underline" href="<?= SITE_URL ?>/convert/megabit-per-second-to-megabyte-per-second">Mbps to MB/s</a> for internet speed. Land units such as the bigha differ between states; the page explains which size is used.</p>
+  <h3 class="font-bold">Searching for a number?</h3>
+  <p>Popular conversions have their own pages for common amounts, such as <a class="underline" href="<?= SITE_URL ?>/convert/30-quintal-to-kilogram">30 quintal to kg</a>, <a class="underline" href="<?= SITE_URL ?>/convert/100-milligram-to-gram">100 mg to g</a>, <a class="underline" href="<?= SITE_URL ?>/convert/500-kilogram-to-pound">500 kg to lbs</a> or <a class="underline" href="<?= SITE_URL ?>/convert/500-hour-to-day">500 hours to days</a>. The quickest way is the search box at the top: type the whole question, like “15 qtl in kg” or “100 mm to cm”, and press Enter to open the answer directly.</p>
+  <p>Below you will find every category — length, weight, temperature, area, volume, speed, time, digital storage, data rate, pressure, energy, power, angle, frequency and fuel economy — with the main conversions of each unit. For calculators that need more than a conversion (GST, EMI, income tax, CCTV storage and more) see the <a class="underline" href="<?= SITE_URL ?>/">full list of tools</a>.</p>
+</article>
+
 <?php foreach (gen_unit_categories() as $catKey => $cat):
     $units = array_keys($cat['units']); ?>
   <section id="<?= e($catKey) ?>" class="mb-8">
