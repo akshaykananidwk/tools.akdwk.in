@@ -44,8 +44,7 @@ function admin_head(string $title): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> — <?= e($siteName) ?> Admin</title>
 <meta name="robots" content="noindex,nofollow">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="<?= SITE_URL ?>/assets/fonts/fonts.css?v=<?= asset_ver() ?>">
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css">
 <!-- Tailwind utilities after krishna.css, the same order the old CDN script used -->
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/tailwind.css?v=<?= asset_ver() ?>">

@@ -26,6 +26,7 @@ function gen_plural(string $name): string {
         'cubic inch' => 'cubic inches', 'celsius' => 'degrees Celsius', 'fahrenheit' => 'degrees Fahrenheit', 'kelvin' => 'kelvin', 'rankine' => 'degrees Rankine',
         'mach' => 'Mach', 'psi' => 'psi', 'mmhg' => 'mmHg', 'torr' => 'torr', 'rpm' => 'rpm', 'hertz' => 'hertz', 'btu' => 'BTU', 'century' => 'centuries'];
     if (isset($irregular[$n])) return $irregular[$n];
+    if (preg_match('/^(us|uk) (.+)$/', $n, $m)) return strtoupper($m[1]) . ' ' . gen_plural($m[2]);
     if (preg_match('/^(.+?) per (.+)$/', $n, $m)) return gen_plural($m[1]) . ' per ' . $m[2];   // "megabits per second"
     if (str_contains($n, '/') || str_contains($n, '(')) return $n;
     if (preg_match('/(s|x|ch|sh)$/', $n)) return $n . 'es';
@@ -262,7 +263,10 @@ function gen_page_content(array $p): array {
 
     // ---- FAQ (6–8, specific to this page) ----
     $faq = [];
-    $faq[] = ["How many $tP are in 1 $fN?", "1 $fN = " . gen_n($one) . " $tP (1 $fs = " . gen_n($one) . " $ts)."];
+    // The question form people type: "How many days is 500 hours?"
+    $howQ = gen_how_many($p, ['fN' => $fN, 'fP' => $fP]);
+    if ($value !== null) $faq[] = [$howQ, ucfirst("$vs " . (abs($v - 1) < 1e-12 ? strtolower($fN) : $fP) . " is $rs " . (abs($r - 1) < 1e-12 ? strtolower($tN) : $tP) . '.')];
+    $faq[] = [$value === null && gen_is_word_unit($to) ? $howQ : "How many $tP are in 1 $fN?", "1 $fN = " . gen_n($one) . " $tP (1 $fs = " . gen_n($one) . " $ts)."];
     $faq[] = ["How do I convert $fs to $ts?", strip_tags($formula)];
     if ($value !== null) $faq[] = ["What is $vs $fs in $ts?", "$vs $fN = $rs $tN."];
     $faq[] = ["How many $fP make 1 $tN?", "1 $tN = " . gen_n($back) . " $fP."];
@@ -273,6 +277,8 @@ function gen_page_content(array $p): array {
     if (!empty($fi['faq'])) $faq[] = $fi['faq'];
     elseif (!empty($ti['faq'])) $faq[] = $ti['faq'];
     $faq[] = ["What is $fN used for?", ucfirst($fN) . ' is used in ' . $fi['use'] . '.'];
+    // Drop the plain "What is 500 h in day?" twin when the "How many days is 500 hours?" form is already there.
+    if ($value !== null) $faq = array_values(array_filter($faq, fn($q) => $q[0] !== "What is $vs $fs in $ts?"));
     $faq = array_slice($faq, 0, 8);
 
     // ---- Quick answers (long-tail: "5 qtl in kg", "10 mg to g") ----
@@ -323,11 +329,75 @@ function gen_title_name(string $unit, string $cat): string {
     return gen_unit_label($cat, $unit)['name'];
 }
 
+/** Units people search by their full word, not a short form ("500 hours to days", "cm to feet"). */
+function gen_is_word_unit(string $unit): bool {
+    static $w = null;
+    $w ??= array_fill_keys(['second', 'minute', 'hour', 'day', 'week', 'month', 'year', 'decade',
+        'mile', 'foot', 'yard', 'inch', 'nautical-mile', 'furlong', 'light-year', 'acre', 'hectare', 'bigha', 'guntha',
+        'cup', 'quart', 'pint', 'gallon-us', 'gallon-uk', 'tablespoon', 'teaspoon', 'fluid-ounce', 'barrel',
+        'stone', 'carat', 'tola', 'knot', 'degree', 'radian', 'revolution', 'arcminute', 'arcsecond', 'gradian'], true);
+    return isset($w[$unit]);
+}
+
+/** "Hour" / "Hours" / "Feet": capitalised, singular only for exactly 1. */
+function gen_word_name(string $unit, string $cat, float $count): string {
+    $name = gen_unit_label($cat, $unit)['name'];
+    $w = ucwords(abs($count - 1) < 1e-12 ? strtolower($name) : gen_plural($name));
+    return preg_replace(['/\bUs\b/', '/\bUk\b/', '/\bBtu\b/', '/\bMmhg\b/', '/\bPsi\b/'], ['US', 'UK', 'BTU', 'mmHg', 'PSI'], $w);
+}
+
+/** Title number: 2 decimals (20.83), more digits only for tiny values (0.000417). */
+function gen_title_num(float $n): string {
+    $a = abs($n);
+    if ($a == 0) return '0';
+    if ($a >= 0.01) return rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+    if ($a < 1e-6) return gen_fmt($n);
+    return rtrim(rtrim(number_format($n, (int) max(2, 2 - floor(log10($a))), '.', ''), '0'), '.');
+}
+
+/** True when at least one side of the pair is a word unit: titles then use plural words. */
+function gen_word_pair(string $from, string $to): bool {
+    return gen_is_word_unit($from) || gen_is_word_unit($to);
+}
+
+/** How a unit is written in a title/H1 for a given amount: word units as "Hours", others as Kg, Mbps, Quintal… */
+function gen_title_unit(string $unit, string $cat, float $count): string {
+    if (gen_is_word_unit($unit)) return gen_word_name($unit, $cat, $count);
+    $t = gen_title_name($unit, $cat);
+    // A full name (Centimeter, Milliliter) next to a word unit reads better in plural: "30 Centimeters to Feet".
+    return $t === gen_unit_label($cat, $unit)['name'] ? gen_word_name($unit, $cat, $count) : $t;
+}
+
+/** "How many days is 500 hours?" — the way Search Console shows people ask. */
+function gen_how_many(array $p, array $C): string {
+    $v = $p['value'] ?? 1.0;
+    $tP = gen_plural(gen_unit_label($p['cat'], $p['to'])['name']);
+    $from = abs($v - 1) < 1e-12 ? strtolower(gen_unit_label($p['cat'], $p['from'])['name']) : gen_plural(gen_unit_label($p['cat'], $p['from'])['name']);
+    $from = preg_replace('/^(us|uk) /', '', $from) === $from ? $from : strtoupper(substr($from, 0, 2)) . substr($from, 2);
+    return 'How many ' . $tP . ' is ' . gen_plain($v) . ' ' . $from . '?';
+}
+
 /** <title>: answer + short forms, e.g. "30 Quintal to Kilogram = 3000 kg | 30 qtl in kg". */
 function gen_seo_title(array $p, array $C): string {
     $fN = gen_title_name($p['from'], $p['cat']); $tN = gen_title_name($p['to'], $p['cat']); $fs = $C['fs']; $ts = $C['ts'];
+    if (gen_word_pair($p['from'], $p['to'])) {
+        $cat = $p['cat'];
+        if ($p['value'] !== null) {
+            $vv = (float) $p['value']; $rr = gen_convert($cat, $vv, $p['from'], $p['to']);
+            $v = gen_plain($vv); $r = gen_title_num($rr);
+            $A = gen_title_unit($p['from'], $cat, $vv); $B = gen_title_unit($p['to'], $cat, 2); $Br = gen_title_unit($p['to'], $cat, (float) $r);
+            $Bans = gen_is_word_unit($p['to']) ? $Br : $ts;
+            foreach (["$v $A to $B = $r $Bans | $v $A in $B", "$v $A to $B = $r $Bans", "$v $A in $B = $r $Bans"] as $t) if (mb_strlen($t) <= 65) return $t;
+            return "$v $fs to $ts = $r $ts";
+        }
+        $A = gen_title_unit($p['from'], $cat, 2); $B = gen_title_unit($p['to'], $cat, 2);
+        $one = gen_plain($C['one']); $oneU = gen_is_word_unit($p['to']) ? gen_title_unit($p['to'], $cat, (float) $C['one']) : $ts;
+        $A1 = gen_title_unit($p['from'], $cat, 1);
+        foreach (["$A to $B Converter — 1 $A1 = $one $oneU", "$A to $B — 1 $A1 = $one $oneU", "$A to $B Converter"] as $t) if (mb_strlen($t) <= 68) return $t;
+        return "$A to $B Converter";
+    }
     if ($p['value'] !== null) {
-        $v = gen_plain($p['value']); $r = gen_plain(gen_convert($p['cat'], $p['value'], $p['from'], $p['to']));
+        $v = gen_plain($p['value']); $r = gen_title_num(gen_convert($p['cat'], $p['value'], $p['from'], $p['to']));
         $c = ["$v $fN to $tN = $r $ts | $v $fs in $ts", "$v $fN to $tN = $r $ts", "$v $fs to $ts = $r $ts"];
         if (strtolower($fN) === strtolower($fs) && strtolower($tN) === strtolower($ts)) $c = ["$v $fs to $ts = $r $ts | $v $fs in $ts converter", "$v $fs to $ts = $r $ts | $v $fs in $ts"];
         foreach ($c as $t) if (mb_strlen($t) <= 65) return $t;
@@ -365,7 +435,7 @@ function gen_search_forms(array $p, array $C): array {
     $fs = strtolower($C['fs']); $ts = strtolower($C['ts']);
     if ($p['value'] !== null) {
         $v = gen_plain($p['value']);
-        return [$v . str_replace(' ', '', $fs) . " to $ts", "$v $fs to $ts", "$v " . strtolower(abs($p['value'] - 1) < 1e-9 ? $C['fN'] : $C['fP']) . ' in ' . strtolower($C['tP'])];
+        return [$v . str_replace(' ', '', $fs) . " to $ts", "$v $fs to $ts", "$v " . strtolower(abs($p['value'] - 1) < 1e-9 ? $C['fN'] : $C['fP']) . ' in ' . strtolower($C['tP']), strtolower(rtrim(gen_how_many($p, $C), '?'))];
     }
     return ["$fs to $ts", strtolower($C['fN']) . ' to ' . strtolower($C['tN']), strtolower($C['fN']) . ' in ' . strtolower($C['tP'])];
 }

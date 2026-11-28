@@ -57,23 +57,21 @@ $siteName = brand_name();
 <meta name="twitter:image" content="<?= e($og) ?>">
 <meta name="theme-color" content="#1E3A8A">
 <link rel="icon" href="<?= SITE_URL ?>/assets/img/logo/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<?php $__fonts = 'https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap'; ?>
-<!-- Fonts load without blocking the first paint (text shows in a system font, then swaps). -->
-<link rel="preload" as="style" href="<?= $__fonts ?>" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="<?= $__fonts ?>"></noscript>
+<!-- Self-hosted fonts (no third-party request). Loaded after the first paint: text shows at once in a
+     system font and swaps to Inter / Baloo Bhai 2 when the files arrive (font-display: swap). -->
+<link rel="preload" as="style" href="<?= SITE_URL ?>/assets/fonts/fonts.css?v=<?= asset_ver() ?>" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="<?= SITE_URL ?>/assets/fonts/fonts.css?v=<?= asset_ver() ?>"></noscript>
 <?php
 // The site CSS is small (≈27 KB, ≈7 KB gzipped), so it is inlined: no render-blocking CSS request.
 // Order matters: krishna.css first, then Tailwind utilities (the same order the old CDN script used).
 $__css = '';
-foreach (['krishna.css', 'tailwind.css'] as $__f) { $__p = KT_ROOT_PUBLIC . '/assets/css/' . $__f; if (is_file($__p)) $__css .= file_get_contents($__p) . "\n"; }
+foreach (['css/krishna.css', 'css/tailwind.css'] as $__f) { $__p = KT_ROOT_PUBLIC . '/assets/' . $__f; if (is_file($__p)) $__css .= file_get_contents($__p) . "\n"; }
 if ($__css !== ''): ?>
 <style><?= $__css ?></style>
 <?php else: ?>
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/krishna.css?v=<?= asset_ver() ?>">
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/tailwind.css?v=<?= asset_ver() ?>">
-<?php endif; unset($__css, $__f, $__p, $__fonts); ?>
+<?php endif; unset($__css, $__f, $__p); ?>
 <script src="<?= SITE_URL ?>/assets/js/icons.js?v=<?= asset_ver() ?>" defer></script>
 <script>window.KT = { url: <?= json_encode(SITE_URL) ?>, lang: <?= json_encode($lang) ?>, csrf: <?= json_encode(csrf_token()) ?>, loggedIn: <?= is_logged_in() ? 'true' : 'false' ?>, ver: <?= json_encode(asset_ver()) ?> };</script>
 <?php

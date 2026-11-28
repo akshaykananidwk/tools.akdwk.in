@@ -208,7 +208,10 @@ function kt_seo_title(array $t): string {
     foreach ($suffixes as $s) {
         if (mb_strlen($name . $s) <= 68) return $name . $s;
     }
-    return $name;
+    // Very long names: keep the part before " – " (the main search phrase), then try the suffixes again.
+    $short = preg_replace('/\s+[–—]\s+.*$/u', '', $name);
+    foreach ($suffixes as $s) if (mb_strlen($short . $s) <= 68) return $short . $s;
+    return mb_strlen($short) <= 68 ? $short : rtrim(mb_substr($short, 0, 66)) . '…';
 }
 
 /** Meta description: tool description + benefits, trimmed to ~158 characters. */

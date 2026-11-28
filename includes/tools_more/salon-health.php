@@ -908,7 +908,7 @@ return [
      'faq' => [$NOTMED_PRO]],
 
     ['slug' => 'dilution-calculator-c1v1-c2v2', 'cat' => 'health', 'type' => 'calc', 'icon' => 'beaker',
-     'en' => 'Dilution Calculator (C1V1 = C2V2)', 'gu' => 'ડાઇલ્યુશન કેલ્ક્યુલેટર (C1V1 = C2V2)',
+     'en' => 'Medicine & Lab Dilution Calculator (C1V1 = C2V2)', 'gu' => 'ડાઇલ્યુશન કેલ્ક્યુલેટર (C1V1 = C2V2)',
      'de' => 'Find how much stock solution and diluent to mix for a required strength, for labs, nurses and pharmacists.',
      'dg' => 'લેબ, નર્સ અને ફાર્માસિસ્ટ માટે જોઈતી સ્ટ્રેન્થ મેળવવા કેટલું સ્ટોક સોલ્યુશન અને ડાઇલ્યુઅન્ટ મિક્સ કરવું તે શોધો.',
      'in' => [

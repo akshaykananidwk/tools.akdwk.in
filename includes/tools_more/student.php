@@ -811,7 +811,7 @@ return [
      'how_gu' => 'મોલ n = દળ ÷ મોલર દળ. કણો = n × 6.022 × 10²³ (એવોગેડ્રો અંક). STP એ એક મોલ વાયુનું કદ 22.4 L (પાઠ્યપુસ્તક કિંમત).'],
 
     ['slug' => 'dilution-c1v1-c2v2-calculator', 'cat' => 'student', 'type' => 'calc', 'icon' => 'beaker',
-     'en' => 'Dilution Calculator (C1V1 = C2V2)', 'gu' => 'મંદન કેલ્ક્યુલેટર (C1V1 = C2V2)',
+     'en' => 'Chemistry Dilution Calculator for Students (C1V1 = C2V2)', 'gu' => 'મંદન કેલ્ક્યુલેટર (C1V1 = C2V2)',
      'de' => 'Find the final volume and how much water to add to dilute a stock solution to a lower concentration using C1V1 = C2V2.',
      'dg' => 'C1V1 = C2V2 વડે સ્ટોક દ્રાવણને ઓછી સાંદ્રતામાં મંદ કરવા અંતિમ કદ અને કેટલું પાણી ઉમેરવું તે શોધો.',
      'in' => [

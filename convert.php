@@ -42,9 +42,15 @@ $answer = gen_convert($cat, $defaultVal, $from, $to);
 // Unique page text (Phase 1) and the SEO copy built from it.
 $C = gen_page_content($parsed);
 $pairName = "{$fromL['name']} to {$toL['name']}";
-$h1 = $value !== null
-    ? gen_fmt($defaultVal) . " {$fromL['name']} to {$toL['name']} (" . gen_plain($defaultVal) . " {$C['fs']} in {$C['ts']})"
-    : "{$fromL['name']} to {$toL['name']} Converter ({$C['fs']} to {$C['ts']})";
+if (gen_word_pair($from, $to)) {
+    // "500 Hours to Days (500 Hours in Days)" / "Hours to Days Converter (hour to day)"
+    $A = gen_title_unit($from, $cat, (float) ($value ?? 2)); $B = gen_title_unit($to, $cat, 2);
+    $h1 = $value !== null ? gen_plain($defaultVal) . " $A to $B (" . gen_plain($defaultVal) . " $A in $B)" : "$A to $B Converter ({$C['fs']} to {$C['ts']})";
+} else {
+    $h1 = $value !== null
+        ? gen_fmt($defaultVal) . " {$fromL['name']} to {$toL['name']} (" . gen_plain($defaultVal) . " {$C['fs']} in {$C['ts']})"
+        : "{$fromL['name']} to {$toL['name']} Converter ({$C['fs']} to {$C['ts']})";
+}
 $page_title = gen_seo_title($parsed, $C);
 $page_desc = gen_seo_desc($parsed, $C);
 $forms = gen_search_forms($parsed, $C);
@@ -137,7 +143,7 @@ require __DIR__ . '/includes/header.php';
       <section>
         <h2 class="section-title text-xl mb-2">How to convert <?= e($C['fs']) ?> to <?= e($C['ts']) ?></h2>
         <p><?= $C['intro'] ?></p>
-        <p class="mt-2 text-sm opacity-80">Searching “<?= e($forms[0]) ?>”, “<?= e($forms[1]) ?>” or “<?= e($forms[2]) ?>”? It is the same conversion — the answer is above.</p>
+        <p class="mt-2 text-sm opacity-80">Searching “<?= e($forms[0]) ?>”, “<?= e($forms[1]) ?>” or “<?= e($forms[2]) ?>”? It is the same conversion — the answer is above.<?php if (isset($forms[3]) && (gen_word_pair($from, $to))): ?> And if you are asking “<?= e(ucfirst($forms[3])) ?>?” — it is <b><?= e(gen_title_num(gen_convert($cat, (float) $defaultVal, $from, $to))) ?> <?= e(strtolower(gen_title_unit($to, $cat, gen_convert($cat, (float) $defaultVal, $from, $to)))) ?></b>.<?php endif; ?></p>
       </section>
       <section>
         <h2 class="section-title text-xl mb-2"><?= e($fromL['name']) ?> to <?= e($toL['name']) ?> formula</h2>
