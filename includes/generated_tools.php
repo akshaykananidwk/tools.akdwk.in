@@ -60,10 +60,10 @@ function gen_unit_categories(): array {
             'barrel' => [158.987294928, 'Barrel', 'bbl'],
         ]],
         'speed' => ['name' => 'Speed', 'icon' => 'gauge', 'base' => 'meter-per-second', 'units' => [
-            'meter-per-second' => [1, 'Meter/second', 'm/s'], 'kilometer-per-hour' => [0.277777778, 'Kilometer/hour', 'km/h'],
-            'mile-per-hour' => [0.44704, 'Mile/hour', 'mph'], 'foot-per-second' => [0.3048, 'Foot/second', 'ft/s'],
+            'meter-per-second' => [1, 'Meter per Second', 'm/s'], 'kilometer-per-hour' => [0.277777778, 'Kilometer per Hour', 'km/h'],
+            'mile-per-hour' => [0.44704, 'Mile per Hour', 'mph'], 'foot-per-second' => [0.3048, 'Foot per Second', 'ft/s'],
             'knot' => [0.514444444, 'Knot', 'kn'], 'mach' => [343, 'Mach', 'Ma'],
-            'kilometer-per-second' => [1000, 'Kilometer/second', 'km/s'],
+            'kilometer-per-second' => [1000, 'Kilometer per Second', 'km/s'],
         ]],
         'time' => ['name' => 'Time', 'icon' => 'clock', 'base' => 'second', 'units' => [
             'second' => [1, 'Second', 's'], 'millisecond' => [0.001, 'Millisecond', 'ms'],
@@ -82,10 +82,10 @@ function gen_unit_categories(): array {
             'tebibyte' => [1099511627776, 'Tebibyte', 'TiB'],
         ]],
         'data-rate' => ['name' => 'Data Transfer Rate', 'icon' => 'wifi', 'base' => 'bit-per-second', 'units' => [
-            'bit-per-second' => [1, 'Bit/second', 'bps'], 'kilobit-per-second' => [1000, 'Kilobit/second', 'Kbps'],
-            'megabit-per-second' => [1e6, 'Megabit/second', 'Mbps'], 'gigabit-per-second' => [1e9, 'Gigabit/second', 'Gbps'],
-            'byte-per-second' => [8, 'Byte/second', 'B/s'], 'kilobyte-per-second' => [8000, 'Kilobyte/second', 'KB/s'],
-            'megabyte-per-second' => [8e6, 'Megabyte/second', 'MB/s'], 'gigabyte-per-second' => [8e9, 'Gigabyte/second', 'GB/s'],
+            'bit-per-second' => [1, 'Bit per Second', 'bps'], 'kilobit-per-second' => [1000, 'Kilobit per Second', 'Kbps'],
+            'megabit-per-second' => [1e6, 'Megabit per Second', 'Mbps'], 'gigabit-per-second' => [1e9, 'Gigabit per Second', 'Gbps'],
+            'byte-per-second' => [8, 'Byte per Second', 'B/s'], 'kilobyte-per-second' => [8000, 'Kilobyte per Second', 'KB/s'],
+            'megabyte-per-second' => [8e6, 'Megabyte per Second', 'MB/s'], 'gigabyte-per-second' => [8e9, 'Gigabyte per Second', 'GB/s'],
         ]],
         'pressure' => ['name' => 'Pressure', 'icon' => 'wind', 'base' => 'pascal', 'units' => [
             'pascal' => [1, 'Pascal', 'Pa'], 'kilopascal' => [1000, 'Kilopascal', 'kPa'],
@@ -103,7 +103,7 @@ function gen_unit_categories(): array {
         'power' => ['name' => 'Power', 'icon' => 'plug', 'base' => 'watt', 'units' => [
             'watt' => [1, 'Watt', 'W'], 'kilowatt' => [1000, 'Kilowatt', 'kW'],
             'megawatt' => [1e6, 'Megawatt', 'MW'], 'horsepower' => [745.699872, 'Horsepower', 'hp'],
-            'metric-horsepower' => [735.49875, 'Metric Horsepower', 'PS'], 'btu-per-hour' => [0.29307107, 'BTU/hour', 'BTU/h'],
+            'metric-horsepower' => [735.49875, 'Metric Horsepower', 'PS'], 'btu-per-hour' => [0.29307107, 'BTU per Hour', 'BTU/h'],
             'milliwatt' => [0.001, 'Milliwatt', 'mW'],
         ]],
         'angle' => ['name' => 'Angle', 'icon' => 'triangle', 'base' => 'degree', 'units' => [
@@ -117,8 +117,8 @@ function gen_unit_categories(): array {
             'rpm' => [0.0166667, 'RPM', 'rpm'],
         ]],
         'fuel' => ['name' => 'Fuel Economy', 'icon' => 'fuel', 'base' => 'km-per-liter', 'special' => 'fuel', 'units' => [
-            'km-per-liter' => [1, 'Kilometer/liter', 'km/L'], 'mpg-us' => [0.425144, 'MPG (US)', 'mpg'],
-            'mpg-uk' => [0.354006, 'MPG (UK)', 'mpg'], 'liter-per-100km' => [-1, 'Liter/100km', 'L/100km'],
+            'km-per-liter' => [1, 'Kilometer per Liter', 'km/L'], 'mpg-us' => [0.425144, 'MPG (US)', 'mpg'],
+            'mpg-uk' => [0.354006, 'MPG (UK)', 'mpg'], 'liter-per-100km' => [-1, 'Liter per 100 km', 'L/100km'],
         ]],
     ];
 }

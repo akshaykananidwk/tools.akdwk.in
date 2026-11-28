@@ -6,14 +6,13 @@
  * converter pages are chunked.
  */
 require_once __DIR__ . '/includes/bootstrap.php';
-require_once __DIR__ . '/includes/generated_tools.php';
+require_once __DIR__ . '/includes/convert_content.php';
 
 header('Content-Type: application/xml; charset=utf-8');
 $base = rtrim(SITE_URL, '/');
 
-$counts = gen_total_count();
 $perFile = 40000;
-$pages = max(1, (int) ceil($counts['total'] / $perFile));
+$pages = max(1, (int) ceil(count(gen_sitemap_convert_urls()) / $perFile));
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";

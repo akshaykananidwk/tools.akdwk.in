@@ -12,7 +12,7 @@ require_once __DIR__ . '/convert_units_info.php';
 
 /** Short form people type in searches (qtl, kg, mg, Mbps…). */
 function gen_short(string $unit, string $cat): string {
-    $map = ['quintal' => 'qtl', 'metric-ton' => 'ton', 'us-ton' => 'US ton', 'square-foot' => 'sq ft', 'square-meter' => 'sq m',
+    $map = ['quintal' => 'qtl', 'metric-ton' => 'ton', 'pound' => 'lbs', 'us-ton' => 'US ton', 'square-foot' => 'sq ft', 'square-meter' => 'sq m',
         'square-yard' => 'sq yd (gaj)', 'square-kilometer' => 'sq km', 'square-centimeter' => 'sq cm', 'square-inch' => 'sq in', 'square-mile' => 'sq mi',
         'cubic-foot' => 'cft', 'cubic-meter' => 'cubic meter', 'kilometer-per-hour' => 'km/h', 'tola' => 'tola', 'bigha' => 'bigha', 'guntha' => 'guntha',
         'acre' => 'acre', 'hectare' => 'hectare', 'month' => 'month', 'year' => 'year', 'week' => 'week', 'day' => 'day', 'hour' => 'hour', 'minute' => 'min'];
@@ -26,7 +26,8 @@ function gen_plural(string $name): string {
         'cubic inch' => 'cubic inches', 'celsius' => 'degrees Celsius', 'fahrenheit' => 'degrees Fahrenheit', 'kelvin' => 'kelvin', 'rankine' => 'degrees Rankine',
         'mach' => 'Mach', 'psi' => 'psi', 'mmhg' => 'mmHg', 'torr' => 'torr', 'rpm' => 'rpm', 'hertz' => 'hertz', 'btu' => 'BTU', 'century' => 'centuries'];
     if (isset($irregular[$n])) return $irregular[$n];
-    if (str_contains($n, '/') || str_contains($n, 'per ') || str_contains($n, '(')) return $n;
+    if (preg_match('/^(.+?) per (.+)$/', $n, $m)) return gen_plural($m[1]) . ' per ' . $m[2];   // "megabits per second"
+    if (str_contains($n, '/') || str_contains($n, '(')) return $n;
     if (preg_match('/(s|x|ch|sh)$/', $n)) return $n . 'es';
     return $n . 's';
 }
@@ -36,18 +37,51 @@ function gen_pick(string $seed, array $options, string $salt = '') {
     return $options[crc32($seed . '|' . $salt) % count($options)];
 }
 
-/** Units with extra number pages (1–100, 150, 200, 250, 500, 1000): the ones Indians search most. */
+/** Units with number pages (1–100, 150, 200, 250, 500, 1000): the ones with real Indian search demand. */
 function gen_popular_units(): array {
-    return ['quintal', 'tola', 'milligram', 'millimeter', 'kilogram', 'gram', 'megabit-per-second', 'metric-ton', 'centimeter', 'pound', 'bigha', 'guntha', 'acre', 'square-foot'];
+    return ['quintal', 'tola', 'milligram', 'millimeter', 'kilogram', 'gram', 'megabit-per-second', 'metric-ton'];
 }
 
-/** The number pages that exist (are linked and listed) for a pair. Other numbers still work, they just aren't promoted. */
+/** Values that get an indexed number page for a promoted pair. */
+function gen_index_values(): array {
+    return array_merge(range(1, 100), [150, 200, 250, 500, 1000]);
+}
+
+/** True when this pair has number pages (popular unit → one of its usual partners). */
+function gen_is_promoted_pair(string $from, string $to): bool {
+    return in_array($from, gen_popular_units(), true) && in_array($to, gen_main_partner($from), true);
+}
+
+/** Number pages that exist (linked + in the sitemap) for a pair. Other numbers still work but are noindex. */
 function gen_value_pages_for(string $from, string $to): array {
-    $pop = gen_popular_units();
-    if (in_array($from, $pop, true) && in_array($to, $pop, true) || in_array($from, $pop, true) && in_array($to, gen_main_partner($from), true)) {
-        return array_merge(range(1, 100), [150, 200, 250, 500, 1000]);
+    return gen_is_promoted_pair($from, $to) ? gen_index_values() : [];
+}
+
+/**
+ * Should this number page be indexed? Yes for promoted pairs with a listed value, and for any page
+ * the owner listed in Admin → SEO (pages that already get impressions in Search Console).
+ */
+function gen_value_indexable(string $from, string $to, float $value): bool {
+    if (gen_is_promoted_pair($from, $to)) {
+        foreach (gen_index_values() as $x) if (abs($x - $value) < 1e-9) return true;
     }
-    return gen_common_values();
+    return isset(gen_keep_slugs()[gen_canonical_slug($value, $from, $to)]);
+}
+
+/** Canonical slugs the owner wants kept in the index (Admin → SEO, from Search Console). */
+function gen_keep_slugs(): array {
+    static $keep = null;
+    if ($keep !== null) return $keep;
+    $keep = [];
+    $raw = function_exists('setting') ? (string) setting('seo_keep_convert', '') : '';
+    foreach (preg_split('/[\s,]+/', $raw) as $line) {
+        $line = strtolower(trim($line));
+        if ($line === '') continue;
+        if (preg_match('#/convert/([a-z0-9.\-]+)#', $line, $m)) $line = $m[1];
+        $p = gen_parse_slug($line);
+        if ($p && $p['value'] !== null) $keep[$p['canonical_slug']] = true;
+    }
+    return $keep;
 }
 
 /** For each popular unit, the partner units people actually convert it to. */
@@ -259,4 +293,88 @@ function gen_page_content(array $p): array {
         'fs' => $fs, 'ts' => $ts, 'fP' => $fP, 'tP' => $tP, 'fN' => $fN, 'tN' => $tN, 'one' => $one, 'back' => $back,
         'table' => gen_table_values($value, $cat, $from),
     ];
+}
+
+/** Plain number for titles/meta (no thousands commas — matches what people type: "3000 kg"). */
+function gen_plain(float $n): string {
+    $a = abs($n);
+    if ($a != 0 && ($a >= 1e9 || $a < 1e-4)) return gen_fmt($n);
+    return rtrim(rtrim(number_format($n, $a >= 100 ? 2 : ($a >= 1 ? 4 : 6), '.', ''), '0'), '.');
+}
+
+/** Name used in titles: the full name, or the short form people really type (Kg, Mbps, MB/s, Lbs). */
+function gen_title_name(string $unit, string $cat): string {
+    $map = ['kilogram' => 'Kg', 'metric-ton' => 'Ton', 'pound' => 'Lbs', 'kilometer-per-hour' => 'Km/h', 'mile-per-hour' => 'Mph',
+        'square-foot' => 'Sq Ft', 'square-meter' => 'Sq Meter', 'square-yard' => 'Sq Yard (Gaj)', 'cubic-foot' => 'CFT'];
+    if (isset($map[$unit])) return $map[$unit];
+    if (in_array($cat, ['data-rate'], true)) return gen_unit_label($cat, $unit)['symbol'];
+    return gen_unit_label($cat, $unit)['name'];
+}
+
+/** <title>: answer + short forms, e.g. "30 Quintal to Kilogram = 3000 kg | 30 qtl in kg". */
+function gen_seo_title(array $p, array $C): string {
+    $fN = gen_title_name($p['from'], $p['cat']); $tN = gen_title_name($p['to'], $p['cat']); $fs = $C['fs']; $ts = $C['ts'];
+    if ($p['value'] !== null) {
+        $v = gen_plain($p['value']); $r = gen_plain(gen_convert($p['cat'], $p['value'], $p['from'], $p['to']));
+        $c = ["$v $fN to $tN = $r $ts | $v $fs in $ts", "$v $fN to $tN = $r $ts", "$v $fs to $ts = $r $ts"];
+        if (strtolower($fN) === strtolower($fs) && strtolower($tN) === strtolower($ts)) $c = ["$v $fs to $ts = $r $ts | $v $fs in $ts converter", "$v $fs to $ts = $r $ts | $v $fs in $ts"];
+        foreach ($c as $t) if (mb_strlen($t) <= 65) return $t;
+        return "$v $fs to $ts = $r $ts";
+    }
+    $one = gen_plain($C['one']);
+    $same = strtolower($fN) === strtolower($fs) && strtolower($tN) === strtolower($ts);
+    if ($same) { $fN = $C['fN']; $tN = $C['tN']; }   // "Megabit/second to Megabyte/second (Mbps to MB/s)"
+    $cands = $p['cat'] === 'temperature'
+        ? ["$fN to $tN ($fs to $ts) — Formula & Converter", "$fN to $tN ($fs to $ts) Converter"]
+        : ["$fN to $tN ($fs to $ts) — 1 $fN = $one $ts | Converter", "$fN to $tN ($fs to $ts) — 1 $fN = $one $ts", "$fN to $tN ($fs to $ts) — 1 $fs = $one $ts", "$fN to $tN ($fs to $ts) Converter"];
+    foreach ($cands as $t) if (mb_strlen($t) <= 68) return $t;
+    return end($cands);
+}
+
+/** Meta description (≤155): answer + formula + "free, instant". */
+function gen_seo_desc(array $p, array $C): string {
+    $fs = $C['fs']; $ts = $C['ts'];
+    $f = $C['formula_text'];
+    if ($p['value'] !== null) {
+        $v = gen_plain($p['value']); $r = gen_plain(gen_convert($p['cat'], $p['value'], $p['from'], $p['to']));
+        $d = "$v $fs = $r $ts. Formula: $f. Step-by-step working, nearby values and a $fs to $ts table. Free, instant converter.";
+    } elseif ($p['cat'] === 'temperature') {
+        $d = "Convert $fs to $ts with the formula $f. 37 $fs = " . gen_plain(gen_convert('temperature', 37, $p['from'], $p['to'])) . " $ts. Solved examples and a full table. Free, instant.";
+    } else {
+        $d = "1 " . strtolower($C['fN']) . " = " . gen_plain($C['one']) . " $ts. Convert $fs to $ts with the formula $f, solved examples and a ready table. Free, instant.";
+    }
+    if (mb_strlen($d) > 155) $d = preg_replace('/ Step-by-step working, nearby values and a .*? table\./u', ' Steps and table inside.', $d);
+    if (mb_strlen($d) > 155) $d = rtrim(mb_substr($d, 0, 152), ' ,.') . '…';
+    return $d;
+}
+
+/** The three ways people type the same search, used once in the page text: "30qtl to kg", "30 qtl to kg", "30 quintals in kilograms". */
+function gen_search_forms(array $p, array $C): array {
+    $fs = strtolower($C['fs']); $ts = strtolower($C['ts']);
+    if ($p['value'] !== null) {
+        $v = gen_plain($p['value']);
+        return [$v . str_replace(' ', '', $fs) . " to $ts", "$v $fs to $ts", "$v " . strtolower(abs($p['value'] - 1) < 1e-9 ? $C['fN'] : $C['fP']) . ' in ' . strtolower($C['tP'])];
+    }
+    return ["$fs to $ts", strtolower($C['fN']) . ' to ' . strtolower($C['tN']), strtolower($C['fN']) . ' in ' . strtolower($C['tP'])];
+}
+
+/** Every converter URL that should be in Google: all pair pages + indexable number pages. [[slug, priority], …] */
+function gen_sitemap_convert_urls(): array {
+    $out = [];
+    foreach (gen_all_pairs() as $pr) $out[] = [$pr['from'] . '-to-' . $pr['to'], gen_is_promoted_pair($pr['from'], $pr['to']) ? '0.8' : '0.6'];
+    $seen = [];
+    foreach (gen_all_pairs() as $pr) {
+        foreach (gen_value_pages_for($pr['from'], $pr['to']) as $v) {
+            $s = gen_canonical_slug((float) $v, $pr['from'], $pr['to']);
+            $seen[$s] = true; $out[] = [$s, '0.5'];
+        }
+    }
+    foreach (array_keys(gen_keep_slugs()) as $s) if (!isset($seen[$s])) $out[] = [$s, '0.5'];
+    return $out;
+}
+
+/** Date the converter content last changed (sitemap lastmod). */
+function gen_convert_lastmod(): string {
+    $files = [__FILE__, __DIR__ . '/convert_units_info.php', __DIR__ . '/generated_tools.php', dirname(__DIR__) . '/convert.php'];
+    return date('Y-m-d', max(array_map(fn($f) => (int) @filemtime($f), $files)));
 }

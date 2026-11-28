@@ -38,18 +38,19 @@ $fromL = gen_unit_label($cat, $from);
 $toL   = gen_unit_label($cat, $to);
 $answer = gen_convert($cat, $defaultVal, $from, $to);
 
-// SEO copy (unique per page).
+// Unique page text (Phase 1) and the SEO copy built from it.
+$C = gen_page_content($parsed);
 $pairName = "{$fromL['name']} to {$toL['name']}";
-if ($value !== null) {
-    $h1 = gen_fmt($defaultVal) . " {$fromL['name']} to {$toL['name']}";
-    $page_title = "$h1 ({$fromL['symbol']} to {$toL['symbol']}) — " . brand_name();
-    $page_desc  = gen_fmt($defaultVal) . " {$fromL['name']} = " . gen_fmt($answer) . " {$toL['name']}. Convert $pairName instantly with formula and table.";
-} else {
-    $h1 = "$pairName Converter";
-    $page_title = "$pairName Converter ({$fromL['symbol']} to {$toL['symbol']}) — " . brand_name();
-    $page_desc  = "Convert $pairName online. 1 {$fromL['name']} = " . gen_fmt(gen_convert($cat, 1, $from, $to)) . " {$toL['name']}. Free instant converter with formula, examples and a conversion table.";
-}
-$page_keywords = "$from to $to, {$fromL['name']} to {$toL['name']}, {$fromL['symbol']} to {$toL['symbol']}, convert $from $to, {$catMeta['name']} converter";
+$h1 = $value !== null
+    ? gen_fmt($defaultVal) . " {$fromL['name']} to {$toL['name']} (" . gen_plain($defaultVal) . " {$C['fs']} in {$C['ts']})"
+    : "{$fromL['name']} to {$toL['name']} Converter ({$C['fs']} to {$C['ts']})";
+$page_title = gen_seo_title($parsed, $C);
+$page_desc = gen_seo_desc($parsed, $C);
+$forms = gen_search_forms($parsed, $C);
+$page_keywords = implode(', ', $forms);
+// Number pages: only popular pairs (1–100, 150, 200, 250, 500, 1000) and owner-listed pages stay in Google.
+$indexable = $value === null || gen_value_indexable($from, $to, (float) $value);
+if (!$indexable) $page_robots = 'noindex, follow';
 
 $breadcrumb = [
     ['label' => 'Home', 'url' => SITE_URL . '/'],
@@ -58,15 +59,10 @@ $breadcrumb = [
     ['label' => $value !== null ? $h1 : $pairName],
 ];
 
-// Unique page text: answer, formula, worked examples, unit guides, reverse, table and FAQ.
-$C = gen_page_content($parsed);
 $table = [];
 foreach ($C['table'] as $v) $table[(string) $v] = gen_fmt(gen_convert($cat, (float) $v, $from, $to));
 $linkable = array_flip(array_map('strval', gen_value_pages_for($from, $to)));
 $faq = $C['faq'];
-$h1 = $value !== null
-    ? gen_fmt($defaultVal) . " {$fromL['name']} to {$toL['name']} (" . gen_fmt($defaultVal) . " {$C['fs']} in {$C['ts']})"
-    : "{$fromL['name']} to {$toL['name']} Converter ({$C['fs']} to {$C['ts']})";
 
 // FAQ + Breadcrumb + WebPage JSON-LD.
 $faqLd = ['@type' => 'FAQPage', 'mainEntity' => array_map(fn($qa) => [
@@ -136,6 +132,7 @@ require __DIR__ . '/includes/header.php';
       <section>
         <h2 class="section-title text-xl mb-2">How to convert <?= e($C['fs']) ?> to <?= e($C['ts']) ?></h2>
         <p><?= $C['intro'] ?></p>
+        <p class="mt-2 text-sm opacity-80">Searching “<?= e($forms[0]) ?>”, “<?= e($forms[1]) ?>” or “<?= e($forms[2]) ?>”? It is the same conversion — the answer is above.</p>
       </section>
       <section>
         <h2 class="section-title text-xl mb-2"><?= e($fromL['name']) ?> to <?= e($toL['name']) ?> formula</h2>
@@ -196,6 +193,19 @@ require __DIR__ . '/includes/header.php';
         </tbody>
       </table></div>
     </div>
+
+    <?php if (gen_is_promoted_pair($from, $to)): ?>
+    <!-- Every number page of this pair (internal links for Google + quick picks for visitors) -->
+    <div class="kt-card p-5 mb-6">
+      <h2 class="section-title text-xl mb-1"><?= $value !== null ? 'More ' . e($C['fs']) . ' to ' . e($C['ts']) . ' values' : 'Common ' . e($C['fs']) . ' to ' . e($C['ts']) . ' conversions' ?></h2>
+      <div class="divider-gold mb-3"></div>
+      <div class="flex flex-wrap gap-1.5 text-xs">
+        <?php foreach (gen_index_values() as $nv): if ($value !== null && abs($nv - $value) < 1e-9) continue; ?>
+          <a class="px-2 py-1 rounded-md border hover:border-[color:var(--gold)]" style="border-color:var(--border)" href="<?= SITE_URL ?>/convert/<?= e(gen_canonical_slug((float) $nv, $from, $to)) ?>"><?= $nv ?> <?= e($C['fs']) ?> to <?= e($C['ts']) ?></a>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
 
     <!-- FAQ -->
     <div class="kt-card p-5 mb-6">
