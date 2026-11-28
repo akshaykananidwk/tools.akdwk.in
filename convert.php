@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/generated_tools.php';
+require_once __DIR__ . '/includes/convert_content.php';
 
 $slug = preg_replace('/[^a-z0-9.\-]/', '', strtolower($_GET['slug'] ?? ''));
 $parsed = gen_parse_slug($slug);
@@ -57,20 +58,15 @@ $breadcrumb = [
     ['label' => $value !== null ? $h1 : $pairName],
 ];
 
-// Conversion table (common values → converted) — unique, useful content.
-$tableVals = gen_common_values();
+// Unique page text: answer, formula, worked examples, unit guides, reverse, table and FAQ.
+$C = gen_page_content($parsed);
 $table = [];
-foreach ($tableVals as $v) $table[$v] = gen_fmt(gen_convert($cat, $v, $from, $to));
-
-// FAQ (unique).
-$oneTo = gen_fmt(gen_convert($cat, 1, $from, $to));
-$faq = [
-    ["How many {$toL['name']} in a {$fromL['name']}?", "One {$fromL['name']} equals $oneTo {$toL['name']} ({$fromL['symbol']} → {$toL['symbol']})."],
-    ["How do I convert $pairName?", ($catMeta['special'] ?? '') === 'temp'
-        ? "Use the temperature formula shown above, or just type your value into the converter for an instant answer."
-        : "Multiply the {$fromL['name']} value by $oneTo to get {$toL['name']}, or enter any number in the converter above."],
-    ["Is this $pairName converter free?", "Yes. It runs entirely in your browser, is completely free, and needs no signup."],
-];
+foreach ($C['table'] as $v) $table[(string) $v] = gen_fmt(gen_convert($cat, (float) $v, $from, $to));
+$linkable = array_flip(array_map('strval', gen_value_pages_for($from, $to)));
+$faq = $C['faq'];
+$h1 = $value !== null
+    ? gen_fmt($defaultVal) . " {$fromL['name']} to {$toL['name']} (" . gen_fmt($defaultVal) . " {$C['fs']} in {$C['ts']})"
+    : "{$fromL['name']} to {$toL['name']} Converter ({$C['fs']} to {$C['ts']})";
 
 // FAQ + Breadcrumb + WebPage JSON-LD.
 $faqLd = ['@type' => 'FAQPage', 'mainEntity' => array_map(fn($qa) => [
@@ -93,13 +89,18 @@ require __DIR__ . '/includes/header.php';
 ?>
 <div class="grid lg:grid-cols-[1fr,300px] gap-6 mt-4">
   <div>
+    <!-- Direct answer (server-side HTML, visible without JavaScript) -->
     <div class="kt-card p-5 mb-5">
-      <div class="flex items-center gap-3">
+      <div class="flex items-start gap-3">
         <div class="icon-wrap w-12 h-12 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="<?= e($catMeta['icon']) ?>" class="w-6 h-6"></i></div>
-        <div>
+        <div class="min-w-0">
           <h1 class="text-2xl md:text-3xl font-extrabold" style="color:var(--krishna-blue)"><?= e($h1) ?></h1>
-          <p class="opacity-70 mt-1"><?= e($catMeta['name']) ?> conversion · {<?= e($fromL['symbol']) ?> → <?= e($toL['symbol']) ?>}</p>
+          <p class="opacity-70 mt-1 text-sm"><?= e($catMeta['name']) ?> conversion · <?= e($fromL['symbol']) ?> → <?= e($toL['symbol']) ?></p>
         </div>
+      </div>
+      <div class="mt-4 p-4 rounded-xl text-center" style="background:linear-gradient(135deg,rgba(30,58,138,.08),rgba(5,150,105,.08))">
+        <p class="text-3xl md:text-4xl font-extrabold leading-tight" style="color:var(--peacock-teal)"><?= e($C['answer']) ?></p>
+        <p class="mt-2 text-sm opacity-80"><?= e($C['answer_sub']) ?></p>
       </div>
     </div>
 
@@ -130,16 +131,65 @@ require __DIR__ . '/includes/header.php';
       </div>
     </div>
 
-    <!-- Conversion table -->
+    <!-- Guide: formula, examples, units, usage, reverse -->
+    <article class="kt-card p-5 mb-6 leading-relaxed space-y-4 conv-guide">
+      <section>
+        <h2 class="section-title text-xl mb-2">How to convert <?= e($C['fs']) ?> to <?= e($C['ts']) ?></h2>
+        <p><?= $C['intro'] ?></p>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2"><?= e($fromL['name']) ?> to <?= e($toL['name']) ?> formula</h2>
+        <p><?= $C['formula'] ?></p>
+        <p class="mt-2 p-3 rounded-lg font-mono text-center" style="background:rgba(0,0,0,.04)"><?= e($C['formula_text']) ?></p>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2">Examples: <?= e($C['fs']) ?> to <?= e($C['ts']) ?> step by step</h2>
+        <p class="mb-2"><?= e($C['ex_intro']) ?></p>
+        <?php foreach ($C['examples'] as $n => $ex): ?>
+          <h3 class="font-bold mt-3">Example <?= $n + 1 ?>: <?= gen_fmt($ex['v']) ?> <?= e($C['fs']) ?> to <?= e($C['ts']) ?></h3>
+          <ol class="list-decimal ml-6 mt-1 space-y-0.5"><?php foreach ($ex['steps'] as $st): ?><li><?= $st ?></li><?php endforeach; ?></ol>
+        <?php endforeach; ?>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2"><?= e($C['what_from']) ?> (<?= e($C['fs']) ?>)?</h2>
+        <p><?= e($C['about_from']) ?></p>
+        <h2 class="section-title text-xl mb-2 mt-4"><?= e($C['what_to']) ?> (<?= e($C['ts']) ?>)?</h2>
+        <p><?= e($C['about_to']) ?></p>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2">Where is <?= e($C['fs']) ?> to <?= e($C['ts']) ?> used?</h2>
+        <p><?= e($C['where']) ?></p>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2"><?= e($toL['name']) ?> to <?= e($fromL['name']) ?> (reverse)</h2>
+        <p><?= $C['reverse'] ?></p>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2"><?= e($C['vs']) ?> <?= e($C['fs']) ?> in other units</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+          <?php foreach ($C['others'] as $o): ?>
+            <div class="p-2 rounded-lg border" style="border-color:var(--border)"><span class="opacity-60"><?= e($o['name']) ?></span><br><b><?= e($o['val']) ?> <?= e($o['sym']) ?></b></div>
+          <?php endforeach; ?>
+        </div>
+      </section>
+      <section>
+        <h2 class="section-title text-xl mb-2">Good to know</h2>
+        <?php if ($C['compare']): ?><p><?= e($C['compare']) ?></p><?php endif; ?>
+        <p class="<?= $C['compare'] ? 'mt-2' : '' ?>"><?= e($C['tip']) ?></p>
+        <p class="mt-2"><?= e($C['quick']) ?></p>
+      </section>
+    </article>
+
+    <!-- Conversion table (30–40 rows) -->
     <div class="kt-card p-5 mb-6">
-      <h2 class="section-title text-xl mb-1"><?= e($fromL['name']) ?> to <?= e($toL['name']) ?> Table</h2>
+      <h2 class="section-title text-xl mb-1"><?= e($fromL['name']) ?> to <?= e($toL['name']) ?> table (<?= e($C['fs']) ?> to <?= e($C['ts']) ?>)</h2>
       <div class="divider-gold mb-4"></div>
       <div class="overflow-x-auto"><table class="w-full text-sm">
-        <thead><tr class="opacity-60 text-left"><th class="py-2"><?= e($fromL['name']) ?> ({<?= e($fromL['symbol']) ?>})</th><th><?= e($toL['name']) ?> ({<?= e($toL['symbol']) ?>})</th></tr></thead>
+        <thead><tr class="opacity-60 text-left"><th class="py-2"><?= e($fromL['name']) ?> (<?= e($fromL['symbol']) ?>)</th><th><?= e($toL['name']) ?> (<?= e($toL['symbol']) ?>)</th></tr></thead>
         <tbody>
-        <?php foreach ($table as $v => $r): ?>
-          <tr class="border-t" style="border-color:var(--border)">
-            <td class="py-2"><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/convert/<?= $v ?>-<?= e($from) ?>-to-<?= e($to) ?>"><?= gen_fmt((float) $v) ?> <?= e($fromL['symbol']) ?></a></td>
+        <?php foreach ($table as $v => $r): $isCur = $value !== null && abs((float) $v - $value) < 1e-9; ?>
+          <tr class="border-t" style="border-color:var(--border)<?= $isCur ? ';background:rgba(5,150,105,.08);font-weight:700' : '' ?>">
+            <td class="py-2"><?php if (!$isCur && isset($linkable[(string) $v])): ?><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/convert/<?= e(gen_slug_num((float) $v)) ?>-<?= e($from) ?>-to-<?= e($to) ?>"><?= gen_fmt((float) $v) ?> <?= e($fromL['symbol']) ?></a><?php else: ?><?= gen_fmt((float) $v) ?> <?= e($fromL['symbol']) ?><?php endif; ?></td>
             <td><?= e($r) ?> <?= e($toL['symbol']) ?></td>
           </tr>
         <?php endforeach; ?>
@@ -149,7 +199,7 @@ require __DIR__ . '/includes/header.php';
 
     <!-- FAQ -->
     <div class="kt-card p-5 mb-6">
-      <h2 class="section-title text-xl mb-1">FAQ</h2>
+      <h2 class="section-title text-xl mb-1"><?= e($C['fs']) ?> to <?= e($C['ts']) ?> — frequently asked questions</h2>
       <div class="divider-gold mb-2"></div>
       <?php foreach ($faq as $qa): ?>
         <div class="faq-item border-b" style="border-color:var(--border)">

@@ -218,6 +218,15 @@ function gen_aliases(): array {
         'mbps' => 'megabit-per-second', 'gbps' => 'gigabit-per-second', 'kbps' => 'kilobit-per-second',
         // volume
         'l' => 'liter', 'ml' => 'milliliter', 'gal' => 'gallon-us',
+        // Indian / common search short forms
+        'qtl' => 'quintal', 'quintals' => 'quintal', 'q' => 'quintal', 'mt' => 'metric-ton', 'tons' => 'metric-ton', 'tonnes' => 'metric-ton',
+        'tolas' => 'tola', 'grams' => 'gram', 'gm' => 'gram', 'gms' => 'gram', 'kilograms' => 'kilogram', 'kilo' => 'kilogram',
+        'milligrams' => 'milligram', 'mcg' => 'microgram', 'ug' => 'microgram', 'ct' => 'carat',
+        'meters' => 'meter', 'metre' => 'meter', 'metres' => 'meter', 'cms' => 'centimeter', 'mms' => 'millimeter',
+        'sqft' => 'square-foot', 'sq-ft' => 'square-foot', 'square-feet' => 'square-foot', 'sqm' => 'square-meter', 'sq-m' => 'square-meter',
+        'gaj' => 'square-yard', 'sq-yard' => 'square-yard', 'vigha' => 'bigha', 'bighas' => 'bigha', 'gunthas' => 'guntha', 'acres' => 'acre', 'hectares' => 'hectare', 'ha' => 'hectare',
+        'mbs' => 'megabyte-per-second', 'mb-s' => 'megabyte-per-second', 'kmph' => 'kilometer-per-hour',
+        'litre' => 'liter', 'litres' => 'liter', 'liters' => 'liter', 'cft' => 'cubic-foot', 'hp' => 'horsepower', 'kw' => 'kilowatt', 'kwh' => 'kilowatt-hour',
     ];
 }
 
@@ -229,7 +238,12 @@ function gen_resolve_unit(string $token): string {
 
 /** Build the canonical slug for a (value, from, to) using full unit keys. */
 function gen_canonical_slug(?float $value, string $from, string $to): string {
-    return ($value !== null ? gen_fmt($value) . '-' : '') . $from . '-to-' . $to;
+    return ($value !== null ? gen_slug_num($value) . '-' : '') . $from . '-to-' . $to;
+}
+
+/** Number as it appears in a URL: no thousands commas ("1000", "2.5"). gen_fmt() adds commas and must not be used in URLs. */
+function gen_slug_num(float $v): string {
+    return rtrim(rtrim(number_format($v, 4, '.', ''), '0'), '.');
 }
 
 /**
