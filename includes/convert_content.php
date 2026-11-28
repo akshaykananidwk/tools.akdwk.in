@@ -49,7 +49,19 @@ function gen_index_values(): array {
 
 /** True when this pair has number pages (popular unit → one of its usual partners). */
 function gen_is_promoted_pair(string $from, string $to): bool {
-    return in_array($from, gen_popular_units(), true) && in_array($to, gen_main_partner($from), true);
+    return (in_array($from, gen_popular_units(), true) && in_array($to, gen_main_partner($from), true))
+        || isset(gen_extra_pairs()[$from . '>' . $to]);
+}
+
+/** More pairs with number pages: these already get impressions in Search Console (owner's list, Nov 2026). */
+function gen_extra_pairs(): array {
+    static $set = null;
+    if ($set !== null) return $set;
+    $set = array_fill_keys([
+        'hour>day', 'gram>ounce', 'minute>second', 'acre>square-foot', 'bar>psi', 'fahrenheit>celsius', 'milliliter>cup',
+        'meter>mile', 'inch>millimeter', 'centimeter>foot', 'quart>gallon-us', 'month>day', 'pound>gram',
+    ], true);
+    return $set;
 }
 
 /** Number pages that exist (linked + in the sitemap) for a pair. Other numbers still work but are noindex. */
