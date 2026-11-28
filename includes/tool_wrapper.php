@@ -130,6 +130,10 @@ function render_tool_page(string $slug): void {
     // Language-aware guide + FAQ (English content for en, Gujarati otherwise).
     $guide = tool_guide($tool);
     $faq   = tool_faq($tool);
+    // Long guide for the most-searched tools (who it is for, example, tips, extra FAQ, last-updated date).
+    require_once __DIR__ . '/tool_landing.php';
+    $landing = kt_tool_landing($tool['slug']);
+    if ($landing) $faq = array_merge($faq, $landing['faq']);
 
     // Schema.org SoftwareApplication + FAQ JSON-LD.
     $faqLd = ['@type' => 'FAQPage', 'mainEntity' => []];
@@ -202,6 +206,8 @@ function render_tool_page(string $slug): void {
           <!-- Action bar (engines wire these up) -->
           <div id="toolActions" class="flex flex-wrap gap-2 mt-4"></div>
         </div>
+
+        <?php if ($landing) kt_render_tool_landing($landing); ?>
 
         <!-- How to use -->
         <div class="kt-card p-5 mb-6">

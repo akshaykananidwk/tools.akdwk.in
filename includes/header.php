@@ -17,7 +17,7 @@ $fest     = festival_theme();
 $user     = current_user();
 $gaId     = setting('ga_id', defined('GA_ID') ? GA_ID : '');
 ?><!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="<?= e($page_lang ?? 'en') ?>" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -42,6 +42,9 @@ $siteName = brand_name();
 <?php if (!empty($page_keywords)): ?><meta name="keywords" content="<?= e($page_keywords) ?>"><?php endif; ?>
 <meta name="author" content="AK Computer, Dwarka">
 <link rel="canonical" href="<?= e($canonical) ?>">
+<?php // Language versions (en / gu / hi): every version lists all of them, itself included, plus x-default (English).
+if (!empty($page_alternates)): foreach ($page_alternates as $__hl => $__hu): ?><link rel="alternate" hreflang="<?= e($__hl) ?>" href="<?= e($__hu) ?>">
+<?php endforeach; endif; ?>
 <!-- Open Graph -->
 <meta property="og:site_name" content="<?= e($siteName) ?>">
 <meta property="og:title" content="<?= e($title) ?>">
@@ -49,7 +52,7 @@ $siteName = brand_name();
 <meta property="og:image" content="<?= e($og) ?>">
 <meta property="og:url" content="<?= e($canonical) ?>">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="en_IN">
+<meta property="og:locale" content="<?= e(["gu" => "gu_IN", "hi" => "hi_IN"][$page_lang ?? "en"] ?? "en_IN") ?>">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<?= e($title) ?>">

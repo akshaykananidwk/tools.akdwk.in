@@ -7,6 +7,8 @@
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/generated_tools.php';
 require_once __DIR__ . '/includes/convert_content.php';
+require_once __DIR__ . '/includes/local_units.php';
+require_once __DIR__ . '/includes/convert_widget.php';
 
 $rawSlug = (string) ($_GET['slug'] ?? '');
 $slug = preg_replace('/[^a-z0-9.\-]/', '', strtolower(str_replace(',', '', rawurldecode($rawSlug))));
@@ -92,6 +94,16 @@ $unitsJson = [];
 foreach ($catMeta['units'] as $k => $u) $unitsJson[$k] = ['f' => $u[0], 'n' => $u[1], 's' => $u[2]];
 
 $page_canonical = SITE_URL . '/convert/' . $parsed['canonical_slug'];
+// Gujarati / Hindi versions (only for indexable pages that have one).
+if ($indexable) $page_alternates = gen_alternates($parsed['canonical_slug']);
+// Region-dependent units: say which value the page uses.
+$regionNotes = [];
+foreach (array_unique([$from, $to]) as $u) {
+    $d = gen_region_default($u);
+    if ($d && count(gen_regions()[$u]['list']) > 1) $regionNotes[] = kt_region_note($u, $cat, 'en', fn($k) => $k === $u ? gen_unit_label($cat, $u)['name'] : gen_unit_label($cat, $k)['symbol']) . ' The size of this unit changes by region — pick yours in the converter below.';
+    elseif ($d) $regionNotes[] = 'This page uses the ' . gen_regions()[$u]['list'][gen_regions()[$u]['default']]['en'] . ' value: 1 ' . gen_unit_label($cat, $u)['name'] . ' = ' . gen_fmt($d['f']) . ' kg.';
+    elseif (isset(gen_fixed_regional_notes()[$u])) $regionNotes[] = gen_fixed_regional_notes()[$u]['en'];
+}
 require __DIR__ . '/includes/header.php';
 ?>
 <div class="grid lg:grid-cols-[1fr,300px] gap-6 mt-4">
@@ -109,13 +121,22 @@ require __DIR__ . '/includes/header.php';
         <p class="text-3xl md:text-4xl font-extrabold leading-tight" style="color:var(--peacock-teal)"><?= e($C['answer']) ?></p>
         <p class="mt-2 text-sm opacity-80"><?= e($C['answer_sub']) ?></p>
       </div>
+      <?php foreach ($regionNotes as $rn): ?><p class="mt-3 text-sm p-2 rounded-lg" style="background:rgba(245,158,11,.10)">📍 <?= e($rn) ?></p><?php endforeach; ?>
     </div>
+    <?= kt_lang_switch($parsed['canonical_slug'], 'en') ?>
 
     <?php
     // Nearby numbers (29, 31, 35, 40 for 30) and the same amount in this unit's other usual partners — only pages Google indexes.
     $near = []; $same = [];
     if ($value !== null) {
+        // The closest indexed values (29, 31, 35, 40 for 30; 250, 1000, 100 for 500).
         foreach ([-1, 1, 5, 10, -5, 20] as $d) { $nv = $value + $d; if ($nv > 0 && gen_value_indexable($from, $to, $nv)) $near[] = $nv; }
+        if (count($near) < 3) {
+            $cand = array_filter(gen_index_values(), fn($nv) => abs($nv - $value) > 1e-9 && !in_array($nv, $near) && gen_value_indexable($from, $to, (float) $nv));
+            usort($cand, fn($a, $b) => abs($a - $value) <=> abs($b - $value));
+            $near = array_merge($near, array_slice($cand, 0, 4 - count($near)));
+            sort($near);
+        }
         $near = array_slice(array_values(array_unique($near)), 0, 5);
         foreach (array_keys(gen_unit_categories()[$cat]['units']) as $u2) {
             if ($u2 !== $from && $u2 !== $to && gen_value_indexable($from, $u2, (float) $value)) $same[] = $u2;
@@ -134,31 +155,8 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <!-- Live converter -->
-    <div class="kt-card p-5 mb-6" id="genConvert"
-         data-cat="<?= e($cat) ?>" data-special="<?= e($catMeta['special'] ?? '') ?>"
-         data-from="<?= e($from) ?>" data-to="<?= e($to) ?>" data-val="<?= e($defaultVal) ?>"
-         data-units='<?= e(json_encode($unitsJson, JSON_UNESCAPED_UNICODE)) ?>'>
-      <div class="grid sm:grid-cols-[1fr,auto,1fr] gap-3 items-end">
-        <div>
-          <label class="kt-label">From</label>
-          <input type="number" class="kt-input gc-val" value="<?= e($defaultVal) ?>" step="any">
-          <select class="kt-select gc-from mt-2"><?php foreach ($catMeta['units'] as $k => $u): ?><option value="<?= e($k) ?>" <?= $k === $from ? 'selected' : '' ?>><?= e($u[1]) ?> (<?= e($u[2]) ?>)</option><?php endforeach; ?></select>
-        </div>
-        <button class="btn btn-ghost gc-swap mb-1" title="Swap"><i data-lucide="arrow-left-right" class="w-4 h-4"></i></button>
-        <div>
-          <label class="kt-label">To</label>
-          <input type="text" class="kt-input gc-out" readonly>
-          <select class="kt-select gc-to mt-2"><?php foreach ($catMeta['units'] as $k => $u): ?><option value="<?= e($k) ?>" <?= $k === $to ? 'selected' : '' ?>><?= e($u[1]) ?> (<?= e($u[2]) ?>)</option><?php endforeach; ?></select>
-        </div>
-      </div>
-      <div class="mt-4 p-4 rounded-xl text-center" style="background:linear-gradient(135deg,rgba(30,58,138,.08),rgba(5,150,105,.08))">
-        <div class="text-2xl font-extrabold gc-result" style="color:var(--peacock-teal)"><?= gen_fmt($defaultVal) ?> <?= e($fromL['symbol']) ?> = <?= gen_fmt($answer) ?> <?= e($toL['symbol']) ?></div>
-      </div>
-      <div class="flex flex-wrap gap-2 mt-4">
-        <button class="btn btn-ghost text-sm gc-copy"><i data-lucide="copy" class="w-4 h-4"></i> Copy</button>
-        <button class="btn btn-wa text-sm gc-wa"><i data-lucide="send" class="w-4 h-4"></i> WhatsApp</button>
-      </div>
-    </div>
+    <?php $__names = []; $__sym = []; foreach ($catMeta['units'] as $k => $u) { $__names[$k] = $u[1]; $__sym[$k] = $u[2]; }
+    kt_convert_widget(['cat' => $cat, 'from' => $from, 'to' => $to, 'val' => $defaultVal, 'lang' => 'en', 'names' => $__names, 'sym' => $__sym]); ?>
 
     <!-- Guide: formula, examples, units, usage, reverse -->
     <article class="kt-card p-5 mb-6 leading-relaxed space-y-4 conv-guide">
@@ -220,7 +218,7 @@ require __DIR__ . '/includes/header.php';
         <?php foreach ($table as $v => $r): $isCur = $value !== null && abs((float) $v - $value) < 1e-9; ?>
           <tr class="border-t" style="border-color:var(--border)<?= $isCur ? ';background:rgba(5,150,105,.08);font-weight:700' : '' ?>">
             <td class="py-2"><?php if (!$isCur && isset($linkable[(string) $v])): ?><a class="hover:text-[color:var(--saffron)]" href="<?= SITE_URL ?>/convert/<?= e(gen_slug_num((float) $v)) ?>-<?= e($from) ?>-to-<?= e($to) ?>"><?= gen_fmt((float) $v) ?> <?= e($fromL['symbol']) ?></a><?php else: ?><?= gen_fmt((float) $v) ?> <?= e($fromL['symbol']) ?><?php endif; ?></td>
-            <td><?= e($r) ?> <?= e($toL['symbol']) ?></td>
+            <td><span data-cv="<?= e($v) ?>"><?= e($r) ?></span> <?= e($toL['symbol']) ?></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
@@ -269,47 +267,4 @@ require __DIR__ . '/includes/header.php';
   </aside>
 </div>
 
-<script>
-(function () {
-  const box = document.getElementById('genConvert');
-  const units = JSON.parse(box.dataset.units);
-  const special = box.dataset.special;
-  const valI = box.querySelector('.gc-val'), fromS = box.querySelector('.gc-from'),
-        toS = box.querySelector('.gc-to'), outI = box.querySelector('.gc-out'),
-        res = box.querySelector('.gc-result');
-  function convert(v, from, to) {
-    if (special === 'temp') {
-      let c = from === 'celsius' ? v : from === 'fahrenheit' ? (v - 32) * 5 / 9 : from === 'kelvin' ? v - 273.15 : (v - 491.67) * 5 / 9;
-      return to === 'celsius' ? c : to === 'fahrenheit' ? c * 9 / 5 + 32 : to === 'kelvin' ? c + 273.15 : (c + 273.15) * 9 / 5;
-    }
-    if (special === 'fuel') {
-      const toKmL = (u, x) => u === 'liter-per-100km' ? (x === 0 ? 0 : 100 / x) : x * units[u].f;
-      const kmL = toKmL(from, v);
-      return to === 'liter-per-100km' ? (kmL === 0 ? 0 : 100 / kmL) : kmL / units[to].f;
-    }
-    return v * units[from].f / units[to].f;
-  }
-  function fmt(n) {
-    if (!isFinite(n)) return '—';
-    if (n === 0) return '0';
-    const a = Math.abs(n);
-    if (a >= 1e15 || (a < 1e-6)) return n.toExponential(6).replace(/\.?0+e/, 'e');
-    const d = a >= 100 ? 2 : a >= 1 ? 4 : 8;
-    return parseFloat(n.toFixed(d)).toLocaleString('en-US', { maximumFractionDigits: d });
-  }
-  let last = '';
-  function run() {
-    const v = parseFloat(valI.value) || 0, f = fromS.value, t = toS.value;
-    const r = convert(v, f, t);
-    outI.value = fmt(r);
-    last = `${fmt(v)} ${units[f].s} = ${fmt(r)} ${units[t].s}`;
-    res.textContent = last;
-  }
-  valI.addEventListener('input', run); fromS.addEventListener('change', run); toS.addEventListener('change', run);
-  box.querySelector('.gc-swap').addEventListener('click', () => { const a = fromS.value; fromS.value = toS.value; toS.value = a; run(); });
-  box.querySelector('.gc-copy').addEventListener('click', () => window.ktCopy && window.ktCopy(last));
-  box.querySelector('.gc-wa').addEventListener('click', () => window.ktWaShareText && window.ktWaShareText(last + '\n' + location.href));
-  run();
-})();
-</script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

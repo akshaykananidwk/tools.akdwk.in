@@ -15,7 +15,7 @@ function gen_short(string $unit, string $cat): string {
     $map = ['quintal' => 'qtl', 'metric-ton' => 'ton', 'pound' => 'lbs', 'us-ton' => 'US ton', 'square-foot' => 'sq ft', 'square-meter' => 'sq m',
         'square-yard' => 'sq yd (gaj)', 'square-kilometer' => 'sq km', 'square-centimeter' => 'sq cm', 'square-inch' => 'sq in', 'square-mile' => 'sq mi',
         'cubic-foot' => 'cft', 'cubic-meter' => 'cubic meter', 'kilometer-per-hour' => 'km/h', 'tola' => 'tola', 'bigha' => 'bigha', 'guntha' => 'guntha',
-        'acre' => 'acre', 'hectare' => 'hectare', 'month' => 'month', 'year' => 'year', 'week' => 'week', 'day' => 'day', 'hour' => 'hour', 'minute' => 'min'];
+        'acre' => 'acre', 'hectare' => 'hectare', 'maund' => 'maund', 'ser' => 'seer', 'month' => 'month', 'year' => 'year', 'week' => 'week', 'day' => 'day', 'hour' => 'hour', 'minute' => 'min'];
     return $map[$unit] ?? gen_unit_label($cat, $unit)['symbol'];
 }
 
@@ -24,7 +24,7 @@ function gen_plural(string $name): string {
     $n = strtolower($name);
     $irregular = ['foot' => 'feet', 'square foot' => 'square feet', 'cubic foot' => 'cubic feet', 'inch' => 'inches', 'square inch' => 'square inches',
         'cubic inch' => 'cubic inches', 'celsius' => 'degrees Celsius', 'fahrenheit' => 'degrees Fahrenheit', 'kelvin' => 'kelvin', 'rankine' => 'degrees Rankine',
-        'mach' => 'Mach', 'psi' => 'psi', 'mmhg' => 'mmHg', 'torr' => 'torr', 'rpm' => 'rpm', 'hertz' => 'hertz', 'btu' => 'BTU', 'century' => 'centuries'];
+        'mach' => 'Mach', 'psi' => 'psi', 'mmhg' => 'mmHg', 'torr' => 'torr', 'rpm' => 'rpm', 'hertz' => 'hertz', 'btu' => 'BTU', 'century' => 'centuries', 'thousand' => 'thousand', 'million' => 'million', 'billion' => 'billion', 'trillion' => 'trillion'];
     if (isset($irregular[$n])) return $irregular[$n];
     if (preg_match('/^(us|uk) (.+)$/', $n, $m)) return strtoupper($m[1]) . ' ' . gen_plural($m[2]);
     if (preg_match('/^(.+?) per (.+)$/', $n, $m)) return gen_plural($m[1]) . ' per ' . $m[2];   // "megabits per second"
@@ -61,6 +61,8 @@ function gen_extra_pairs(): array {
     $set = array_fill_keys([
         'hour>day', 'gram>ounce', 'minute>second', 'acre>square-foot', 'bar>psi', 'fahrenheit>celsius', 'milliliter>cup',
         'meter>mile', 'inch>millimeter', 'centimeter>foot', 'quart>gallon-us', 'month>day', 'pound>gram',
+        // Phase 5: Indian units with Gujarati/Hindi number pages (maund, vigha).
+        'maund>kilogram', 'bigha>guntha', 'bigha>square-foot', 'bigha>acre',
     ], true);
     return $set;
 }
@@ -335,7 +337,7 @@ function gen_is_word_unit(string $unit): bool {
     $w ??= array_fill_keys(['second', 'minute', 'hour', 'day', 'week', 'month', 'year', 'decade',
         'mile', 'foot', 'yard', 'inch', 'nautical-mile', 'furlong', 'light-year', 'acre', 'hectare', 'bigha', 'guntha',
         'cup', 'quart', 'pint', 'gallon-us', 'gallon-uk', 'tablespoon', 'teaspoon', 'fluid-ounce', 'barrel',
-        'stone', 'carat', 'tola', 'knot', 'degree', 'radian', 'revolution', 'arcminute', 'arcsecond', 'gradian'], true);
+        'stone', 'carat', 'tola', 'maund', 'ser', 'thousand', 'lakh', 'crore', 'million', 'billion', 'trillion', 'knot', 'degree', 'radian', 'revolution', 'arcminute', 'arcsecond', 'gradian'], true);
     return isset($w[$unit]);
 }
 

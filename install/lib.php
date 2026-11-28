@@ -170,12 +170,15 @@ Options -Indexes
   RewriteCond %{THE_REQUEST} ^[A-Z]+\s/index\.php[\s?]
   RewriteRule ^index\.php$ / [R=301,L]
   RewriteRule ^(tool|category|convert|blog)/(.+)/$ /$1/$2 [R=301,L]
+  RewriteRule ^(gu|hi)/convert/(.+)/$ /$1/convert/$2 [R=301,L]
 
   # Clean URLs: /tool/<slug>  /category/<slug>  /blog/<slug>
   RewriteRule ^tool/([a-z0-9-]+)/?$ tool.php?slug=$1 [L,QSA]
   RewriteRule ^category/([a-z0-9-]+)/?$ category.php?slug=$1 [L,QSA]
   RewriteRule ^blog/([a-z0-9-]+)/?$ blog/post.php?slug=$1 [L,QSA]
   RewriteRule ^convert/([A-Za-z0-9.,%\-]+)/?$ convert.php?slug=$1 [L,QSA]
+  # Gujarati / Hindi converter pages.
+  RewriteRule ^(gu|hi)/convert/([A-Za-z0-9.,%\-]+)$ convert_local.php?ln=$1&slug=$2 [L,QSA]
   RewriteRule ^sitemap\.xml$ sitemap.php [L]
   RewriteRule ^sitemap-main\.xml$ sitemap-main.php [L]
   RewriteRule ^sitemap-convert\.xml$ sitemap-convert.php [L,QSA]

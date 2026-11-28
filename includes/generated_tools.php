@@ -36,6 +36,8 @@ function gen_unit_categories(): array {
             'quintal' => [100, 'Quintal', 'q'], 'carat' => [0.0002, 'Carat', 'ct'],
             'tola' => [0.0116638, 'Tola', 'tola'], 'us-ton' => [907.18474, 'US Ton', 'ton'],
             'grain' => [6.479891e-5, 'Grain', 'gr'],
+            // Region-dependent: Gujarat market maund (20 kg) and the Indian standard seer; other regions in includes/regional_units.php.
+            'maund' => [20, 'Maund', 'maund'], 'ser' => [0.9331, 'Seer', 'seer'],
         ]],
         'temperature' => ['name' => 'Temperature', 'icon' => 'thermometer', 'base' => 'celsius', 'special' => 'temp', 'units' => [
             'celsius' => [1, 'Celsius', '°C'], 'fahrenheit' => [1, 'Fahrenheit', '°F'],
@@ -46,8 +48,8 @@ function gen_unit_categories(): array {
             'square-centimeter' => [1e-4, 'Square Centimeter', 'cm²'], 'square-mile' => [2589988.11, 'Square Mile', 'mi²'],
             'square-yard' => [0.83612736, 'Square Yard', 'yd²'], 'square-foot' => [0.09290304, 'Square Foot', 'ft²'],
             'square-inch' => [0.00064516, 'Square Inch', 'in²'], 'acre' => [4046.8564224, 'Acre', 'ac'],
-            'hectare' => [10000, 'Hectare', 'ha'], 'bigha' => [1618.7, 'Bigha', 'bigha'],
-            'guntha' => [101.17, 'Guntha', 'guntha'],
+            'hectare' => [10000, 'Hectare', 'ha'], 'bigha' => [1618.74256896, 'Bigha', 'bigha'],
+            'guntha' => [101.17141056, 'Guntha', 'guntha'],
         ]],
         'volume' => ['name' => 'Volume', 'icon' => 'flask-conical', 'base' => 'liter', 'units' => [
             'liter' => [1, 'Liter', 'L'], 'milliliter' => [0.001, 'Milliliter', 'mL'],
@@ -119,6 +121,10 @@ function gen_unit_categories(): array {
         'fuel' => ['name' => 'Fuel Economy', 'icon' => 'fuel', 'base' => 'km-per-liter', 'special' => 'fuel', 'units' => [
             'km-per-liter' => [1, 'Kilometer per Liter', 'km/L'], 'mpg-us' => [0.425144, 'MPG (US)', 'mpg'],
             'mpg-uk' => [0.354006, 'MPG (UK)', 'mpg'], 'liter-per-100km' => [-1, 'Liter per 100 km', 'L/100km'],
+        ]],
+        'number' => ['name' => 'Indian Number System', 'icon' => 'indian-rupee', 'base' => 'thousand', 'units' => [
+            'thousand' => [1e3, 'Thousand', 'thousand'], 'lakh' => [1e5, 'Lakh', 'lakh'], 'crore' => [1e7, 'Crore', 'crore'],
+            'million' => [1e6, 'Million', 'million'], 'billion' => [1e9, 'Billion', 'billion'], 'trillion' => [1e12, 'Trillion', 'trillion'],
         ]],
     ];
 }
@@ -226,6 +232,9 @@ function gen_aliases(): array {
         'sqft' => 'square-foot', 'sq-ft' => 'square-foot', 'square-feet' => 'square-foot', 'sqm' => 'square-meter', 'sq-m' => 'square-meter',
         'gaj' => 'square-yard', 'sq-yard' => 'square-yard', 'vigha' => 'bigha', 'bighas' => 'bigha', 'gunthas' => 'guntha', 'acres' => 'acre', 'hectares' => 'hectare', 'ha' => 'hectare',
         'mbs' => 'megabyte-per-second', 'mb-s' => 'megabyte-per-second', 'kmph' => 'kilometer-per-hour',
+        'maunds' => 'maund', 'mann' => 'maund', 'man' => 'maund', 'mun' => 'maund', 'seer' => 'ser', 'seers' => 'ser', 'sher' => 'ser',
+        'var' => 'square-yard', 'vaar' => 'square-yard', 'gaz' => 'square-yard', 'lac' => 'lakh', 'lacs' => 'lakh', 'lakhs' => 'lakh', 'crores' => 'crore', 'cr' => 'crore',
+        'millions' => 'million', 'billions' => 'billion', 'trillions' => 'trillion',
         'litre' => 'liter', 'litres' => 'liter', 'liters' => 'liter', 'cft' => 'cubic-foot', 'hp' => 'horsepower', 'kw' => 'kilowatt', 'kwh' => 'kilowatt-hour',
     ];
 }

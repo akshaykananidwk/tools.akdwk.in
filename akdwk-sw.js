@@ -1,8 +1,9 @@
 /* Krishna Tools service worker: push notifications (notification.akdwk.in) + installable app with an offline page.
- * Network first for pages (always fresh), cache first for versioned /assets/ files. Cross-origin requests are not touched. */
+ * HTML pages: network first, always fresh from the server (the offline page only when there is no network).
+ * /assets/ files with a ?v= version: cache first (a new version has a new URL). Other /assets/ files: network first. Cross-origin requests are not touched. */
 try { importScripts('https://notification.akdwk.in/sdk/push-sw.js'); } catch (e) { /* push stays off if that host is unreachable; the app still works */ }
 
-const KT_CACHE = 'kt-app-v1';
+const KT_CACHE = 'kt-app-v2';
 const OFFLINE_URL = '/offline.html';
 const MAX_ASSETS = 80;
 
@@ -29,7 +30,14 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api/')) return;
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
+    event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match(OFFLINE_URL)));
+    return;
+  }
+  if (url.pathname.startsWith('/assets/') && !url.searchParams.has('v')) {
+    event.respondWith(fetch(req).then(res => {
+      if (res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(KT_CACHE).then(c => { c.put(req, copy); trim(c); }); }
+      return res;
+    }).catch(() => caches.match(req)));
     return;
   }
   if (url.pathname.startsWith('/assets/')) {
