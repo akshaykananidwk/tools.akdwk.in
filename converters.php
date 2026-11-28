@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/generated_tools.php';
 
 $counts = gen_total_count();
 $page_title = 'Unit Converters — ' . number_format($counts['total']) . '+ Free Online Conversions | ' . brand_name();
-$page_desc = 'Free online unit converters: length, weight, temperature, volume, speed, digital storage, data rate and more. ' . number_format($counts['total']) . '+ instant conversions with formulas and tables.';
+$page_desc = number_format($counts['total']) . '+ free unit converters — length, weight, area, temperature, data rate and Indian units — with formulas and tables.';
 $page_keywords = 'unit converter, length converter, weight converter, temperature converter, online conversion, km to miles, kg to lbs';
 $breadcrumb = [['label' => 'Home', 'url' => SITE_URL . '/'], ['label' => 'Converters']];
 require __DIR__ . '/includes/header.php';

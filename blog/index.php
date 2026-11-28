@@ -6,7 +6,7 @@ $en = current_lang() === 'en';
 $posts = all("SELECT * FROM " . tbl('blog_posts') . " WHERE is_published = 1 ORDER BY created_at DESC, id DESC");
 
 $page_title = t('blog') . ' — ' . brand_name();
-$page_desc  = $en ? 'Guides and tips on tools, CCTV, PDF, images and more.' : 'ટૂલ્સ, CCTV, PDF, ઇમેજ અને વધુ પર માર્ગદર્શિકા અને ટિપ્સ.';
+$page_desc  = 'Practical guides from AK Computer, Dwarka: CCTV planning, PDF and image tips, Indian units like quintal and bigha, GST and everyday calculations.';
 $breadcrumb = [
     ['label' => t('home'), 'url' => SITE_URL . '/'],
     ['label' => t('blog')],

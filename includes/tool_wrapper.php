@@ -193,6 +193,7 @@ function render_tool_page(string $slug): void {
                data-engine="<?= e($tool['engine']) ?>"
                data-src="<?= e(kt_engine_file($tool['engine'])) ?>"
                data-slug="<?= e($tool['slug']) ?>"
+               data-cat="<?= e($tool['cat']) ?>"
                data-toolid="<?= (int) ($tool['db_id'] ?? 0) ?>"
                data-premium="<?= (int) !empty($tool['is_premium']) ?>"
                data-allowed="<?= $access['allowed'] ? 1 : 0 ?>"
@@ -247,6 +248,16 @@ function render_tool_page(string $slug): void {
           </div>
           <?php endif; ?>
         </div>
+      <?php // Embed code: other sites can show this tool in an iframe, with a credit link back here.
+        $__embed = '<iframe src="' . SITE_URL . '/embed/' . $tool['slug'] . '" title="' . $name . ' — Krishna Tools" width="100%" height="' . max(600, $__md + 260) . '" style="border:0;max-width:100%" loading="lazy"></iframe>' . "\n"
+            . '<p style="font-size:13px">Free <a href="' . SITE_URL . '/tool/' . $tool['slug'] . '">' . $name . '</a> by Krishna Tools</p>'; ?>
+        <details class="kt-card p-5 mb-6" id="embedTool">
+          <summary class="font-bold cursor-pointer"><i data-lucide="code" class="w-4 h-4 inline"></i> Embed this tool on your website</summary>
+          <p class="text-sm opacity-80 mt-3">Copy this code into any web page, blog or WordPress "Custom HTML" block. The tool works inside your page, free, with a small credit link to Krishna Tools.</p>
+          <textarea readonly rows="4" class="kt-input font-mono text-xs mt-2" id="embedCode" aria-label="Embed code"><?= e($__embed) ?></textarea>
+          <button type="button" class="btn btn-ghost text-sm mt-2" data-embed-copy><i data-lucide="copy" class="w-4 h-4"></i> Copy embed code</button>
+          <a class="text-sm underline ml-2" href="<?= SITE_URL ?>/embed/<?= e($tool['slug']) ?>" target="_blank" rel="noopener nofollow">Preview</a>
+        </details>
       </div>
 
       <!-- Related tools sidebar -->

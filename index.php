@@ -14,9 +14,7 @@ try { foreach (all("SELECT slug, is_active, is_premium, views FROM " . tbl('tool
 $en = current_lang() === 'en';
 $nTools = (int) (floor(count($tools) / 50) * 50); // "700+" style rounded count
 $page_title = brand_name() . " — {$nTools}+ Free Online Tools & Unit Converters";
-$page_desc  = $en
-    ? "Krishna Tools by AK Computer, Dwarka — {$nTools}+ free online tools for everyone: PDF & image, restaurant, hotel, salon, doctor, contractor, electrician, printing, student, farmer, finance, birthday wishes and more. No login, works in your browser."
-    : "AK Computer, દ્વારકા દ્વારા {$nTools}+ ફ્રી ઓનલાઇન ટૂલ્સ — PDF, ઇમેજ, રેસ્ટોરન્ટ, હોટલ, સલૂન, ડૉક્ટર, કોન્ટ્રાક્ટર, ઇલેક્ટ્રિશિયન, વિદ્યાર્થી, ખેડૂત, શુભેચ્છા અને ઘણું બધું. લોગિન વગર, સંપૂર્ણ ફ્રી.";
+$page_desc  = "{$nTools}+ free online tools and unit converters by AK Computer, Dwarka: PDF, image, GST, CCTV, quotation, age and BMI calculators. No login needed.";
 $perCat = 8; // home shows the first 8 tools of each category; the rest live on the category page
 $page_keywords = 'online tools, free tools, pdf converter, image compressor, cctv storage calculator, gst calculator, qr code generator, invoice generator, AK Computer Dwarka';
 require __DIR__ . '/includes/header.php';

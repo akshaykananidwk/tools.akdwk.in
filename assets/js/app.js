@@ -45,6 +45,31 @@ function downloadDataUrl(url, name) {
 }
 window.ktCopy = copy; window.ktDownloadBlob = downloadBlob;
 
+/* ---------- GA4 events (only when Google Analytics is set in Admin → Settings) ----------
+   tool_use (first interaction with a tool), converter_use, copy_result, share, tool_download,
+   search, embed_code_copy. Every event carries the tool slug and category where there is one. */
+function ga(name, params) { try { if (typeof window.gtag === 'function') window.gtag('event', name, Object.assign({ page_type: pageType(), embedded: !!KT.embed }, params || {})); } catch (e) {} }
+function pageType() { const p = location.pathname; return p.startsWith('/tool/') ? 'tool' : p.startsWith('/convert/') ? 'converter' : p.startsWith('/embed/') ? 'embed' : p.startsWith('/category/') ? 'category' : p === '/' ? 'home' : 'page'; }
+function toolInfo() { const m = document.getElementById('toolMount'); return m ? { tool_slug: m.dataset.slug, tool_category: m.dataset.cat || '' } : {}; }
+window.ktGa = ga;
+function wireGa() {
+  const m = document.getElementById('toolMount');
+  if (m) { let used = false; const once = () => { if (used) return; used = true; ga('tool_use', toolInfo()); };
+    ['input', 'change'].forEach(ev => m.addEventListener(ev, once, { capture: true }));
+    m.addEventListener('click', e => { if (e.target.closest('button,label,input[type=file]')) once(); }, { capture: true }); }
+  const c = document.getElementById('genConvert');
+  if (c) { let used = false; const once = () => { if (used) return; used = true; ga('converter_use', { conversion: (c.dataset.from || '') + '_to_' + (c.dataset.to || '') }); };
+    c.addEventListener('input', once, { capture: true }); c.addEventListener('change', once, { capture: true }); }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button,a'); if (!b) return;
+    const txt = (b.textContent || '').trim().toLowerCase();
+    if (b.matches('[data-embed-copy]')) { const t = document.getElementById('embedCode'); if (t) copy(t.value); ga('embed_code_copy', toolInfo()); return; }
+    if (b.matches('.gc-wa,.btn-wa') || /whatsapp/.test(txt)) ga('share', Object.assign({ method: 'whatsapp' }, toolInfo()));
+    else if (b.matches('.gc-copy') || /^copy/.test(txt)) ga('copy_result', toolInfo());
+    else if (/download|save png|save pdf/.test(txt)) ga('tool_download', toolInfo());
+  }, { capture: true });
+}
+
 /* ---------- Lazy CDN loader ---------- */
 const CDN = {
   jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -1103,7 +1128,7 @@ function parseConversion(term, ci) {
 function wireSearchBox(inp, box) {
   if (!inp || !box) return;
   let tmr;
-  const go = () => { const a = box.querySelector('a'); if (a) location.href = a.href; };
+  const go = () => { const a = box.querySelector('a'); ga('search', { search_term: inp.value.trim().slice(0, 100) }); if (a) location.href = a.href; };
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
   inp.addEventListener('input', () => {
     clearTimeout(tmr);
@@ -1115,7 +1140,7 @@ function wireSearchBox(inp, box) {
       const words = term.split(/\s+/).filter(w => w.length > 1);
       const score = (name, hay) => { let s = 0; for (const w of (words.length ? words : [term])) { if (!hay.includes(w)) return -1; s += name.includes(w) ? 3 : 1; } return s; };
       const tools = idx.map(t => {
-        const name = (t.name_gu + ' ' + t.name_en + ' ' + t.slug.replace(/-/g, ' ')).toLowerCase();
+        const name = (t.name_en + ' ' + t.slug.replace(/-/g, ' ')).toLowerCase();
         const s = score(name, name + ' ' + (t.k || '')); return s > 0 ? [s, t] : null;
       }).filter(Boolean).sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
       const direct = parseConversion(term, ci);
@@ -1128,7 +1153,7 @@ function wireSearchBox(inp, box) {
       const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
       let html = '';
       if (direct) html += row(`${KT.url}/convert/${direct.slug}`, 'arrow-right-left', `<b>${esc(direct.label)}</b>`, esc(direct.name) + ' →');
-      html += tools.map(h => row(`${KT.url}/tool/${h.slug}`, h.icon, esc(GU ? h.name_gu : h.name_en))).join('');
+      html += tools.map(h => row(`${KT.url}/tool/${h.slug}`, h.icon, esc(h.name_en))).join('');
       if (convs.length) html += `<div class="text-[11px] uppercase tracking-wide opacity-50 px-2 pt-2">Converters</div>` + convs.map(c => row(`${KT.url}/convert/${c[0]}`, 'arrow-right-left', esc(c[1]), esc(c[2]))).join('');
       box.innerHTML = html || `<div class="p-2 text-sm opacity-60">${T('કંઈ મળ્યું નહીં', 'No results')} — <a class="underline" href="${KT.url}/search.php?q=${encodeURIComponent(term)}">search all</a></div>`;
       box.classList.remove('hidden'); if (window.lucide) lucide.createIcons();
@@ -1214,6 +1239,7 @@ document.addEventListener('DOMContentLoaded', () => {
   trackRecent();
   showMine();
   wireInstall();
+  wireGa();
 });
-registerSW();
+if (!KT.embed) registerSW();
 })();

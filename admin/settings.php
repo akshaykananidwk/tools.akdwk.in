@@ -12,7 +12,7 @@ require_once __DIR__ . '/layout.php';
 $textKeys = [
     'site_name', 'site_url', 'shop_name', 'shop_address', 'shop_phone', 'shop_whatsapp',
     'gstin', 'wa_base_url', 'wa_api_key', 'wa_session_id', 'wa_sender', 'wa_inbound_url',
-    'rzp_webhook_secret', 'ga_id',
+    'rzp_webhook_secret', 'ga_id', 'gsc_verify', 'shop_email', 'shop_hours',
 ];
 $boolKeys = ['wa_ivr_enabled', 'maintenance_mode'];
 
@@ -104,6 +104,9 @@ admin_head('Settings');
       <div><label class="kt-label text-xs">Site name</label><input name="site_name" class="kt-input !py-1.5" value="<?= e(sv('site_name', 'Krishna Tools')) ?>"></div>
       <div><label class="kt-label text-xs">Site URL</label><input name="site_url" class="kt-input !py-1.5" value="<?= e(sv('site_url', defined('SITE_URL') ? SITE_URL : '')) ?>"></div>
       <div><label class="kt-label text-xs">Google Analytics ID</label><input name="ga_id" class="kt-input !py-1.5" value="<?= e(sv('ga_id')) ?>" placeholder="G-XXXXXXX"></div>
+      <div><label class="kt-label text-xs">Search Console verification code (content of the google-site-verification meta tag)</label><input name="gsc_verify" class="kt-input !py-1.5" value="<?= e(sv('gsc_verify')) ?>" placeholder="abc123…"></div>
+      <div><label class="kt-label text-xs">Shop email (About / Contact pages)</label><input name="shop_email" class="kt-input !py-1.5" value="<?= e(sv('shop_email')) ?>" placeholder="name@example.com"></div>
+      <div><label class="kt-label text-xs">Shop hours (About / Contact pages)</label><input name="shop_hours" class="kt-input !py-1.5" value="<?= e(sv('shop_hours')) ?>" placeholder="Mon–Sat 9:30 am – 8:30 pm"></div>
       <div>
         <label class="kt-label text-xs">Default language</label>
         <select name="default_lang" class="kt-select !py-1.5">

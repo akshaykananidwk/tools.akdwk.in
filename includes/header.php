@@ -41,6 +41,7 @@ $siteName = brand_name();
 <meta name="robots" content="<?= e($page_robots ?? 'index, follow, max-image-preview:large') ?>">
 <?php if (!empty($page_keywords)): ?><meta name="keywords" content="<?= e($page_keywords) ?>"><?php endif; ?>
 <meta name="author" content="AK Computer, Dwarka">
+<?php if ($__gsc = trim((string) setting('gsc_verify', ''))): ?><meta name="google-site-verification" content="<?= e(preg_replace('/^.*content="([^"]+)".*$/', '$1', $__gsc)) ?>"><?php endif; ?>
 <link rel="canonical" href="<?= e($canonical) ?>">
 <!-- Open Graph -->
 <meta property="og:site_name" content="<?= e($siteName) ?>">
@@ -146,7 +147,7 @@ if (!empty($breadcrumb) && !str_contains((string) ($extra_head ?? ''), 'Breadcru
 
     <nav class="flex items-center gap-1 md:gap-2">
       <button id="mobileSearchBtn" class="btn btn-ghost !px-2 md:hidden" title="Search tools and converters" aria-label="Search"><i data-lucide="search" class="w-4 h-4"></i></button>
-      <a href="<?= SITE_URL ?>/converters.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= current_lang() === 'en' ? 'Converters' : 'કન્વર્ટર' ?></a>
+      <a href="<?= SITE_URL ?>/converters.php" class="hidden md:inline-block btn btn-ghost text-sm">Converters</a>
       <?php if (!kt_all_free()): ?><a href="<?= SITE_URL ?>/pricing.php" class="hidden md:inline-block btn btn-ghost text-sm"><?= t('pricing') ?></a><?php endif; ?>
       <button onclick="ktToggleTheme()" class="btn btn-ghost !px-2" title="Theme" aria-label="Theme">
         <i data-lucide="moon-star" class="w-4 h-4"></i>

@@ -178,6 +178,8 @@ Options -Indexes
   RewriteRule ^convert/([A-Za-z0-9.,%\-]+)/?$ convert.php?slug=$1 [L,QSA]
   # The site is English-only: old Gujarati / Hindi converter URLs go to the English page.
   RewriteRule ^(gu|hi)/convert/(.+?)/?$ /convert/$2 [R=301,L]
+  # Embeddable tools for other websites (iframe).
+  RewriteRule ^embed/([a-z0-9-]+)/?$ embed.php?slug=$1 [L,QSA]
   RewriteRule ^sitemap\.xml$ sitemap.php [L]
   RewriteRule ^sitemap-main\.xml$ sitemap-main.php [L]
   RewriteRule ^sitemap-convert\.xml$ sitemap-convert.php [L,QSA]
@@ -185,7 +187,8 @@ Options -Indexes
 
 # Security headers
 <IfModule mod_headers.c>
-  Header always set X-Frame-Options "SAMEORIGIN"
+  # Pages may not be framed by other sites — except /embed/<tool>, which exists for that.
+  Header always set X-Frame-Options "SAMEORIGIN" "expr=%{THE_REQUEST} !~ m#\s/embed/#"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set X-XSS-Protection "1; mode=block"

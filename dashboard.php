@@ -62,8 +62,8 @@ require __DIR__ . '/includes/header.php';
   <!-- Daily shlok -->
   <div class="kt-card p-5" style="background:linear-gradient(135deg,rgba(30,58,138,.07),rgba(245,158,11,.07))">
     <div class="text-xs opacity-60"><?= t('daily_shlok') ?></div>
-    <div class="mt-2 font-semibold" style="font-family:'Baloo Bhai 2'"><?= e($shlok['sanskrit']) ?></div>
-    <div class="text-sm opacity-70 mt-1"><?= e($shlok['en'] ?? $shlok['gu']) ?></div>
+    <div class="mt-2 font-semibold">“<?= e($shlok['en'] ?? '') ?>”</div>
+    <div class="text-xs opacity-60 mt-1">— Bhagavad Gita</div>
   </div>
 </div>
 

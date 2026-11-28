@@ -29,8 +29,9 @@ if ($part === '' || $part === 'pages') {
     $urls[] = [$base . '/converters.php', $siteMod, 'weekly', '0.8'];
     $urls[] = [$base . '/blog/', null, 'weekly', '0.7'];
     $urls[] = [$base . '/pricing.php', null, 'monthly', '0.4'];
-    $urls[] = [$base . '/about.php', null, 'monthly', '0.4'];
+    $urls[] = [$base . '/about.php', date('Y-m-d', (int) @filemtime(__DIR__ . '/about.php')), 'monthly', '0.4'];
     $urls[] = [$base . '/contact.php', null, 'monthly', '0.4'];
+    foreach (['privacy', 'terms', 'disclaimer'] as $lp) $urls[] = [$base . "/$lp.php", date('Y-m-d', (int) @filemtime(__DIR__ . "/$lp.php")), 'yearly', '0.3'];
     foreach (kt_categories() as $c) $urls[] = [$base . '/category/' . $c['slug'], $toolMod, 'weekly', '0.8'];
     try {
         foreach (all("SELECT slug, created_at FROM " . tbl('blog_posts') . " WHERE is_published = 1") as $p) {

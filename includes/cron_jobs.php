@@ -111,6 +111,13 @@ function kt_cron_jobs(): array {
         'handler' => 'kt_job_ak_earn_queue',
     ],
 
+    // ── SEO report: crawl every sitemap URL, list title/description/thin/noindex problems ─
+    [
+        'key' => 'seo_report', 'name' => 'SEO Report (crawl all sitemap pages)',
+        'group' => 'reports', 'schedule' => 'cron:10 3 * * *', 'default_enabled' => true,
+        'handler' => 'kt_job_seo_report',
+    ],
+
     // ── Daily admin report (off by default) ────────────────────────────
     [
         'key' => 'auto_report', 'name' => 'Daily Admin Report',
@@ -237,6 +244,13 @@ function kt_job_amc_reminder(CronContext $ctx): string {
 function kt_job_ak_earn_queue(CronContext $ctx): string {
     if (!function_exists('ak_enabled') || !ak_enabled()) return 'AK Earn not configured';   // ak_enabled() loads the keys
     return ak_flush_queue(100) . ' queued event(s) sent';
+}
+
+function kt_job_seo_report(CronContext $ctx): string {
+    require_once __DIR__ . '/seo_report.php';
+    $r = kt_seo_report_run(true, 1500);
+    $n = 0; foreach (kt_seo_issues($r) as [, $list]) $n += count($list);
+    return "{$r['checked']}/{$r['planned']} pages checked in {$r['seconds']}s, $n issue(s)";
 }
 
 function kt_job_cleanup(CronContext $ctx): string {

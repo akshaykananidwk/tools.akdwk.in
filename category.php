@@ -30,9 +30,15 @@ $sample = implode(', ', array_map(fn($t) => loc($t, 'name'), array_slice($tools,
 $page_title = $en
     ? "{$cnTools} — {$n} Free Online Tools | " . brand_name()
     : "{$cnTools} — {$n} ફ્રી ઓનલાઇન ટૂલ્સ | " . brand_name();
-$page_desc = $en
-    ? "{$n} free {$cnTools}: {$sample} and more. No login, works on mobile, nothing is uploaded."
-    : "{$n} ફ્રી {$cnTools} ગુજરાતી અને English માં: {$sample} અને વધુ. લોગિન વગર, મોબાઇલ પર ચાલે.";
+if (mb_strlen($page_title) > 70) $page_title = "{$cnTools} — {$n} Free Online Tools";
+// Description within 160 characters: as many sample tool names as fit.
+$names = array_map(fn($t) => preg_replace('/\s*\(.*$/', '', loc($t, 'name')), array_slice($tools, 0, 6));
+$page_desc = '';
+for ($k = count($names); $k >= 1; $k--) {
+    $page_desc = "{$n} free {$cnTools}: " . implode(', ', array_slice($names, 0, $k)) . ' and more. No login, works on mobile.';
+    if (mb_strlen($page_desc) <= 160) break;
+}
+if (mb_strlen($page_desc) > 160) $page_desc = "{$n} free {$cnTools} that work in your browser. No login, works on mobile, nothing is uploaded.";
 // ItemList structured data so Google understands the category page.
 $listLd = ['@context' => 'https://schema.org', '@type' => 'ItemList', 'name' => loc($cat, 'name'), 'numberOfItems' => $n, 'itemListElement' => []];
 foreach ($tools as $i => $t) $listLd['itemListElement'][] = ['@type' => 'ListItem', 'position' => $i + 1, 'url' => SITE_URL . '/tool/' . $t['slug'], 'name' => loc($t, 'name')];

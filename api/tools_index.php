@@ -12,7 +12,7 @@ $out = [];
 foreach (kt_tools() as $t) {
     if (isset($disabled[$t['slug']])) continue;
     // 'k' = extra search phrases, so typing "voice typing" or "vyaj" finds the right tool.
-    $out[] = ['slug' => $t['slug'], 'name_gu' => $t['name_gu'], 'name_en' => $t['name_en'], 'icon' => $t['icon'], 'cat' => $t['cat'],
+    $out[] = ['slug' => $t['slug'], 'name_en' => $t['name_en'], 'icon' => $t['icon'], 'cat' => $t['cat'],
               'k' => implode(' ', array_slice(kt_tool_keywords($t, 8), 0, 8))];
 }
 echo json_encode($out, JSON_UNESCAPED_UNICODE);
