@@ -15,3 +15,4 @@ Thumbs.db
 *.swp
 /uploads/backups/*
 /uploads/cron/*
+logs/seo_report.json
